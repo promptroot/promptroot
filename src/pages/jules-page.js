@@ -31,7 +31,6 @@ async function loadJulesInfo() {
   const noJulesKeySection = document.getElementById('noJulesKeySection');
   const julesContentSection = document.getElementById('julesContentSection');
   const julesKeyStatus = document.getElementById('julesKeyStatus');
-  const dangerZoneSection = document.getElementById('dangerZoneSection');
   
   if (!user) {
     loadingDiv.classList.add('hidden');
@@ -64,7 +63,6 @@ async function loadJulesInfo() {
     if (hasKey) {
       if (noJulesKeySection) noJulesKeySection.classList.add('hidden');
       if (julesContentSection) julesContentSection.classList.remove('hidden');
-      if (dangerZoneSection) dangerZoneSection.classList.remove('hidden');
       if (loadJulesInfoBtn) loadJulesInfoBtn.classList.remove('hidden');
       
       // Load Jules account information
@@ -72,7 +70,6 @@ async function loadJulesInfo() {
     } else {
       if (noJulesKeySection) noJulesKeySection.classList.remove('hidden');
       if (julesContentSection) julesContentSection.classList.add('hidden');
-      if (dangerZoneSection) dangerZoneSection.classList.add('hidden');
       if (loadJulesInfoBtn) loadJulesInfoBtn.classList.add('hidden');
     }
   } catch (err) {
@@ -84,7 +81,6 @@ async function loadJulesInfo() {
 async function initApp() {
   // Set up Jules key event handlers
   const addJulesKeyBtnProminent = document.getElementById('addJulesKeyBtnProminent');
-  const resetJulesKeyBtn = document.getElementById('resetJulesKeyBtn');
   
   const addKeyHandler = () => {
     showJulesKeyModal(() => {
@@ -99,60 +95,6 @@ async function initApp() {
   
   if (addJulesKeyBtnProminent) {
     addJulesKeyBtnProminent.onclick = addKeyHandler;
-  }
-  
-  if (resetJulesKeyBtn) {
-    resetJulesKeyBtn.onclick = async () => {
-      const confirmed = await showConfirm(`This will delete your stored Jules API key. You'll need to enter a new one next time.`, {
-        title: 'Delete API Key',
-        confirmText: 'Delete',
-        confirmStyle: 'error'
-      });
-      if (!confirmed) return;
-      
-      try {
-        const auth = getAuth();
-        const user = auth?.currentUser;
-        if (!user) return;
-        
-        resetJulesKeyBtn.disabled = true;
-        resetJulesKeyBtn.textContent = 'Deleting...';
-        
-        const deleted = await deleteStoredJulesKey(user.uid);
-        if (deleted) {
-          const julesKeyStatus = document.getElementById('julesKeyStatus');
-          if (julesKeyStatus) {
-            renderStatus(julesKeyStatus, STATUS_TYPES.NOT_SAVED, 'Not saved');
-          }
-          
-          // Restore button
-          resetJulesKeyBtn.innerHTML = '';
-          const icon = document.createElement('span');
-          icon.className = 'icon icon-inline';
-          icon.setAttribute('aria-hidden', 'true');
-          icon.textContent = 'delete';
-          resetJulesKeyBtn.appendChild(icon);
-          resetJulesKeyBtn.appendChild(document.createTextNode(' Delete Jules API Key'));
-
-          resetJulesKeyBtn.disabled = false;
-          
-          const noJulesKeySection = document.getElementById('noJulesKeySection');
-          const julesContentSection = document.getElementById('julesContentSection');
-          if (noJulesKeySection) noJulesKeySection.classList.remove('hidden');
-          if (julesContentSection) julesContentSection.classList.add('hidden');
-          document.getElementById('dangerZoneSection').classList.add('hidden');
-          document.getElementById('julesProfileInfoSection').classList.remove('hidden');
-          
-          showToast('Jules API key has been deleted. You can enter a new one next time.', 'success');
-        } else {
-          throw new Error('Failed to delete key');
-        }
-      } catch (error) {
-        showToast('Failed to delete API key: ' + error.message, 'error');
-        renderStatus(resetJulesKeyBtn, STATUS_TYPES.RESET, 'Delete Jules API Key');
-        resetJulesKeyBtn.disabled = false;
-      }
-    };
   }
   
   // Set up load Jules info button

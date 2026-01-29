@@ -42,6 +42,38 @@
 
         <button id="addCopenBtn" class="btn w-full mt-md"><span class="icon icon-inline" aria-hidden="true">add</span> Add Copen Link</button>
       </div>
+
+      <!-- Jules API Key Section -->
+      <div id="julesKeySection" class="mt-lg">
+        <h3 class="section-title-md mb-md"><span class="icon icon-inline" aria-hidden="true">smart_toy</span> Jules API Key</h3>
+        <p class="muted-text mb-md">Connect your Jules API key to use AI-powered coding features.</p>
+        
+        <div id="julesKeyStatusDiv" class="panel mb-md">
+          <div class="small-text muted-text mb-sm">API Key Status</div>
+          <div id="julesKeyStatus" class="muted-text fw-600 font-16">Loading...</div>
+        </div>
+        
+        <!-- No Jules Key Message -->
+        <div id="noJulesKeySection" class="panel pad-xl text-center mb-md hidden">
+          <div class="font-48 mb-sm"><span class="icon icon-xl" aria-hidden="true">key</span></div>
+          <h4 class="small-text fw-600 mb-sm font-18">Jules API Key Required</h4>
+          <p class="muted-text small-text centered-content">
+            To use Jules AI coding agent, you need to add your Jules API key. Get your API key from the 
+            <a href="https://jules.google.com/settings/api" target="_blank" rel="noopener">Jules API settings</a> 
+            and add it below to get started.
+          </p>
+          <button id="addJulesKeyBtn" class="btn primary xl fw-600">
+            <span class="icon icon-inline" aria-hidden="true">add</span> Add Jules API Key
+          </button>
+        </div>
+        
+        <!-- Danger Zone (shown when key exists) -->
+        <div id="julesKeyDangerZone" class="danger-panel mt-md hidden">
+          <div class="small-text fw-600 danger-text mb-sm"><span class="icon icon-inline" aria-hidden="true">warning</span> Danger Zone</div>
+          <div class="small-text muted-text mb-sm">This action will delete your stored Jules API key. You'll need to enter a new one next time.</div>
+          <button id="resetJulesKeyBtn" class="btn danger w-full fw-600"><span class="icon icon-inline" aria-hidden="true">delete</span> Delete Jules API Key</button>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -72,6 +104,19 @@
       <div class="modal-footer">
         <button id="copenEditorCancel" class="btn">Cancel</button>
         <button id="copenEditorSave" class="btn primary"><span class="icon icon-inline" aria-hidden="true">save</span> Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jules API Key Modal -->
+  <div id="julesKeyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="julesKeyModalTitle">
+    <div class="modal-content">
+      <h2 id="julesKeyModalTitle">Save Jules API Key</h2>
+      <p>Enter your Jules API key. This will be encrypted and stored securely.</p>
+      <input id="julesKeyInput" type="password" placeholder="Paste your Jules API key..." />
+      <div class="modal-buttons">
+        <button id="julesCancelBtn" class="btn">Cancel</button>
+        <button id="julesSaveBtn" class="btn primary">Save & Continue</button>
       </div>
     </div>
   </div>

@@ -266,7 +266,6 @@ async function filterAndRenderBranches() {
   if (!branchDropdownMenu || !allBranches.length) return;
   
   // Keep the search input at the top
-  const searchWrapper = branchDropdownMenu.querySelector('.dropdown-search-wrapper');
   
   // Clear everything except search
   const items = Array.from(branchDropdownMenu.children);

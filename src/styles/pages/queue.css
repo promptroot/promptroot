@@ -1,55 +1,6 @@
-/* Page: Queue */
-/* Add any queue-specific overrides here. */
-
-/* Scheduled queue items styling */
-.queue-status-scheduled {
-  border-left: 3px solid var(--accent);
-}
-
-.queue-scheduled-info {
-  font-size: 12px;
-  color: var(--accent);
-  margin-top: 6px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.queue-scheduled-info .icon {
-  font-size: 16px;
-}
-
-/* Error info styling */
-.queue-error-info {
-  font-size: 12px;
-  color: var(--error);
-  margin-top: 6px;
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.queue-error-info .icon {
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-/* Schedule modal form styling */
-#scheduleQueueModal .form-help-text {
-  font-size: 13px;
-  color: var(--muted);
-  margin-bottom: 16px;
-}
-
-#scheduleQueueModal .form-error {
-  color: var(--danger);
-  font-size: 13px;
-  padding: 8px;
-  background: rgba(192, 80, 77, 0.1);
-  border-radius: 4px;
-  margin-top: 12px;
-}
-
-#scheduleQueueModal .form-error.hidden {
-  display: none;
-}
+/*
+  Deprecated: Queue page overrides
+  All styles moved to components: src/styles/components/jules-queue.css
+  Do NOT add styles here. This file remains only for historical reference
+  and will be removed in a future cleanup.
+*/

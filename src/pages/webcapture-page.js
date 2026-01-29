@@ -1,9 +1,10 @@
 /**
  * Web Capture Page Initialization
- * Handles extension download functionality
+ * Handles extension download functionality and detection
  */
 
 import { TIMEOUTS } from '../utils/constants.js';
+import { detectExtension, isChromium } from '../utils/extension-detector.js';
 
 function waitForComponents() {
   if (document.querySelector('header')) {
@@ -13,7 +14,11 @@ function waitForComponents() {
   }
 }
 
-function initApp() {
+async function initApp() {
+  if (isChromium()) {
+    await checkExtensionStatus();
+  }
+
   // Download extension button
   const downloadBtn = document.getElementById('downloadExtensionBtn');
   if (downloadBtn && !downloadBtn.dataset.bound) {
@@ -46,6 +51,17 @@ function initApp() {
         }, TIMEOUTS.actionFeedback);
       }
     });
+  }
+}
+
+async function checkExtensionStatus() {
+  const downloadBtn = document.getElementById('downloadExtensionBtn');
+  if (!downloadBtn) return;
+
+  const isInstalled = await detectExtension();
+
+  if (isInstalled) {
+    downloadBtn.innerHTML = '<span class="icon icon-inline" aria-hidden="true">refresh</span> Re-download Extension';
   }
 }
 

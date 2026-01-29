@@ -334,6 +334,7 @@ export async function syncActiveSessions(progressCallback = null) {
 
     // Fetch ALL sessions from Jules API (bulk operation)
     const apiSessions = new Map();
+    const stateCounts = {};
     let pageToken = null;
     
     do {
@@ -342,12 +343,16 @@ export async function syncActiveSessions(progressCallback = null) {
       
       sessions.forEach(session => {
         apiSessions.set(session.id, session);
+        // Track state distribution
+        const state = session.state || 'NO_STATE';
+        stateCounts[state] = (stateCounts[state] || 0) + 1;
       });
       
       pageToken = response.nextPageToken;
     } while (pageToken);
 
     console.log(`[Session Tracking] Fetched ${apiSessions.size} sessions from API`);
+    console.log('[Session Tracking] API State distribution:', stateCounts);
 
     // Get all local sessions
     const allSessionsSnapshot = await db
@@ -384,6 +389,18 @@ export async function syncActiveSessions(progressCallback = null) {
     });
 
     console.log(`[Session Tracking] Syncing ${toUpdate.length} changed sessions`);
+
+    // Track sync statistics
+    const syncStats = {
+      completed: 0,
+      failed: 0,
+      inProgress: 0,
+      queued: 0,
+      awaiting: 0,
+      unknown: 0,
+      withPR: 0,
+      total: toUpdate.length
+    };
 
     // Update changed sessions
     for (let i = 0; i < toUpdate.length; i++) {
@@ -426,6 +443,16 @@ export async function syncActiveSessions(progressCallback = null) {
           }
         }
 
+        // Log sessions with UNKNOWN status for debugging
+        if (!session.state) {
+          console.warn(`[Session Tracking] Session ${sessionId} has no state field:`, {
+            name: session.name,
+            title: session.title,
+            createTime: session.createTime,
+            updateTime: session.updateTime
+          });
+        }
+
         const sessionData = {
           sessionId,
           sessionName: session.name,
@@ -445,6 +472,17 @@ export async function syncActiveSessions(progressCallback = null) {
         };
 
         await sessionRef.set(sessionData, { merge: true });
+
+        // Update sync statistics
+        const status = sessionData.status;
+        if (status === 'COMPLETED') syncStats.completed++;
+        else if (status === 'FAILED') syncStats.failed++;
+        else if (status === 'IN_PROGRESS' || status === 'PLANNING') syncStats.inProgress++;
+        else if (status === 'QUEUED') syncStats.queued++;
+        else if (status === 'AWAITING_USER_FEEDBACK') syncStats.awaiting++;
+        else syncStats.unknown++;
+        
+        if (sessionData.hasPR) syncStats.withPR++;
 
         if (progressCallback) {
           progressCallback(i + 1, toUpdate.length);

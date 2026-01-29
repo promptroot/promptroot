@@ -48,6 +48,9 @@ export async function calculateAnalytics(startDate, endDate) {
       });
     });
 
+    console.log(`[Analytics] Calculating analytics for ${sessions.length} sessions`);
+    console.log('[Analytics] Date range:', { startDate, endDate });
+
     return aggregateSessionData(sessions);
   } catch (error) {
     handleError(error, { source: 'calculateAnalytics' });

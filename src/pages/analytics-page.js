@@ -147,12 +147,14 @@ async function loadAnalytics() {
   const notSignedInDiv = document.getElementById('analyticsNotSignedIn');
 
   try {
+    console.log('[Analytics UI] Loading analytics...');
     toggleVisibility(loadingDiv, true);
     toggleVisibility(contentDiv, false);
     toggleVisibility(notSignedInDiv, false);
 
     // Get date range
     const dateRange = getSelectedDateRange();
+    console.log('[Analytics UI] Date range:', dateRange);
     
     // Calculate analytics
     currentAnalytics = await calculateAnalytics(dateRange.start, dateRange.end);
@@ -225,25 +227,43 @@ async function renderStatusChart(analytics) {
     statusChartInstance.destroy();
   }
 
+  const chartData = [
+    analytics.statusDistribution.COMPLETED,
+    analytics.statusDistribution.FAILED,
+    analytics.statusDistribution.IN_PROGRESS + analytics.statusDistribution.PLANNING,
+    analytics.statusDistribution.QUEUED,
+    analytics.statusDistribution.AWAITING_USER_FEEDBACK,
+    analytics.statusDistribution.UNKNOWN
+  ];
+
+  console.log('[Analytics UI] Rendering status chart with data:', {
+    completed: chartData[0],
+    failed: chartData[1],
+    inProgress: chartData[2],
+    queued: chartData[3],
+    awaiting: chartData[4],
+    unknown: chartData[5],
+    total: chartData.reduce((sum, val) => sum + val, 0)
+  });
+
   const data = {
-    labels: ['Completed', 'Failed', 'In Progress', 'Other'],
+    labels: ['Completed', 'Failed', 'In Progress', 'Queued', 'Awaiting Feedback', 'Unknown'],
     datasets: [{
-      data: [
-        analytics.statusDistribution.COMPLETED,
-        analytics.statusDistribution.FAILED,
-        analytics.statusDistribution.IN_PROGRESS + analytics.statusDistribution.PLANNING,
-        analytics.statusDistribution.QUEUED + analytics.statusDistribution.AWAITING_USER_FEEDBACK + analytics.statusDistribution.UNKNOWN
-      ],
+      data: chartData,
       backgroundColor: [
         'rgba(40, 167, 69, 0.8)',
         'rgba(220, 53, 69, 0.8)',
         'rgba(255, 193, 7, 0.8)',
+        'rgba(0, 123, 255, 0.8)',
+        'rgba(255, 152, 0, 0.8)',
         'rgba(108, 117, 125, 0.8)'
       ],
       borderColor: [
         'rgb(40, 167, 69)',
         'rgb(220, 53, 69)',
         'rgb(255, 193, 7)',
+        'rgb(0, 123, 255)',
+        'rgb(255, 152, 0)',
         'rgb(108, 117, 125)'
       ],
       borderWidth: 2

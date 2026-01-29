@@ -1,6 +1,5 @@
-/* Page: Profile */
+/* Component: Copen Management */
 
-/* Copen List */
 .copen-list {
   display: flex;
   flex-direction: column;
@@ -97,4 +96,3 @@
   background: rgba(139, 148, 168, 0.1);
   color: var(--muted);
 }
-

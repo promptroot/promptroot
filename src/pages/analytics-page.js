@@ -231,39 +231,43 @@ async function renderStatusChart(analytics) {
     analytics.statusDistribution.COMPLETED,
     analytics.statusDistribution.FAILED,
     analytics.statusDistribution.IN_PROGRESS + analytics.statusDistribution.PLANNING,
+    analytics.statusDistribution.PAUSED,
+    analytics.statusDistribution.AWAITING_USER_FEEDBACK + analytics.statusDistribution.AWAITING_PLAN_APPROVAL,
     analytics.statusDistribution.QUEUED,
-    analytics.statusDistribution.AWAITING_USER_FEEDBACK,
-    analytics.statusDistribution.UNKNOWN
+    analytics.statusDistribution.STATE_UNSPECIFIED
   ];
 
   console.log('[Analytics UI] Rendering status chart with data:', {
     completed: chartData[0],
     failed: chartData[1],
     inProgress: chartData[2],
-    queued: chartData[3],
+    paused: chartData[3],
     awaiting: chartData[4],
-    unknown: chartData[5],
+    queued: chartData[5],
+    unspecified: chartData[6],
     total: chartData.reduce((sum, val) => sum + val, 0)
   });
 
   const data = {
-    labels: ['Completed', 'Failed', 'In Progress', 'Queued', 'Awaiting Feedback', 'Unknown'],
+    labels: ['Completed', 'Failed', 'In Progress', 'Paused', 'Awaiting', 'Queued', 'Unspecified'],
     datasets: [{
       data: chartData,
       backgroundColor: [
         'rgba(40, 167, 69, 0.8)',
         'rgba(220, 53, 69, 0.8)',
         'rgba(255, 193, 7, 0.8)',
-        'rgba(0, 123, 255, 0.8)',
+        'rgba(156, 39, 176, 0.8)',
         'rgba(255, 152, 0, 0.8)',
+        'rgba(0, 123, 255, 0.8)',
         'rgba(108, 117, 125, 0.8)'
       ],
       borderColor: [
         'rgb(40, 167, 69)',
         'rgb(220, 53, 69)',
         'rgb(255, 193, 7)',
-        'rgb(0, 123, 255)',
+        'rgb(156, 39, 176)',
         'rgb(255, 152, 0)',
+        'rgb(0, 123, 255)',
         'rgb(108, 117, 125)'
       ],
       borderWidth: 2

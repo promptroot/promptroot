@@ -48,7 +48,7 @@ export async function trackSessionCreation(sessionData) {
       title: sessionData.title || '',
       
       // Status
-      status: sessionData.status || 'UNKNOWN',
+      status: sessionData.status || 'STATE_UNSPECIFIED',
       
       // Outcomes (initial state)
       hasPR: false,
@@ -397,7 +397,8 @@ export async function syncActiveSessions(progressCallback = null) {
       inProgress: 0,
       queued: 0,
       awaiting: 0,
-      unknown: 0,
+      paused: 0,
+      unspecified: 0,
       withPR: 0,
       total: toUpdate.length
     };
@@ -443,7 +444,7 @@ export async function syncActiveSessions(progressCallback = null) {
           }
         }
 
-        // Log sessions with UNKNOWN status for debugging
+        // Log sessions with STATE_UNSPECIFIED status for debugging
         if (!session.state) {
           console.warn(`[Session Tracking] Session ${sessionId} has no state field:`, {
             name: session.name,
@@ -460,7 +461,7 @@ export async function syncActiveSessions(progressCallback = null) {
           promptContent: session.prompt || '',
           sourceId,
           branch,
-          status: session.state || 'UNKNOWN',
+          status: session.state || 'STATE_UNSPECIFIED',
           sessionUrl: session.url || `https://jules.google.com/session/${sessionId}`,
           createdAt: session.createTime ? new Date(session.createTime) : getServerTimestamp(),
           completedAt,
@@ -479,8 +480,9 @@ export async function syncActiveSessions(progressCallback = null) {
         else if (status === 'FAILED') syncStats.failed++;
         else if (status === 'IN_PROGRESS' || status === 'PLANNING') syncStats.inProgress++;
         else if (status === 'QUEUED') syncStats.queued++;
-        else if (status === 'AWAITING_USER_FEEDBACK') syncStats.awaiting++;
-        else syncStats.unknown++;
+        else if (status === 'AWAITING_USER_FEEDBACK' || status === 'AWAITING_PLAN_APPROVAL') syncStats.awaiting++;
+        else if (status === 'PAUSED') syncStats.paused++;
+        else syncStats.unspecified++;
         
         if (sessionData.hasPR) syncStats.withPR++;
 

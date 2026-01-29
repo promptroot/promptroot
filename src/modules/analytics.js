@@ -40,16 +40,24 @@ export async function calculateAnalytics(startDate, endDate) {
 
     const snapshot = await query.get();
     const sessions = [];
+    const allDocs = [];
 
     snapshot.forEach(doc => {
+      const data = doc.data();
+      allDocs.push({ id: doc.id, status: data.status, createdAt: data.createdAt });
       sessions.push({
         id: doc.id,
-        ...doc.data()
+        ...data
       });
     });
 
-    console.log(`[Analytics] Calculating analytics for ${sessions.length} sessions`);
+    console.log(`[Analytics] Query returned ${snapshot.size} documents, processing ${sessions.length} sessions`);
     console.log('[Analytics] Date range:', { startDate, endDate });
+    
+    // Sample first few sessions to verify data
+    if (sessions.length > 0) {
+      console.log('[Analytics] Sample sessions (first 3):', allDocs.slice(0, 3));
+    }
 
     return aggregateSessionData(sessions);
   } catch (error) {
@@ -64,6 +72,14 @@ export async function calculateAnalytics(startDate, endDate) {
  * @returns {Object} Aggregated analytics
  */
 function aggregateSessionData(sessions) {
+  // First, collect all unique statuses to identify unexpected values
+  const allStatuses = {};
+  sessions.forEach(session => {
+    const status = session.status || 'NULL_STATUS';
+    allStatuses[status] = (allStatuses[status] || 0) + 1;
+  });
+  console.log('[Analytics] Raw status counts from all sessions:', allStatuses);
+
   const analytics = {
     // Core metrics
     totalSessions: sessions.length,
@@ -112,17 +128,30 @@ function aggregateSessionData(sessions) {
       FAILED: 0,
       IN_PROGRESS: 0,
       PLANNING: 0,
-      QUEUED: 0,
+      AWAITING_PLAN_APPROVAL: 0,
       AWAITING_USER_FEEDBACK: 0,
-      UNKNOWN: 0
+      PAUSED: 0,
+      QUEUED: 0,
+      STATE_UNSPECIFIED: 0
     }
   };
 
   sessions.forEach(session => {
     // Status counts
-    const status = session.status || 'UNKNOWN';
-    if (analytics.statusDistribution[status] !== undefined) {
-      analytics.statusDistribution[status]++;
+    const status = session.status || 'STATE_UNSPECIFIED';
+    // Map legacy UNKNOWN to STATE_UNSPECIFIED
+    const normalizedStatus = status === 'UNKNOWN' ? 'STATE_UNSPECIFIED' : status;
+    
+    if (analytics.statusDistribution[normalizedStatus] !== undefined) {
+      analytics.statusDistribution[normalizedStatus]++;
+    } else {
+      // Unrecognized status - log it and count as STATE_UNSPECIFIED
+      console.warn('[Analytics] Unrecognized session status:', {
+        sessionId: session.sessionId || session.id,
+        status: status,
+        title: session.title
+      });
+      analytics.statusDistribution.STATE_UNSPECIFIED++;
     }
 
     if (status === 'COMPLETED') {

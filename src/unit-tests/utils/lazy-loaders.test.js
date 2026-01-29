@@ -55,7 +55,9 @@ describe('lazy-loaders', () => {
       const result = await loadPromise;
       
       expect(document.createElement).toHaveBeenCalledWith('script');
-      expect(capturedScript.src).toBe('https://cdn.jsdelivr.net/npm/marked/marked.min.js');
+      expect(capturedScript.src).toBe('https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js');
+      expect(capturedScript.integrity).toBe('sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+');
+      expect(capturedScript.crossOrigin).toBe('anonymous');
       expect(document.head.appendChild).toHaveBeenCalled();
       expect(result).toBe(markedMock);
     });
@@ -173,7 +175,9 @@ describe('lazy-loaders', () => {
       const result = await loadPromise;
       
       expect(document.createElement).toHaveBeenCalledWith('script');
-      expect(capturedScript.src).toBe('https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js');
+      expect(capturedScript.src).toBe('https://cdn.jsdelivr.net/npm/fuse.js@7.1.0/dist/fuse.min.js');
+      expect(capturedScript.integrity).toBe('sha384-P/y/5cwqUn6MDvJ9lCHJSaAi2EoH3JSeEdyaORsQMPgbpvA+NvvUqik7XH2YGBjb');
+      expect(capturedScript.crossOrigin).toBe('anonymous');
       expect(document.head.appendChild).toHaveBeenCalled();
       expect(result).toBe(fuseMock);
     });

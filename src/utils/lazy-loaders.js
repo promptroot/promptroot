@@ -19,7 +19,9 @@ export async function loadMarked() {
   
   const promise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+    script.src = 'https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js';
+    script.integrity = 'sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+';
+    script.crossOrigin = 'anonymous';
     script.onload = () => {
       loadedLibraries.set('marked', true);
       loadingPromises.delete('marked');
@@ -51,7 +53,9 @@ export async function loadFuse() {
   
   const promise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js';
+    script.src = 'https://cdn.jsdelivr.net/npm/fuse.js@7.1.0/dist/fuse.min.js';
+    script.integrity = 'sha384-P/y/5cwqUn6MDvJ9lCHJSaAi2EoH3JSeEdyaORsQMPgbpvA+NvvUqik7XH2YGBjb';
+    script.crossOrigin = 'anonymous';
     script.onload = () => {
       loadedLibraries.set('fuse', true);
       loadingPromises.delete('fuse');

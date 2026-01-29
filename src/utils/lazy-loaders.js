@@ -19,8 +19,8 @@ export async function loadMarked() {
   
   const promise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/marked@17.0.1/marked.min.js';
-    script.integrity = 'sha384-tkjnnf9Tzhv5ZFrDroGvUExw9C3EVFo0RFRkzKR8ZX4b5Psoec4yb1PlD8Jh4j4H';
+    script.src = 'https://cdn.jsdelivr.net/npm/marked@14.1.2/marked.min.js';
+    script.integrity = 'sha384-dAw12gnWShdrRMCwiNUvPHQ5IWS3uZwljXl3x7qNqvn+5gD/O/DXFCnR29GdXgOk';
     script.crossOrigin = 'anonymous';
     script.onload = () => {
       loadedLibraries.set('marked', true);
@@ -53,8 +53,8 @@ export async function loadFuse() {
   
   const promise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/fuse.js@7.1.0/dist/fuse.min.js';
-    script.integrity = 'sha384-P/y/5cwqUn6MDvJ9lCHJSaAi2EoH3JSeEdyaORsQMPgbpvA+NvvUqik7XH2YGBjb';
+    script.src = 'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js';
+    script.integrity = 'sha384-PCSoOZTpbkikBEtd/+uV3WNdc676i9KUf01KOA8CnJotvlx8rRrETbDuwdjqTYvt';
     script.crossOrigin = 'anonymous';
     script.onload = () => {
       loadedLibraries.set('fuse', true);

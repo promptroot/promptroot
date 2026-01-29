@@ -306,28 +306,6 @@ async function handleEditCopen(copenId) {
   }
 }
 
-async function handleDeleteCopen(copenId) {
-  if (!currentUser) return;
-
-  const confirmed = await showConfirm('Are you sure you want to delete this custom copen?', {
-    title: 'Delete Custom Copen',
-    confirmText: 'Delete',
-    confirmClass: 'danger'
-  });
-
-  if (!confirmed) return;
-
-  try {
-    clearCopenCache();
-    await deleteCustomCopen(currentUser.uid, copenId);
-    showToast('Copen deleted', 'success');
-    await loadCopens(currentUser);
-  } catch (error) {
-    console.error('Error deleting copen:', error);
-    showToast('Failed to delete copen', 'error');
-  }
-}
-
 async function handleDeleteSelectedCopens() {
   if (!currentUser) return;
 

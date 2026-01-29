@@ -168,10 +168,6 @@ function renderCopenList(copens) {
     btn.addEventListener('click', () => handleEditCopen(btn.dataset.copenId));
   });
 
-  copenList.querySelectorAll('[data-action="delete-copen"]').forEach(btn => {
-    btn.addEventListener('click', () => handleDeleteCopen(btn.dataset.copenId));
-  });
-
   copenList.querySelectorAll('[data-action="toggle-copen"]').forEach(btn => {
     btn.addEventListener('click', () => handleToggleCopen(btn.dataset.copenId, btn.dataset.enabled === 'true'));
   });
@@ -181,13 +177,13 @@ function createCopenItem(copen, index, totalCount) {
   const isDisabled = copen.disabled || false;
   const defaultBadge = copen.isDefault ? '<span class="copen-item-default-badge">Default</span>' : '';
   
-  // Edit/delete buttons
-  const editButtons = `
+  // Checkbox and edit button (no individual delete button)
+  const actions = `
+    <div class="copen-checkbox-col">
+      <input type="checkbox" class="copen-checkbox" data-copen-id="${copen.id}" />
+    </div>
     <button class="btn-icon" data-action="edit-copen" data-copen-id="${copen.id}" title="Edit">
       <span class="icon" aria-hidden="true">edit</span>
-    </button>
-    <button class="btn-icon" data-action="delete-copen" data-copen-id="${copen.id}" title="${copen.isDefault ? 'Disable' : 'Delete'}">
-      <span class="icon" aria-hidden="true">delete</span>
     </button>
   `;
 
@@ -209,7 +205,7 @@ function createCopenItem(copen, index, totalCount) {
         </div>
       </div>
       <div class="copen-item-actions">
-        ${editButtons}
+        ${actions}
       </div>
     </div>
   `;
@@ -332,6 +328,45 @@ async function handleDeleteCopen(copenId) {
   }
 }
 
+async function handleDeleteSelectedCopens() {
+  if (!currentUser) return;
+
+  const selectedCheckboxes = document.querySelectorAll('.copen-checkbox:checked');
+  if (selectedCheckboxes.length === 0) {
+    showToast('No copens selected', 'warn');
+    return;
+  }
+
+  const confirmed = await showConfirm(`Delete ${selectedCheckboxes.length} selected copen${selectedCheckboxes.length > 1 ? 's' : ''}?`, {
+    title: 'Delete Selected Copens',
+    confirmText: 'Delete',
+    confirmClass: 'danger'
+  });
+
+  if (!confirmed) return;
+
+  try {
+    const deletePromises = Array.from(selectedCheckboxes).map(cb => 
+      deleteCustomCopen(currentUser.uid, cb.dataset.copenId)
+    );
+    
+    await Promise.all(deletePromises);
+    clearCopenCache();
+    showToast(`${selectedCheckboxes.length} copen${selectedCheckboxes.length > 1 ? 's' : ''} deleted`, 'success');
+    await loadCopens(currentUser);
+  } catch (error) {
+    console.error('Error deleting copens:', error);
+    showToast('Failed to delete some copens', 'error');
+  }
+}
+
+function handleSelectAllCopens(checked) {
+  const checkboxes = document.querySelectorAll('.copen-checkbox');
+  checkboxes.forEach(cb => {
+    cb.checked = checked;
+  });
+}
+
 async function handleToggleCopen(copenId, currentlyEnabled) {
   if (!currentUser) return;
 
@@ -361,28 +396,6 @@ function getDragAfterElement(container, y) {
   }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-async function handleToggleCopen_UNUSED(copenId) {
-  if (!currentUser) return;
-  
-  try {
-    const copens = await getUserCopens(currentUser.uid);
-    const currentIndex = copens.findIndex(c => c.id === copenId);
-    
-    if (currentIndex < 0 || currentIndex >= copens.length - 1) return; // Already at bottom
-    
-    // Swap with item below
-    [copens[currentIndex], copens[currentIndex + 1]] = [copens[currentIndex + 1], copens[currentIndex]];
-    
-    // Save new order (this will need a new function in copen-manager)
-    clearCopenCache();
-    showToast('Copen moved down', 'success');
-    renderCopenList(copens);
-  } catch (error) {
-    console.error('Error moving copen:', error);
-    showToast('Failed to move copen', 'error');
-  }
-}
-
 async function initApp() {
   try {
     await waitForFirebase();
@@ -390,6 +403,8 @@ async function initApp() {
     
     // Set up event listeners
     const addCopenBtn = document.getElementById('addCopenBtn');
+    const copenSelectAll = document.getElementById('copenSelectAll');
+    const copenDeleteBtn = document.getElementById('copenDeleteBtn');
     const copenEditorSave = document.getElementById('copenEditorSave');
     const copenEditorCancel = document.getElementById('copenEditorCancel');
     const copenEditorClose = document.getElementById('copenEditorClose');
@@ -398,6 +413,14 @@ async function initApp() {
 
     if (addCopenBtn) {
       addCopenBtn.addEventListener('click', () => showCopenEditor());
+    }
+
+    if (copenSelectAll) {
+      copenSelectAll.addEventListener('change', (e) => handleSelectAllCopens(e.target.checked));
+    }
+
+    if (copenDeleteBtn) {
+      copenDeleteBtn.addEventListener('click', handleDeleteSelectedCopens);
     }
 
     if (copenEditorSave) {

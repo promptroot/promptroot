@@ -100,6 +100,18 @@
   align-items: center;
 }
 
+.copen-checkbox-col {
+  display: flex;
+  align-items: center;
+}
+
+.copen-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
 .copen-item-actions .btn-icon {
   width: 32px;
   height: 32px;

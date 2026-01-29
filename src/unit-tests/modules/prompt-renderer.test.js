@@ -445,7 +445,6 @@ describe('prompt-renderer', () => {
 
     it('should handle markdown parsing errors', async () => {
       const { loadMarked } = await import('../../utils/lazy-loaders.js');
-      const { showToast } = await import('../../modules/toast.js');
       loadMarked.mockReset();
       loadMarked.mockRejectedValue(new Error('Markdown parsing failed'));
 

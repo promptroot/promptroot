@@ -36,11 +36,19 @@
         <h3 class="section-title-md mb-md"><span class="icon icon-inline" aria-hidden="true">open_in_new</span> Copen Links</h3>
         <p class="muted-text mb-md">Manage the "Copy and Open" destinations available when working with prompts.</p>
         
+        <div class="toolbar">
+          <div class="toolbar-actions">
+            <label class="form-label small-text"><input id="copenSelectAll" type="checkbox" /> Select All</label>
+          </div>
+          <div class="toolbar-actions">
+            <button id="addCopenBtn" class="btn"><span class="icon icon-inline" aria-hidden="true">add</span> Add Copen Link</button>
+            <button id="copenDeleteBtn" class="btn danger"><span class="icon icon-inline" aria-hidden="true">delete</span> Delete Selected</button>
+          </div>
+        </div>
+
         <div id="copenList" class="copen-list">
           <!-- Copens will be populated here -->
         </div>
-
-        <button id="addCopenBtn" class="btn w-full mt-md"><span class="icon icon-inline" aria-hidden="true">add</span> Add Copen Link</button>
       </div>
 
       <!-- Jules API Key Section -->

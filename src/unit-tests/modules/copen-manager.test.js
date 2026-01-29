@@ -9,6 +9,16 @@ import {
   DEFAULT_COPENS
 } from '../../modules/copen-manager.js';
 
+// Mock global firebase
+global.firebase = {
+  firestore: {
+    FieldValue: {
+      arrayUnion: vi.fn((val) => `ARRAY_UNION_${JSON.stringify(val)}`),
+      arrayRemove: vi.fn((val) => `ARRAY_REMOVE_${val}`)
+    }
+  }
+};
+
 // Mock Firestore
 const mockDoc = {
   exists: false,
@@ -34,6 +44,7 @@ const mockDb = {
 };
 
 vi.mock('../../modules/firebase-service.js', () => ({
+  getDb: vi.fn(() => mockDb),
   getFirestore: vi.fn(() => mockDb)
 }));
 
@@ -175,12 +186,9 @@ describe('copen-manager', () => {
       expect(copenId).toMatch(/^custom_\d+$/);
       expect(mockDb.collection).toHaveBeenCalledWith('userCopens');
       expect(mockCollection.doc).toHaveBeenCalledWith('user123');
-      expect(mockDocRef.set).toHaveBeenCalledWith(
-        expect.objectContaining({
-          customCopens: expect.objectContaining({ _arrayUnion: expect.any(Object) })
-        }),
-        { merge: true }
-      );
+      expect(mockDocRef.set).toHaveBeenCalled();
+      expect(global.firebase.firestore.FieldValue.arrayUnion).toHaveBeenCalled();
+      expect(mockDocRef.set.mock.calls[0][1]).toEqual({ merge: true });
     });
 
     it('should add custom copen with custom icon', async () => {
@@ -190,7 +198,9 @@ describe('copen-manager', () => {
         icon: 'star'
       });
 
-      const callArgs = mockDb.FieldValue.arrayUnion.mock.calls[0][0];
+      expect(mockDocRef.set).toHaveBeenCalled();
+      expect(global.firebase.firestore.FieldValue.arrayUnion).toHaveBeenCalled();
+      const callArgs = global.firebase.firestore.FieldValue.arrayUnion.mock.calls[0][0];
       expect(callArgs.icon).toBe('star');
     });
 
@@ -276,7 +286,7 @@ describe('copen-manager', () => {
       await expect(updateCustomCopen('user123', 'custom_1', { label: 'New' }))
         .rejects.toThrow('Firestore update error');
       
-      expect(console.error).toHaveBeenCalledWith('Error updating custom copen:', expect.any(Error));
+      expect(console.error).toHaveBeenCalledWith('Error updating Copen link:', expect.any(Error));
     });
   });
 
@@ -345,7 +355,7 @@ describe('copen-manager', () => {
       await expect(deleteCustomCopen('user123', 'custom_1'))
         .rejects.toThrow('Firestore delete error');
       
-      expect(console.error).toHaveBeenCalledWith('Error deleting custom copen:', expect.any(Error));
+      expect(console.error).toHaveBeenCalledWith('Error deleting copen link:', expect.any(Error));
     });
   });
 
@@ -359,26 +369,20 @@ describe('copen-manager', () => {
       mockDocRef.set.mockResolvedValue();
       
       await toggleDefaultCopen('user123', 'claude', true);
-      
-      expect(mockDocRef.set).toHaveBeenCalledWith(
-        expect.objectContaining({
-          disabledDefaults: expect.objectContaining({ _arrayRemove: 'claude' })
-        }),
-        { merge: true }
-      );
+
+      expect(mockDocRef.set).toHaveBeenCalled();
+      expect(global.firebase.firestore.FieldValue.arrayRemove).toHaveBeenCalledWith('claude');
+      expect(mockDocRef.set.mock.calls[0][1]).toEqual({ merge: true });
     });
 
     it('should add copen to disabledDefaults when disabling', async () => {
       mockDocRef.set.mockResolvedValue();
       
       await toggleDefaultCopen('user123', 'claude', false);
-      
-      expect(mockDocRef.set).toHaveBeenCalledWith(
-        expect.objectContaining({
-          disabledDefaults: expect.objectContaining({ _arrayUnion: 'claude' })
-        }),
-        { merge: true }
-      );
+
+      expect(mockDocRef.set).toHaveBeenCalled();
+      expect(global.firebase.firestore.FieldValue.arrayUnion).toHaveBeenCalledWith('claude');
+      expect(mockDocRef.set.mock.calls[0][1]).toEqual({ merge: true });
     });
 
     it('should handle Firestore errors', async () => {

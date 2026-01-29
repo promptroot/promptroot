@@ -29,11 +29,3 @@
 @import url('./styles/components/update-banner.css');
 @import url('./styles/components/toast.css');
 @import url('./styles/components/utilities.css');
-
-/* Page-specific overrides */
-@import url('./styles/pages/home.css');
-@import url('./styles/pages/jules.css');
-@import url('./styles/pages/sessions.css');
-@import url('./styles/pages/queue.css');
-@import url('./styles/pages/profile.css');
-@import url('./styles/pages/webcapture.css');

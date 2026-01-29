@@ -173,10 +173,8 @@ async function syncToGitHub() {
         const link = document.createElement('a');
         link.href = result.url;
         link.textContent = 'View on GitHub';
-        link.className = 'link';
+        link.className = 'link block mt-8';
         link.target = '_blank';
-        link.style.display = 'block';
-        link.style.marginTop = '8px';
         statusDiv.appendChild(link);
       }, 100);
     } else {
@@ -296,7 +294,6 @@ function showStatus(message, type) {
   statusDiv.appendChild(document.createTextNode(' ' + message));
 
   statusDiv.className = `status ${type}`;
-  statusDiv.style.display = 'flex';
 }
 
 downloadBtn.addEventListener('click', downloadMarkdown);

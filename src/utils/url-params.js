@@ -1,5 +1,5 @@
 // ===== URL Parameter Parsing =====
-import { validateOwner, validateRepo, validateBranch } from './validation.js';
+import { validateOwner, validateRepo, validateBranch, validatePathParam } from './validation.js';
 
 export function parseParams() {
   const out = {};
@@ -13,7 +13,8 @@ export function parseParams() {
   const validationMap = {
     owner: validateOwner,
     repo: validateRepo,
-    branch: validateBranch
+    branch: validateBranch,
+    path: validatePathParam
   };
 
   for (const src of sources) {

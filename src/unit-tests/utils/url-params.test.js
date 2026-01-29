@@ -110,6 +110,59 @@ describe('url-params', () => {
       consoleWarnSpy.mockRestore();
     });
 
+    it('should validate branch parameter allowlist for special characters', () => {
+      window.location.search = '?branch=feature/add_new-thing_123';
+
+      const params = parseParams();
+
+      expect(params.branch).toBe('feature/add_new-thing_123');
+    });
+
+    it('should reject path traversal sequences in path parameter (search)', () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      window.location.search = '?path=../secrets';
+
+      const params = parseParams();
+
+      expect(params.path).toBeUndefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid value for parameter 'path'"),
+        '../secrets'
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should reject path traversal sequences in path parameter (hash)', () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      window.location.hash = '#?path=folder/../../secrets';
+
+      const params = parseParams();
+
+      expect(params.path).toBeUndefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid value for parameter 'path'"),
+        'folder/../../secrets'
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should reject absolute path values in path parameter', () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      window.location.search = '?path=/etc/passwd';
+
+      const params = parseParams();
+
+      expect(params.path).toBeUndefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid value for parameter 'path'"),
+        '/etc/passwd'
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
+
     it('should accept non-validated parameters without validation', () => {
       window.location.search = '?custom=value&another=param&owner=test';
       

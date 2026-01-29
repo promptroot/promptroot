@@ -37,3 +37,22 @@
 #subtaskErrorModal > div {
   max-width: 500px;
 }
+
+/* Subtask Error Modal */
+.subtask-error {
+  flex: 1;
+}
+
+.subtask-error__message {
+  word-break: break-word;
+}
+
+.subtask-error__details {
+  word-break: break-word;
+}
+
+.subtask-error__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

@@ -1,15 +1,59 @@
 // Session storage cache utilities
 import { CACHE_DURATIONS, CACHE_KEYS, CACHE_POLICIES, CACHE_STRATEGIES } from './constants.js';
+import { getAuth } from '../modules/firebase-service.js';
 
 export { CACHE_KEYS };
 
-function getCacheKey(key, userId) {
-  return userId ? `${key}_${userId}` : key;
+function hashToken(token) {
+  let hash = 0;
+  for (let i = 0; i < token.length; i++) {
+    hash = ((hash << 5) - hash) + token.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
 }
 
-export function setCache(key, data, userId = null) {
+function getStoredToken() {
   try {
-    const cacheKey = getCacheKey(key, userId);
+    if (typeof localStorage === 'undefined') return null;
+    const raw = localStorage.getItem('github_access_token');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === 'string') return parsed;
+    return parsed?.token || null;
+  } catch (error) {
+    console.warn('Failed to parse stored GitHub token for cache keying:', error);
+    return null;
+  }
+}
+
+function getUserCacheIdentity(userId) {
+  if (userId) {
+    return `uid:${userId}`;
+  }
+
+  const authUserId = getAuth()?.currentUser?.uid;
+  if (authUserId) {
+    return `uid:${authUserId}`;
+  }
+
+  const token = getStoredToken();
+  if (token) {
+    return `token:${hashToken(token)}`;
+  }
+
+  return 'guest';
+}
+
+function getCacheKey(key, userId, scopeKey = null) {
+  const identity = getUserCacheIdentity(userId);
+  const scopeSuffix = scopeKey ? `:${scopeKey}` : '';
+  return `${key}${scopeSuffix}::${identity}`;
+}
+
+export function setCache(key, data, userId = null, scopeKey = null) {
+  try {
+    const cacheKey = getCacheKey(key, userId, scopeKey);
     const cacheData = {
       data,
       timestamp: Date.now()
@@ -26,9 +70,9 @@ export function setCache(key, data, userId = null) {
  * @param {string} [userId] - Optional user ID
  * @returns {object} Cache state metadata
  */
-export function getCacheState(key, userId = null) {
+export function getCacheState(key, userId = null, scopeKey = null) {
   try {
-    const cacheKey = getCacheKey(key, userId);
+    const cacheKey = getCacheKey(key, userId, scopeKey);
     const cached = sessionStorage.getItem(cacheKey);
     const policy = CACHE_POLICIES[key] || CACHE_POLICIES.DEFAULT;
 
@@ -75,9 +119,9 @@ export function getCacheState(key, userId = null) {
   }
 }
 
-export function getCache(key, userId = null) {
+export function getCache(key, userId = null, scopeKey = null) {
   try {
-    const state = getCacheState(key, userId);
+    const state = getCacheState(key, userId, scopeKey);
     
     if (!state.exists) return null;
 
@@ -86,24 +130,24 @@ export function getCache(key, userId = null) {
       switch (state.policy.strategy) {
         case CACHE_STRATEGIES.CACHE_FIRST:
           // Expired cache is invalid - clear and return null
-          clearCache(key, userId);
+          clearCache(key, userId, scopeKey);
           return null;
         
         case CACHE_STRATEGIES.STALE_WHILE_REVALIDATE:
           // SWR would return stale data and trigger background refresh
           // Not implemented yet - treat as CACHE_FIRST for now
-          clearCache(key, userId);
+          clearCache(key, userId, scopeKey);
           return null;
         
         case CACHE_STRATEGIES.NETWORK_ONLY:
           // Network-only doesn't use cache - this shouldn't happen
           // but clear and return null to be safe
-          clearCache(key, userId);
+          clearCache(key, userId, scopeKey);
           return null;
         
         default:
           // Unknown strategy - fail safe by clearing stale cache
-          clearCache(key, userId);
+          clearCache(key, userId, scopeKey);
           return null;
       }
     }
@@ -115,12 +159,27 @@ export function getCache(key, userId = null) {
   }
 }
 
-export function clearCache(key, userId = null) {
+export function clearCache(key, userId = null, scopeKey = null) {
   try {
-    const cacheKey = getCacheKey(key, userId);
+    const cacheKey = getCacheKey(key, userId, scopeKey);
     sessionStorage.removeItem(cacheKey);
   } catch (error) {
     console.error('Error clearing cache:', error);
+  }
+}
+
+export function clearUserCache(userId = null) {
+  try {
+    const identity = getUserCacheIdentity(userId);
+    const identitySuffix = `::${identity}`;
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const key = sessionStorage.key(i);
+      if (key && key.endsWith(identitySuffix)) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  } catch (error) {
+    console.error('Error clearing user cache:', error);
   }
 }
 

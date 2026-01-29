@@ -16,7 +16,8 @@ vi.mock('../../modules/toast.js', () => ({
 
 vi.mock('../../utils/session-cache.js', () => ({
   setCache: vi.fn(),
-  getCache: vi.fn()
+  getCache: vi.fn(),
+  clearUserCache: vi.fn()
 }));
 
 vi.mock('../../modules/jules-api.js', () => ({

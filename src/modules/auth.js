@@ -1,7 +1,7 @@
 // ===== Firebase Authentication Module =====
 
 import { showToast } from './toast.js';
-import { setCache, getCache } from '../utils/session-cache.js';
+import { setCache, getCache, clearUserCache } from '../utils/session-cache.js';
 import { getAuth } from './firebase-service.js';
 // Lazy loaded: jules-api.js (for clearJulesKeyCache)
 
@@ -62,6 +62,7 @@ export async function switchGitHubAccount() {
     // Sign out the current user first
     const auth = getAuth();
     if (auth?.currentUser) {
+      clearUserCache(auth.currentUser.uid);
       await signOutUser();
     }
     
@@ -76,6 +77,7 @@ export async function switchGitHubAccount() {
 export async function signOutUser() {
   try {
     const auth = getAuth();
+    clearUserCache(auth?.currentUser?.uid || null);
     if (auth) {
       // Clear Jules API key cache on logout
       if (auth.currentUser) {

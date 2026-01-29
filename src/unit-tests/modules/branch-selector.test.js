@@ -535,6 +535,7 @@ describe('branch-selector', () => {
       expect(setCache).toHaveBeenCalledWith(
         CACHE_KEYS.BRANCHES,
         expect.any(Array),
+        null,
         'owner1/repo1'
       );
     });

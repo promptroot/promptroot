@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { setCache, getCache, getCacheState, clearCache, clearAllCache, CACHE_KEYS } from '../../utils/session-cache.js';
+import { setCache, getCache, getCacheState, clearCache, clearAllCache, clearUserCache, CACHE_KEYS } from '../../utils/session-cache.js';
 import { CACHE_STRATEGIES } from '../../utils/constants.js';
 
 describe('session-cache', () => {
@@ -7,6 +7,7 @@ describe('session-cache', () => {
 
   beforeEach(() => {
     sessionStorage.clear();
+    localStorage.removeItem('github_access_token');
     originalDateNow = Date.now;
   });
 
@@ -38,7 +39,7 @@ describe('session-cache', () => {
 
       setCache('test_key', testData);
 
-      const stored = JSON.parse(sessionStorage.getItem('test_key'));
+      const stored = JSON.parse(sessionStorage.getItem('test_key::guest'));
       expect(stored.data).toEqual(testData);
       expect(stored.timestamp).toBe(mockTime);
     });
@@ -48,8 +49,8 @@ describe('session-cache', () => {
       
       setCache('test_key', testData, 'user123');
 
-      expect(sessionStorage.getItem('test_key_user123')).toBeDefined();
-      expect(sessionStorage.getItem('test_key')).toBeNull();
+      expect(sessionStorage.getItem('test_key::uid:user123')).toBeDefined();
+      expect(sessionStorage.getItem('test_key::guest')).toBeNull();
     });
 
     it('should handle complex data structures', () => {
@@ -62,7 +63,7 @@ describe('session-cache', () => {
 
       setCache('complex', complexData);
 
-      const stored = JSON.parse(sessionStorage.getItem('complex'));
+      const stored = JSON.parse(sessionStorage.getItem('complex::guest'));
       expect(stored.data).toEqual(complexData);
     });
 
@@ -85,7 +86,7 @@ describe('session-cache', () => {
       setCache('key', { value: 'old' });
       setCache('key', { value: 'new' });
 
-      const stored = JSON.parse(sessionStorage.getItem('key'));
+      const stored = JSON.parse(sessionStorage.getItem('key::guest'));
       expect(stored.data.value).toBe('new');
     });
   });
@@ -249,13 +250,13 @@ describe('session-cache', () => {
       getCache('expiring_key');
 
       // Should be removed from storage
-      expect(sessionStorage.getItem('expiring_key')).toBeNull();
+      expect(sessionStorage.getItem('expiring_key::guest')).toBeNull();
     });
 
     it('should handle invalid JSON gracefully', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       
-      sessionStorage.setItem('bad_json', '{invalid json}');
+      sessionStorage.setItem('bad_json::guest', '{invalid json}');
 
       const retrieved = getCache('bad_json');
       
@@ -282,7 +283,7 @@ describe('session-cache', () => {
     });
 
     it('should handle missing timestamp in cached data', () => {
-      sessionStorage.setItem('bad_format', JSON.stringify({ data: 'test' }));
+      sessionStorage.setItem('bad_format::guest', JSON.stringify({ data: 'test' }));
 
       const retrieved = getCache('bad_format');
       
@@ -298,8 +299,8 @@ describe('session-cache', () => {
 
       clearCache('key1');
 
-      expect(sessionStorage.getItem('key1')).toBeNull();
-      expect(sessionStorage.getItem('key2')).not.toBeNull();
+      expect(sessionStorage.getItem('key1::guest')).toBeNull();
+      expect(sessionStorage.getItem('key2::guest')).not.toBeNull();
     });
 
     it('should clear cache with userId suffix', () => {
@@ -307,7 +308,7 @@ describe('session-cache', () => {
 
       clearCache('key', 'user123');
 
-      expect(sessionStorage.getItem('key_user123')).toBeNull();
+      expect(sessionStorage.getItem('key::uid:user123')).toBeNull();
     });
 
     it('should handle clearing non-existent cache', () => {
@@ -352,6 +353,20 @@ describe('session-cache', () => {
       }).not.toThrow();
 
       sessionStorage.clear = originalClear;
+    });
+  });
+
+  describe('clearUserCache', () => {
+    it('should clear cache entries for a specific user identity', () => {
+      setCache('key1', { data: 'test1' }, 'user123');
+      setCache('key2', { data: 'test2' }, 'user123');
+      setCache('key3', { data: 'test3' }, 'user456');
+
+      clearUserCache('user123');
+
+      expect(sessionStorage.getItem('key1::uid:user123')).toBeNull();
+      expect(sessionStorage.getItem('key2::uid:user123')).toBeNull();
+      expect(sessionStorage.getItem('key3::uid:user456')).not.toBeNull();
     });
   });
 

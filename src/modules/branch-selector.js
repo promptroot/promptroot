@@ -307,13 +307,14 @@ export async function loadBranches() {
 
   try {
     // Check cache first
-    const cacheKey = `${currentOwner}/${currentRepo}`;
-    let branches = getCache(CACHE_KEYS.BRANCHES, cacheKey);
+    const cacheScopeKey = `${currentOwner}/${currentRepo}`;
+    const userId = getCurrentUser()?.uid || null;
+    let branches = getCache(CACHE_KEYS.BRANCHES, userId, cacheScopeKey);
     
     if (!branches) {
       // Load from API and cache
       branches = await getBranches(currentOwner, currentRepo);
-      setCache(CACHE_KEYS.BRANCHES, branches, cacheKey);
+      setCache(CACHE_KEYS.BRANCHES, branches, userId, cacheScopeKey);
     }
 
     allBranches = branches;

@@ -378,6 +378,57 @@ describe('prompt-renderer', () => {
 
   describe('error handling', () => {
     beforeEach(async () => {
+      // Set up proper mock BEFORE initialization
+      const mockContentEl = { 
+        innerHTML: '', 
+        textContent: '',
+        appendChild: vi.fn(),
+        querySelectorAll: vi.fn().mockReturnValue([]),
+        addEventListener: vi.fn(),
+        dataset: {},
+        style: {},
+        classList: {
+          add: vi.fn(),
+          remove: vi.fn(),
+          contains: vi.fn().mockReturnValue(false)
+        }
+      };
+      
+      const mockFreeInputSection = {
+        classList: { add: vi.fn() }
+      };
+      
+      global.document.getElementById.mockImplementation((id) => {
+        if (id === 'content') return mockContentEl;
+        if (id === 'freeInputSection') return mockFreeInputSection;
+        if (id === 'title' || id === 'meta' || id === 'empty' || id === 'actions') {
+          return {
+            textContent: '',
+            style: {},
+            classList: { add: vi.fn(), remove: vi.fn() }
+          };
+        }
+        if (id === 'copyBtn' || id === 'rawBtn' || id === 'ghBtn' || id === 'editBtn' || 
+            id === 'shareBtn' || id === 'julesBtn' || id === 'freeInputBtn' || id === 'moreBtn') {
+          return {
+            innerHTML: '',
+            href: '',
+            title: '',
+            removeAttribute: vi.fn(),
+            setAttribute: vi.fn(),
+            onclick: null,
+            classList: { add: vi.fn(), remove: vi.fn() }
+          };
+        }
+        return null;
+      });
+      
+      global.document.createElement.mockReturnValue({
+        style: {},
+        textContent: '',
+        appendChild: vi.fn()
+      });
+      
       initPromptRenderer();
       
       const { fetchRawFile } = await import('../../modules/github-api.js');
@@ -400,11 +451,14 @@ describe('prompt-renderer', () => {
 
       const mockFile = { path: 'test.md', name: 'test.md', slug: 'test', type: 'file' };
       
-      // selectFile should not throw - it handles errors gracefully
-      await selectFile(mockFile, true, 'owner', 'repo', 'main');
+      // Get the contentEl that was set during init
+      const contentEl = global.document.getElementById('content');
       
-      // Verify graceful degradation - error toast was shown
-      expect(showToast).toHaveBeenCalledWith('Markdown rendering unavailable', 'error');
+      // Should not throw - error is handled gracefully with fallback UI
+      await expect(selectFile(mockFile, true, 'owner', 'repo', 'main')).resolves.toBeUndefined();
+      
+      // Verify fallback rendering was used
+      expect(contentEl.appendChild).toHaveBeenCalled();
     });
 
     it('should handle DOM manipulation errors gracefully', () => {

@@ -57,7 +57,7 @@ export async function getUserCopens(userId) {
 }
 
 /**
- * Add a custom copen
+ * Add a copen link
  * @param {string} userId - User ID
  * @param {object} copen - Copen object {label, url, icon}
  * @returns {Promise<string>} ID of the new copen
@@ -91,7 +91,7 @@ export async function addCustomCopen(userId, copen) {
 }
 
 /**
- * Update a custom copen
+ * Update a copen link
  * @param {string} userId - User ID
  * @param {string} copenId - Copen ID
  * @param {object} updates - Fields to update
@@ -121,13 +121,13 @@ export async function updateCustomCopen(userId, copenId, updates) {
 
     await docRef.update({ customCopens });
   } catch (error) {
-    console.error('Error updating custom copen:', error);
+    console.error('Error updating Copen link:', error);
     throw error;
   }
 }
 
 /**
- * Delete a custom copen
+ * Delete a copen link
  * @param {string} userId - User ID
  * @param {string} copenId - Copen ID
  * @returns {Promise<void>}
@@ -148,7 +148,7 @@ export async function deleteCustomCopen(userId, copenId) {
     const filtered = customCopens.filter(c => c.id !== copenId);
     await docRef.update({ customCopens: filtered });
   } catch (error) {
-    console.error('Error deleting custom copen:', error);
+    console.error('Error deleting copen link:', error);
     throw error;
   }
 }

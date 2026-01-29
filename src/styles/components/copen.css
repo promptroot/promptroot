@@ -9,16 +9,32 @@
 .copen-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   padding: 12px;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 8px;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, opacity 0.2s;
 }
 
 .copen-item:hover {
   border-color: var(--accent);
+}
+
+.copen-item.dragging {
+  opacity: 0.5;
+}
+
+.copen-drag-handle {
+  color: #999;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.copen-drag-handle:active {
+  cursor: grabbing;
 }
 
 .copen-item-left {
@@ -81,11 +97,17 @@
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+  align-items: center;
 }
 
 .copen-item-actions .btn-icon {
   width: 32px;
   height: 32px;
+}
+
+.copen-item-actions .btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .copen-item.disabled {

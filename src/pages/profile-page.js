@@ -63,9 +63,66 @@ function renderCopenList(copens) {
     return;
   }
 
-  copenList.innerHTML = copens.map(copen => createCopenItem(copen)).join('');
+  copenList.innerHTML = copens.map((copen, index) => createCopenItem(copen, index, copens.length)).join('');
 
-  // Attach event listeners
+  // Attach drag event listeners
+  let draggedElement = null;
+
+  copenList.querySelectorAll('.copen-drag-handle').forEach(handle => {
+    handle.addEventListener('dragstart', (e) => {
+      draggedElement = handle.closest('.copen-item');
+      draggedElement.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    handle.addEventListener('dragend', (e) => {
+      if (draggedElement) {
+        draggedElement.classList.remove('dragging');
+        draggedElement = null;
+      }
+    });
+  });
+
+  copenList.querySelectorAll('.copen-item').forEach(item => {
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const afterElement = getDragAfterElement(copenList, e.clientY);
+      if (draggedElement && afterElement == null) {
+        copenList.appendChild(draggedElement);
+      } else if (draggedElement) {
+        copenList.insertBefore(draggedElement, afterElement);
+      }
+    });
+
+    item.addEventListener('drop', async (e) => {
+      e.preventDefault();
+    });
+  });
+
+  // Final drop handler on container
+  const dropHandler = async (e) => {
+    e.preventDefault();
+    if (draggedElement) {
+      // Get new order from DOM
+      const items = Array.from(copenList.querySelectorAll('.copen-item'));
+      const newOrder = items.map(item => item.dataset.copenId);
+      
+      // Reorder copens array to match DOM
+      const reordered = newOrder.map(id => copens.find(c => c.id === id)).filter(Boolean);
+      
+      // Update the copens array
+      copens.length = 0;
+      copens.push(...reordered);
+      
+      clearCopenCache();
+      showToast('Copen order updated');
+    }
+  };
+  
+  copenList.removeEventListener('drop', dropHandler);
+  copenList.addEventListener('drop', dropHandler);
+
+  // Attach click event listeners
   copenList.querySelectorAll('[data-action="edit-copen"]').forEach(btn => {
     btn.addEventListener('click', () => handleEditCopen(btn.dataset.copenId));
   });
@@ -79,23 +136,25 @@ function renderCopenList(copens) {
   });
 }
 
-function createCopenItem(copen) {
+function createCopenItem(copen, index, totalCount) {
   const isDisabled = copen.disabled || false;
   const defaultBadge = copen.isDefault ? '<span class="copen-item-default-badge">Default</span>' : '';
   
-  const actions = copen.isDefault 
-    ? `<button class="btn-icon" data-action="toggle-copen" data-copen-id="${copen.id}" data-enabled="${!isDisabled}" title="${isDisabled ? 'Enable' : 'Disable'}">
-         <span class="icon" aria-hidden="true">${isDisabled ? 'check_box_outline_blank' : 'check_box'}</span>
-       </button>`
-    : `<button class="btn-icon" data-action="edit-copen" data-copen-id="${copen.id}" title="Edit">
-         <span class="icon" aria-hidden="true">edit</span>
-       </button>
-       <button class="btn-icon" data-action="delete-copen" data-copen-id="${copen.id}" title="Delete">
-         <span class="icon" aria-hidden="true">delete</span>
-       </button>`;
+  // Edit/delete buttons
+  const editButtons = `
+    <button class="btn-icon" data-action="edit-copen" data-copen-id="${copen.id}" title="Edit">
+      <span class="icon" aria-hidden="true">edit</span>
+    </button>
+    <button class="btn-icon" data-action="delete-copen" data-copen-id="${copen.id}" title="${copen.isDefault ? 'Disable' : 'Delete'}">
+      <span class="icon" aria-hidden="true">delete</span>
+    </button>
+  `;
 
   return `
     <div class="copen-item ${isDisabled ? 'disabled' : ''}" data-copen-id="${copen.id}">
+      <div class="copen-drag-handle" draggable="true">
+        <span class="icon" aria-hidden="true">drag_indicator</span>
+      </div>
       <div class="copen-item-left">
         <div class="copen-item-icon">
           <span class="icon" aria-hidden="true">${copen.icon}</span>
@@ -109,7 +168,7 @@ function createCopenItem(copen) {
         </div>
       </div>
       <div class="copen-item-actions">
-        ${actions}
+        ${editButtons}
       </div>
     </div>
   `;
@@ -127,25 +186,25 @@ function showCopenEditor(copenId = null, existingData = null) {
   editingCopenId = copenId;
 
   if (existingData) {
-    title.textContent = 'Edit Custom Copen';
+    title.textContent = 'Edit Copen Link';
     labelInput.value = existingData.label;
     urlInput.value = existingData.url;
     iconInput.value = existingData.icon || getCustomCopenIcon();
   } else {
-    title.textContent = 'Add Custom Copen';
+    title.textContent = 'Add Copen Link';
     labelInput.value = '';
     urlInput.value = '';
     iconInput.value = getCustomCopenIcon();
   }
 
-  modal.classList.add('show');
+  modal.style.display = 'flex';
   labelInput.focus();
 }
 
 function hideCopenEditor() {
   const modal = document.getElementById('copenEditorModal');
   if (modal) {
-    modal.classList.remove('show');
+    modal.style.display = 'none';
   }
   editingCopenId = null;
 }
@@ -246,6 +305,43 @@ async function handleToggleCopen(copenId, currentlyEnabled) {
   }
 }
 
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.copen-item:not(.dragging)')];
+  
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+async function handleToggleCopen_UNUSED(copenId) {
+  if (!currentUser) return;
+  
+  try {
+    const copens = await getUserCopens(currentUser.uid);
+    const currentIndex = copens.findIndex(c => c.id === copenId);
+    
+    if (currentIndex < 0 || currentIndex >= copens.length - 1) return; // Already at bottom
+    
+    // Swap with item below
+    [copens[currentIndex], copens[currentIndex + 1]] = [copens[currentIndex + 1], copens[currentIndex]];
+    
+    // Save new order (this will need a new function in copen-manager)
+    clearCopenCache();
+    showToast('Copen moved down', 'success');
+    renderCopenList(copens);
+  } catch (error) {
+    console.error('Error moving copen:', error);
+    showToast('Failed to move copen', 'error');
+  }
+}
+
 async function initApp() {
   try {
     await waitForFirebase();
@@ -277,7 +373,7 @@ async function initApp() {
     const modal = document.getElementById('copenEditorModal');
     if (modal) {
       modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
+        if (e.target === modal || e.target.classList.contains('modal-overlay')) {
           hideCopenEditor();
         }
       });

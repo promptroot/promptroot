@@ -46,6 +46,14 @@ describe('url-params', () => {
       });
     });
 
+    it('should parse query parameters from hash string without ? prefix', () => {
+      window.location.hash = '#p=some-slug';
+
+      const params = parseParams();
+
+      expect(params.p).toBe('some-slug');
+    });
+
     it('should parse parameters from both search and hash (hash takes precedence)', () => {
       window.location.search = '?owner=search-owner&branch=main';
       window.location.hash = '#?owner=hash-owner&repo=myrepo';

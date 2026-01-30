@@ -110,6 +110,50 @@ describe('url-params', () => {
       consoleWarnSpy.mockRestore();
     });
 
+    it('should validate path parameter and reject path traversal', () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      window.location.search = '?path=../secret.txt';
+
+      const params = parseParams();
+
+      expect(params.path).toBeUndefined();
+      expect(consoleWarnSpy).toHaveBeenCalled();
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should validate path parameter and reject absolute path', () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      window.location.search = '?path=/etc/passwd';
+
+      const params = parseParams();
+
+      expect(params.path).toBeUndefined();
+      expect(consoleWarnSpy).toHaveBeenCalled();
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should validate p parameter and reject invalid paths', () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      window.location.hash = '#?p=../secret.txt';
+
+      const params = parseParams();
+
+      expect(params.p).toBeUndefined();
+      expect(consoleWarnSpy).toHaveBeenCalled();
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should accept valid path parameter', () => {
+      window.location.search = '?path=src/modules/auth.js';
+
+      const params = parseParams();
+
+      expect(params.path).toBe('src/modules/auth.js');
+    });
+
     it('should accept non-validated parameters without validation', () => {
       window.location.search = '?custom=value&another=param&owner=test';
       

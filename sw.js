@@ -112,11 +112,6 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
   
-  // Skip caching on localhost entirely
-  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
-    return; // Let browser handle normally
-  }
-  
   // Skip caching for excluded patterns (API calls, external auth, etc.)
   if (CACHE_EXCLUDE_PATTERNS.some(pattern => pattern.test(request.url))) {
     return; // Let browser handle normally

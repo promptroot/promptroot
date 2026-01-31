@@ -138,8 +138,8 @@ test.describe('Smoke Tests - Critical Paths', () => {
     await page.waitForSelector('#list', { timeout: 15000, state: 'visible' });
     await page.waitForTimeout(1000);
     
-    // Navigate to different repo via URL
-    await page.goto('/?owner=testuser&repo=other-repo&branch=main', { waitUntil: 'networkidle' });
+    // Navigate to different repo via URL (use domcontentloaded instead of networkidle to avoid timeout)
+    await page.goto('/?owner=testuser&repo=other-repo&branch=main', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
     

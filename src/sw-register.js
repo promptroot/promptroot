@@ -10,11 +10,10 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(registrations => {
       registrations.forEach(registration => registration.unregister());
     });
-    return;
-  }
-  
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+  } else {
+    // Only register service worker on non-localhost environments
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
       .then(registration => {
         // Check for updates on page load
         registration.update();
@@ -33,5 +32,6 @@ if ('serviceWorker' in navigator) {
       .catch(err => {
         console.warn('Service Worker registration failed:', err);
       });
-  });
+    });
+  }
 }

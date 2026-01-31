@@ -2,7 +2,7 @@
 // Provides offline support and dramatic performance improvements for repeat visits
 // Expected: 88% faster repeat loads (~50ms vs 409ms)
 
-const CACHE_VERSION = 'promptroot-v6';
+const CACHE_VERSION = 'promptroot-v7';
 const CACHE_NAME = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -65,6 +65,13 @@ const CACHE_EXCLUDE_PATTERNS = [
   /firebaselogging\.googleapis\.com/,
   /chrome-extension:\/\//,
   /hot-update/
+];
+
+// Assets that should use network-first strategy (frequently updated content)
+const NETWORK_FIRST_PATTERNS = [
+  /raw\.githubusercontent\.com.*\.md$/,
+  /gist\.githubusercontent\.com/,
+  /github\.com\/.*\/contents\//
 ];
 
 // Install event - cache critical static assets
@@ -132,10 +139,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
+  // Use network-first for frequently updated content (markdown files, etc.)
+  if (NETWORK_FIRST_PATTERNS.some(pattern => pattern.test(request.url))) {
+    event.respondWith(networkFirstStrategy(request));
+    return;
+  }
   event.respondWith(
     cacheFirstStrategy(request)
   );
 });
+
+async function networkFirstStrategy(request) {
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse && networkResponse.status >= 200 && networkResponse.status < 300) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    throw error;
+  }
+}
 
 // Cache-first strategy: Try cache, fallback to network, then cache response
 async function cacheFirstStrategy(request) {

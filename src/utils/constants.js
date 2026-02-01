@@ -213,6 +213,26 @@ export const UI_TEXT = {
   SAVE_KEY: "Save & Continue"
 };
 
+// Folder Submenu Text
+export const FOLDER_SUBMENU_TEXT = {
+  NEW_PROMPT: 'Prompt (blank)',
+  NEW_CONVERSATION: 'Conversation (template)',
+  CONVERSATION_TEMPLATE: `**Conversation Link (Codex, Jules, etc):** [https://chatgpt.com/s/...]
+
+### Prompt
+[paste your full prompt here]
+
+### Output
+[response(s), context, notes, or follow-up thoughts]
+`,
+  NEW_PROMPT_FILENAME_PREFIX: 'prompt-',
+  NEW_CONVERSATION_FILENAME: 'new-conversation.md',
+  ACTIONS: {
+    CREATE_PROMPT: 'create-prompt',
+    CREATE_CONVERSATION: 'create-conversation'
+  }
+};
+
 // CSS class names for state management
 export const CSS_CLASSES = {
   HIDDEN: 'hidden',

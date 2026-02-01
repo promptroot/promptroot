@@ -2,6 +2,7 @@ import { getCurrentUser } from './auth.js';
 import { getDb } from './firebase-service.js';
 import { showToast } from './toast.js';
 import { toggleVisibility } from '../utils/dom-helpers.js';
+import { loadFuse } from '../utils/lazy-loaders.js';
 
 function extractDefaultBranch(source) {
   const defaultBranchObj = source?.githubRepo?.defaultBranch ||
@@ -45,6 +46,10 @@ export class RepoSelector {
     this.allReposLoaded = false;
     this.sourcesCache = null;
     this.selectedSourceId = null;
+    this.searchInput = null;
+    this.searchClearBtn = null;
+    this.currentSearchTerm = '';
+    this.cachedFuseInstance = null;
   }
 
   saveToStorage() {
@@ -175,8 +180,229 @@ export class RepoSelector {
     setupClickOutsideClose(this.dropdownBtn, this.dropdownMenu);
   }
 
+  /**
+   * Creates a search input element for the repository dropdown
+   */
+  createSearchInput() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'dropdown-search-wrapper';
+    
+    const inputContainer = document.createElement('div');
+    inputContainer.style.position = 'relative';
+    
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'dropdown-search';
+    input.placeholder = 'Search repositories...';
+    input.setAttribute('aria-label', 'Search repositories');
+    
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'dropdown-search-clear hidden';
+    clearBtn.setAttribute('aria-label', 'Clear search');
+    clearBtn.innerHTML = '<span class="icon" aria-hidden="true">close</span>';
+    
+    // Prevent dropdown from closing when clicking inside search
+    wrapper.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+    
+    input.addEventListener('input', () => {
+      this.currentSearchTerm = input.value.toLowerCase().trim();
+      
+      // Show/hide clear button
+      if (this.currentSearchTerm) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      
+      // Re-render filtered repositories
+      this.filterAndRenderRepos();
+    });
+    
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      input.value = '';
+      this.currentSearchTerm = '';
+      clearBtn.classList.add('hidden');
+      input.focus();
+      this.filterAndRenderRepos();
+    });
+    
+    inputContainer.appendChild(input);
+    inputContainer.appendChild(clearBtn);
+    wrapper.appendChild(inputContainer);
+    
+    this.searchInput = input;
+    this.searchClearBtn = clearBtn;
+    
+    return wrapper;
+  }
+
+  /**
+   * Filters repositories based on current search term using Fuse.js fuzzy search
+   */
+  async filterRepos(repos) {
+    if (!this.currentSearchTerm) return repos;
+    
+    // Lazy load Fuse only when actually searching
+    if (!this.cachedFuseInstance) {
+      const Fuse = await loadFuse();
+      this.cachedFuseInstance = new Fuse(repos, {
+        keys: ['name', 'id'],
+        includeScore: true,
+        threshold: 0.3,
+        ignoreLocation: true
+      });
+    }
+    
+    const results = this.cachedFuseInstance.search(this.currentSearchTerm);
+    return results.map(result => result.item);
+  }
+
+  /**
+   * Re-renders repositories based on current search term
+   */
+  async filterAndRenderRepos() {
+    if (!this.dropdownMenu) return;
+    
+    // Keep the search input at the top
+    const searchWrapper = this.dropdownMenu.querySelector('.dropdown-search-wrapper');
+    
+    // Clear everything except search
+    const items = Array.from(this.dropdownMenu.children);
+    items.forEach(item => {
+      if (!item.classList.contains('dropdown-search-wrapper')) {
+        item.remove();
+      }
+    });
+    
+    // Get all repos (favorites + all sources)
+    const allRepos = [];
+    
+    // Add favorites
+    if (this.favorites && this.favorites.length > 0) {
+      allRepos.push(...this.favorites.map(f => ({ ...f, isFavorite: true })));
+    }
+    
+    // Add all sources if loaded
+    if (this.allReposLoaded && this.allSources.length > 0) {
+      this.allSources.forEach(source => {
+        if (!this.favorites.some(f => f.id === (source.name || source.id))) {
+          const fullPath = source.name || source.id;
+          const pathParts = fullPath.split('/');
+          const repoName = pathParts.length >= 4 ? pathParts.slice(-2).join('/') : fullPath;
+          allRepos.push({ id: source.name || source.id, name: repoName, isFavorite: false, source });
+        }
+      });
+    }
+    
+    if (allRepos.length === 0) {
+      const noResults = document.createElement('div');
+      noResults.className = 'dropdown-helper-text';
+      noResults.textContent = 'No repositories found';
+      this.dropdownMenu.appendChild(noResults);
+      return;
+    }
+    
+    // Filter repositories
+    const filtered = await this.filterRepos(allRepos);
+    
+    if (filtered.length === 0) {
+      const noResults = document.createElement('div');
+      noResults.className = 'dropdown-helper-text';
+      noResults.textContent = 'No repositories found';
+      this.dropdownMenu.appendChild(noResults);
+      return;
+    }
+    
+    // Separate favorites from others
+    const filteredFavorites = filtered.filter(r => r.isFavorite);
+    const filteredOthers = filtered.filter(r => !r.isFavorite);
+    
+    // Render favorites section
+    if (filteredFavorites.length > 0) {
+      const favHeader = document.createElement('div');
+      favHeader.className = 'dropdown-group-header';
+      favHeader.textContent = `Favorites (${filteredFavorites.length})`;
+      this.dropdownMenu.appendChild(favHeader);
+      
+      for (const fav of filteredFavorites) {
+        const item = this.createRepoItem(fav.name, fav.id, true, async () => {
+          this.selectedSourceId = fav.id;
+          this.dropdownText.textContent = fav.name;
+          this.dropdownMenu.classList.remove('open');
+          this.dropdownMenu.style.display = '';
+          
+          this.saveToStorage();
+          this.dropdownBtn.setAttribute('aria-expanded', 'false');
+          
+          let currentBranch = fav.branch;
+          
+          if (!currentBranch) {
+            if (this.branchSelector) {
+              this.branchSelector.dropdownText.textContent = 'Detecting branch...';
+              this.branchSelector.dropdownBtn.disabled = true;
+            }
+            currentBranch = await this.verifyDefaultBranch(fav);
+            if (this.branchSelector) {
+              this.branchSelector.initialize(fav.id, currentBranch);
+            }
+          } else {
+            if (this.branchSelector) {
+              this.branchSelector.initialize(fav.id, currentBranch);
+            }
+            this.verifyDefaultBranch(fav, true).catch((error) => {
+              console.error('Failed to verify default branch in background:', error);
+            });
+          }
+          
+          if (this.onSelect) {
+            this.onSelect(fav.id, currentBranch, fav.name);
+          }
+        });
+        
+        this.dropdownMenu.appendChild(item);
+      }
+    }
+    
+    // Render other repositories section
+    if (filteredOthers.length > 0) {
+      const otherHeader = document.createElement('div');
+      otherHeader.className = 'dropdown-group-header';
+      otherHeader.textContent = `Other Repositories (${filteredOthers.length})`;
+      this.dropdownMenu.appendChild(otherHeader);
+      
+      for (const repo of filteredOthers) {
+        const defaultBranch = repo.source ? extractDefaultBranch(repo.source) : 'main';
+        
+        const item = this.createRepoItem(repo.name, repo.id, false, () => {
+          this.selectedSourceId = repo.id;
+          this.dropdownText.textContent = repo.name;
+          this.dropdownMenu.classList.remove('open');
+          this.dropdownMenu.style.display = '';
+          
+          this.saveToStorage();
+          this.dropdownBtn.setAttribute('aria-expanded', 'false');
+          
+          if (this.onSelect) {
+            this.onSelect(repo.id, defaultBranch, repo.name);
+          }
+        });
+        
+        this.dropdownMenu.appendChild(item);
+      }
+    }
+  }
+
   async populateDropdown() {
     this.dropdownMenu.innerHTML = '';
+    
+    // Reset search state
+    this.currentSearchTerm = '';
+    this.searchInput = null;
+    this.searchClearBtn = null;
+    this.cachedFuseInstance = null;
     
     const loadingIndicator = document.createElement('div');
     loadingIndicator.className = 'dropdown-loading';
@@ -194,6 +420,11 @@ export class RepoSelector {
     } else {
       await this.loadAllRepos();
       this.dropdownMenu.innerHTML = '';
+      
+      // Add search input at the top when all repos are loaded
+      const searchElement = this.createSearchInput();
+      this.dropdownMenu.appendChild(searchElement);
+      
       this.renderAllRepos();
     }
     
@@ -255,6 +486,7 @@ export class RepoSelector {
         try {
           await this.loadAllRepos();
           this.allReposLoaded = true;
+          this.cachedFuseInstance = null; // Clear cache when new repos loaded
         } catch (error) {
           showMoreBtn.textContent = 'Failed to load - click to retry';
           showMoreBtn.classList.remove('loading');
@@ -263,6 +495,13 @@ export class RepoSelector {
       }
       
       showMoreBtn.classList.add('hidden');
+      
+      // Add search input at the top before rendering all repos
+      if (!this.dropdownMenu.querySelector('.dropdown-search-wrapper')) {
+        const searchElement = this.createSearchInput();
+        this.dropdownMenu.insertBefore(searchElement, this.dropdownMenu.firstChild);
+      }
+      
       this.renderAllRepos();
     };
     
@@ -480,6 +719,11 @@ export class BranchSelector {
     this.selectedBranch = null;
     this.sourceId = null;
     this.allBranchesLoaded = false;
+    this.searchInput = null;
+    this.searchClearBtn = null;
+    this.currentSearchTerm = '';
+    this.allBranches = [];
+    this.cachedFuseInstance = null;
   }
 
   saveToStorage() {
@@ -570,6 +814,166 @@ export class BranchSelector {
     setupClickOutsideClose(this.dropdownBtn, this.dropdownMenu);
   }
 
+  /**
+   * Creates a search input element for the branch dropdown
+   */
+  createSearchInput() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'dropdown-search-wrapper';
+    
+    const inputContainer = document.createElement('div');
+    inputContainer.style.position = 'relative';
+    
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'dropdown-search';
+    input.placeholder = 'Search branches...';
+    input.setAttribute('aria-label', 'Search branches');
+    
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'dropdown-search-clear hidden';
+    clearBtn.setAttribute('aria-label', 'Clear search');
+    clearBtn.innerHTML = '<span class="icon" aria-hidden="true">close</span>';
+    
+    // Prevent dropdown from closing when clicking inside search
+    wrapper.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+    
+    input.addEventListener('input', () => {
+      this.currentSearchTerm = input.value.toLowerCase().trim();
+      
+      // Show/hide clear button
+      if (this.currentSearchTerm) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      
+      // Re-render filtered branches
+      this.filterAndRenderBranches();
+    });
+    
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      input.value = '';
+      this.currentSearchTerm = '';
+      clearBtn.classList.add('hidden');
+      input.focus();
+      this.filterAndRenderBranches();
+    });
+    
+    inputContainer.appendChild(input);
+    inputContainer.appendChild(clearBtn);
+    wrapper.appendChild(inputContainer);
+    
+    this.searchInput = input;
+    this.searchClearBtn = clearBtn;
+    
+    return wrapper;
+  }
+
+  /**
+   * Filters branches based on current search term using Fuse.js fuzzy search
+   */
+  async filterBranches(branches) {
+    if (!this.currentSearchTerm) return branches;
+    
+    // Lazy load Fuse only when actually searching
+    if (!this.cachedFuseInstance) {
+      const Fuse = await loadFuse();
+      this.cachedFuseInstance = new Fuse(branches, {
+        keys: ['name'],
+        includeScore: true,
+        threshold: 0.3,
+        ignoreLocation: true
+      });
+    }
+    
+    const results = this.cachedFuseInstance.search(this.currentSearchTerm);
+    return results.map(result => result.item);
+  }
+
+  /**
+   * Re-renders branches based on current search term
+   */
+  async filterAndRenderBranches() {
+    if (!this.dropdownMenu || !this.allBranches.length) return;
+    
+    // Keep the search input at the top
+    const searchWrapper = this.dropdownMenu.querySelector('.dropdown-search-wrapper');
+    
+    // Clear everything except search
+    const items = Array.from(this.dropdownMenu.children);
+    items.forEach(item => {
+      if (!item.classList.contains('dropdown-search-wrapper')) {
+        item.remove();
+      }
+    });
+    
+    // Get filtered branches
+    const filtered = await this.filterBranches(this.allBranches);
+    
+    if (filtered.length === 0) {
+      const noResults = document.createElement('div');
+      noResults.className = 'dropdown-helper-text';
+      noResults.textContent = 'No branches found';
+      this.dropdownMenu.appendChild(noResults);
+      return;
+    }
+    
+    // Always show current branch at top if it matches
+    const currentBranch = filtered.find(b => b.name === this.selectedBranch);
+    if (currentBranch) {
+      const currentItem = document.createElement('div');
+      currentItem.className = 'dropdown-item-with-star selected';
+      currentItem.onclick = () => {
+        this.dropdownMenu.classList.remove('open');
+        this.dropdownMenu.style.display = '';
+        this.dropdownBtn.setAttribute('aria-expanded', 'false');
+      };
+      
+      const star = document.createElement('span');
+      star.className = 'star-icon';
+      star.style.visibility = 'hidden';
+      
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'item-name';
+      nameSpan.textContent = this.selectedBranch;
+      
+      currentItem.appendChild(star);
+      currentItem.appendChild(nameSpan);
+      this.dropdownMenu.appendChild(currentItem);
+    }
+    
+    // Show all other matching branches
+    filtered.forEach(branch => {
+      if (branch.name === this.selectedBranch) return;
+      
+      const item = document.createElement('div');
+      item.className = 'dropdown-item-with-star';
+      
+      const star = document.createElement('span');
+      star.className = 'star-icon';
+      star.style.visibility = 'hidden';
+      
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'item-name';
+      nameSpan.textContent = branch.name;
+      
+      item.onclick = () => {
+        this.setSelectedBranch(branch.name);
+        this.dropdownMenu.classList.remove('open');
+        this.dropdownMenu.style.display = '';
+        this.dropdownBtn.setAttribute('aria-expanded', 'false');
+      };
+      
+      item.appendChild(star);
+      item.appendChild(nameSpan);
+      this.dropdownMenu.appendChild(item);
+    });
+  }
+
   populateDropdown() {
     if (!this.sourceId) {
       showToast('Please select a repository first', 'warn');
@@ -577,6 +981,21 @@ export class BranchSelector {
     }
     
     this.dropdownMenu.innerHTML = '';
+    
+    // Reset search state
+    this.currentSearchTerm = '';
+    this.searchInput = null;
+    this.searchClearBtn = null;
+    this.cachedFuseInstance = null;
+    
+    // Don't add search input initially, only after "Show more" is clicked
+    this.cachedFuseInstance = null;
+    
+    // Add search input at the top if branches are loaded
+    if (this.allBranchesLoaded) {
+      const searchElement = this.createSearchInput();
+      this.dropdownMenu.appendChild(searchElement);
+    }
     
     const currentItem = document.createElement('div');
     currentItem.className = 'dropdown-item-with-star selected';
@@ -626,15 +1045,50 @@ export class BranchSelector {
         }
 
         this.allBranchesLoaded = true;
-        toggleVisibility(showMoreBtn, false);
+        this.allBranches = allBranches;
         
+        // Re-populate dropdown with search input
+        this.dropdownMenu.innerHTML = '';
+        
+        // Reset search
+        this.currentSearchTerm = '';
+        this.searchInput = null;
+        this.searchClearBtn = null;
+        this.cachedFuseInstance = null;
+        this.cachedFuseInstance = null;
+        
+        // Add search input
+        const searchElement = this.createSearchInput();
+        this.dropdownMenu.appendChild(searchElement);
+        
+        // Add current branch
+        const currentItem = document.createElement('div');
+        currentItem.className = 'dropdown-item-with-star selected';
+        currentItem.onclick = () => {
+          this.dropdownMenu.classList.remove('open');
+          this.dropdownMenu.style.display = '';
+          this.dropdownBtn.setAttribute('aria-expanded', 'false');
+        };
+        
+        const star = document.createElement('span');
+        star.className = 'star-icon';
+        star.style.visibility = 'hidden';
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'item-name';
+        nameSpan.textContent = this.selectedBranch;
+        
+        currentItem.appendChild(star);
+        currentItem.appendChild(nameSpan);
+        this.dropdownMenu.appendChild(currentItem);
+        
+        // Add all other branches
         allBranches.forEach(branch => {
           if (branch.name === this.selectedBranch) return;
           
           const item = document.createElement('div');
           item.className = 'dropdown-item-with-star';
           
-          // Hide star for branches (not using favorites here)
           const star = document.createElement('span');
           star.className = 'star-icon';
           star.style.visibility = 'hidden';

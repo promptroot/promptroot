@@ -48,6 +48,13 @@ vi.mock('../../modules/github-api.js', () => ({
   getBranches: vi.fn()
 }));
 
+vi.mock('../../utils/lazy-loaders.js', () => ({
+  loadFuse: vi.fn(() => Promise.resolve(class MockFuse {
+    constructor() {}
+    search() { return []; }
+  }))
+}));
+
 // Setup global mocks
 Object.defineProperty(global, 'localStorage', {
   value: {
@@ -90,6 +97,8 @@ global.document = {
     },
     setAttribute: vi.fn(),
     getAttribute: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     style: {
       cssText: '',
       display: '',
@@ -105,7 +114,8 @@ global.document = {
       opacity: '',
       top: '',
       left: '',
-      width: ''
+      width: '',
+      position: ''
     },
     classList: {
       add: vi.fn(),
@@ -116,9 +126,12 @@ global.document = {
     onclick: null,
     setAttribute: vi.fn(),
     appendChild: vi.fn(),
+    insertBefore: vi.fn(),
     contains: vi.fn(() => false),
     setAttribute: vi.fn(),
     removeAttribute: vi.fn(),
+    querySelector: vi.fn(() => null),
+    querySelectorAll: vi.fn(() => []),
     classList: {
       add: vi.fn(),
       remove: vi.fn(),

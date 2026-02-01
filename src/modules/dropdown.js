@@ -1,6 +1,6 @@
 const openDropdowns = new Set();
 
-const ITEM_SELECTOR = '[role="menuitem"], [role="option"], [role="menuitemradio"], [role="menuitemcheckbox"]';
+const ITEM_SELECTOR = '[role="menuitem"], [role="option"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="button"]';
 
 function getItems(menu) {
   // Prefer role-based items

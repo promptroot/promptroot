@@ -274,3 +274,18 @@ a:hover { text-decoration: underline; }
 /* Danger zone variations */
 .danger-title { font-size:15px; font-weight:600; color:var(--danger); margin-bottom:10px; }
 .danger-desc { font-size:13px; color:var(--muted); margin-bottom:14px; }
+
+/* Markdown fallback styles */
+.markdown-warning {
+  padding: 12px;
+  margin-bottom: 16px;
+  background-color: rgba(243, 156, 18, 0.1);
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  color: var(--warn);
+}
+
+.markdown-fallback {
+  white-space: pre-wrap;
+  font-family: var(--font-mono);
+}

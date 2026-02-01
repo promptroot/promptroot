@@ -7,7 +7,7 @@ import { RepoSelector, BranchSelector } from './repo-branch-selector.js';
 import { addToJulesQueue } from './jules-queue.js';
 import { toggleVisibility } from '../utils/dom-helpers.js';
 import { extractTitleFromPrompt } from '../utils/title.js';
-import { RETRY_CONFIG, TIMEOUTS, JULES_MESSAGES } from '../utils/constants.js';
+import { RETRY_CONFIG, TIMEOUTS, JULES_MESSAGES, JULES_MODAL_TEXT } from '../utils/constants.js';
 import { showToast } from './toast.js';
 
 let lastSelectedSourceId = 'sources/github/promptroot/promptroot';
@@ -44,33 +44,33 @@ export function showJulesKeyModal(onSave) {
   const handleSave = async () => {
     const apiKey = input.value.trim();
     if (!apiKey) {
-      showToast('Please enter your Jules API key.', 'warn');
+      showToast(JULES_MODAL_TEXT.ENTER_API_KEY, 'warn');
       return;
     }
 
     try {
-      saveBtn.textContent = 'Saving...';
+      saveBtn.textContent = JULES_MODAL_TEXT.SAVING;
       saveBtn.disabled = true;
 
       const user = getAuth()?.currentUser || null;
       if (!user) {
-        showToast('Not logged in.', 'error');
-        saveBtn.textContent = 'Save & Continue';
+        showToast(JULES_MODAL_TEXT.NOT_LOGGED_IN, 'error');
+        saveBtn.textContent = JULES_MODAL_TEXT.SAVE_BUTTON;
         saveBtn.disabled = false;
         return;
       }
 
       await encryptAndStoreKey(apiKey, user.uid);
 
-      showToast('Jules API key saved successfully', 'success');
+      showToast(JULES_MODAL_TEXT.KEY_SAVED_SUCCESS, 'success');
       hideJulesKeyModal();
-      saveBtn.textContent = 'Save & Continue';
+      saveBtn.textContent = JULES_MODAL_TEXT.SAVE_BUTTON;
       saveBtn.disabled = false;
 
       if (onSave) onSave();
     } catch (error) {
-      showToast('Failed to save API key: ' + error.message, 'error');
-      saveBtn.textContent = 'Save & Continue';
+      showToast(JULES_MODAL_TEXT.SAVE_KEY_ERROR(error.message), 'error');
+      saveBtn.textContent = JULES_MODAL_TEXT.SAVE_BUTTON;
       saveBtn.disabled = false;
     }
   };
@@ -155,7 +155,7 @@ export async function showJulesEnvModal(promptText) {
         prompt: promptText,
         sourceId: selectedSourceId,
         branch: selectedBranch,
-        note: 'Queued from Try in Jules modal'
+        note: JULES_MODAL_TEXT.NOTE_QUEUED_MODAL
       });
       showToast(JULES_MESSAGES.QUEUED, 'success');
       hideJulesEnvModal();
@@ -216,7 +216,7 @@ async function handleRepoSelect(sourceId, branch, promptText, suppressPopups = f
               prompt: promptText,
               sourceId: sourceId,
               branch: lastSelectedBranch,
-              note: 'Queued from Try in Jules flow (partial retries)'
+              note: JULES_MODAL_TEXT.NOTE_QUEUED_PARTIAL
             });
             showToast(JULES_MESSAGES.QUEUED, 'success');
           } catch (err) {
@@ -249,7 +249,7 @@ async function handleRepoSelect(sourceId, branch, promptText, suppressPopups = f
               prompt: promptText,
               sourceId: sourceId,
               branch: lastSelectedBranch,
-              note: 'Queued from Try in Jules flow (final failure)'
+              note: JULES_MODAL_TEXT.NOTE_QUEUED_FINAL
             });
             showToast(JULES_MESSAGES.QUEUED, 'success');
           } catch (err) {
@@ -314,7 +314,7 @@ export async function showSubtaskErrorModal(subtaskNumber, totalSubtasks, error,
   }
 
   return new Promise((resolve) => {
-    subtaskNumDiv.textContent = `Task ${subtaskNumber} of ${totalSubtasks}`;
+    subtaskNumDiv.textContent = JULES_MODAL_TEXT.SUBTASK_PROGRESS(subtaskNumber, totalSubtasks);
     messageDiv.textContent = error.message || String(error);
     detailsDiv.textContent = error.toString();
 

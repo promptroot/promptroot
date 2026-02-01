@@ -51,8 +51,23 @@ vi.mock('../../utils/constants.js', () => ({
     SIGN_IN_REQUIRED: 'Please sign in',
     QUEUED: 'Added to queue',
     QUEUE_FAILED: (msg) => `Failed: ${msg}`
+  },
+  JULES_MODAL_TEXT: {
+    ENTER_API_KEY: 'Please enter your Jules API key.',
+    SAVING: 'Saving...',
+    NOT_LOGGED_IN: 'Not logged in.',
+    SAVE_BUTTON: 'Save & Continue',
+    KEY_SAVED_SUCCESS: 'Jules API key saved successfully',
+    SAVE_KEY_ERROR: (msg) => 'Failed to save API key: ' + msg,
+    NOTE_QUEUED_MODAL: 'Queued from Try in Jules modal',
+    NOTE_QUEUED_PARTIAL: 'Queued from Try in Jules flow (partial retries)',
+    NOTE_QUEUED_FINAL: 'Queued from Try in Jules flow (final failure)',
+    SUBTASK_PROGRESS: (current, total) => `Task ${current} of ${total}`,
+    SUBTASK_ERROR_TITLE: 'Subtask Error'
   }
 }));
+
+import { JULES_MODAL_TEXT } from '../../utils/constants.js';
 
 vi.mock('../../modules/toast.js', () => ({
   showToast: vi.fn()
@@ -249,7 +264,7 @@ describe('jules-modal', () => {
       
       await mockSaveBtn.onclick();
       
-      expect(showToast).toHaveBeenCalledWith('Please enter your Jules API key.', 'warn');
+      expect(showToast).toHaveBeenCalledWith(JULES_MODAL_TEXT.ENTER_API_KEY, 'warn');
     });
 
     it('should show error if user not logged in', async () => {
@@ -274,8 +289,8 @@ describe('jules-modal', () => {
       
       await mockSaveBtn.onclick();
       
-      expect(showToast).toHaveBeenCalledWith('Not logged in.', 'error');
-      expect(mockSaveBtn.textContent).toBe('Save & Continue');
+      expect(showToast).toHaveBeenCalledWith(JULES_MODAL_TEXT.NOT_LOGGED_IN, 'error');
+      expect(mockSaveBtn.textContent).toBe(JULES_MODAL_TEXT.SAVE_BUTTON);
       expect(mockSaveBtn.disabled).toBe(false);
     });
 
@@ -288,7 +303,7 @@ describe('jules-modal', () => {
       
       const mockModal = createMockElement('julesKeyModal');
       const mockInput = createMockElement('julesKeyInput');
-      const mockSaveBtn = createMockElement('julesSaveBtn', { textContent: 'Save & Continue' });
+      const mockSaveBtn = createMockElement('julesSaveBtn', { textContent: JULES_MODAL_TEXT.SAVE_BUTTON });
       const mockCancelBtn = createMockElement('julesCancelBtn');
       
       global.document.getElementById.mockImplementation((id) => {
@@ -305,9 +320,9 @@ describe('jules-modal', () => {
       await mockSaveBtn.onclick();
       
       expect(encryptAndStoreKey).toHaveBeenCalledWith('my-api-key', 'user123');
-      expect(showToast).toHaveBeenCalledWith('Jules API key saved successfully', 'success');
+      expect(showToast).toHaveBeenCalledWith(JULES_MODAL_TEXT.KEY_SAVED_SUCCESS, 'success');
       expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
-      expect(mockSaveBtn.textContent).toBe('Save & Continue');
+      expect(mockSaveBtn.textContent).toBe(JULES_MODAL_TEXT.SAVE_BUTTON);
       expect(mockSaveBtn.disabled).toBe(false);
     });
 
@@ -319,7 +334,7 @@ describe('jules-modal', () => {
       
       const mockModal = createMockElement('julesKeyModal');
       const mockInput = createMockElement('julesKeyInput');
-      const mockSaveBtn = createMockElement('julesSaveBtn', { textContent: 'Save & Continue' });
+      const mockSaveBtn = createMockElement('julesSaveBtn', { textContent: JULES_MODAL_TEXT.SAVE_BUTTON });
       const mockCancelBtn = createMockElement('julesCancelBtn');
       
       global.document.getElementById.mockImplementation((id) => {
@@ -337,7 +352,7 @@ describe('jules-modal', () => {
       await mockSaveBtn.onclick();
       
       expect(onSaveCallback).toHaveBeenCalled();
-      expect(mockSaveBtn.textContent).toBe('Save & Continue');
+      expect(mockSaveBtn.textContent).toBe(JULES_MODAL_TEXT.SAVE_BUTTON);
       expect(mockSaveBtn.disabled).toBe(false);
     });
 
@@ -350,7 +365,7 @@ describe('jules-modal', () => {
       
       const mockModal = createMockElement('julesKeyModal');
       const mockInput = createMockElement('julesKeyInput');
-      const mockSaveBtn = createMockElement('julesSaveBtn', { textContent: 'Save & Continue' });
+      const mockSaveBtn = createMockElement('julesSaveBtn', { textContent: JULES_MODAL_TEXT.SAVE_BUTTON });
       const mockCancelBtn = createMockElement('julesCancelBtn');
       
       global.document.getElementById.mockImplementation((id) => {
@@ -366,8 +381,8 @@ describe('jules-modal', () => {
       
       await mockSaveBtn.onclick();
       
-      expect(showToast).toHaveBeenCalledWith('Failed to save API key: Storage failed', 'error');
-      expect(mockSaveBtn.textContent).toBe('Save & Continue');
+      expect(showToast).toHaveBeenCalledWith(JULES_MODAL_TEXT.SAVE_KEY_ERROR('Storage failed'), 'error');
+      expect(mockSaveBtn.textContent).toBe(JULES_MODAL_TEXT.SAVE_BUTTON);
       expect(mockSaveBtn.disabled).toBe(false);
     });
 

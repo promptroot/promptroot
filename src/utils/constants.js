@@ -199,6 +199,21 @@ export const JULES_MESSAGES = {
   FINAL_RETRY_FAILED: "Failed to submit task after multiple retries. Please try again later."
 };
 
+// Jules Modal UI text
+export const JULES_MODAL_TEXT = {
+  ENTER_API_KEY: 'Please enter your Jules API key.',
+  SAVING: 'Saving...',
+  NOT_LOGGED_IN: 'Not logged in.',
+  SAVE_BUTTON: 'Save & Continue',
+  KEY_SAVED_SUCCESS: 'Jules API key saved successfully',
+  SAVE_KEY_ERROR: (msg) => 'Failed to save API key: ' + msg,
+  NOTE_QUEUED_MODAL: 'Queued from Try in Jules modal',
+  NOTE_QUEUED_PARTIAL: 'Queued from Try in Jules flow (partial retries)',
+  NOTE_QUEUED_FINAL: 'Queued from Try in Jules flow (final failure)',
+  SUBTASK_PROGRESS: (current, total) => `Task ${current} of ${total}`,
+  SUBTASK_ERROR_TITLE: 'Subtask Error'
+};
+
 // UI text
 export const UI_TEXT = {
   LOADING: "Loading...",

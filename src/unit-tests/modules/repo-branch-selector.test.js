@@ -100,6 +100,7 @@ global.document = {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     style: {
+      setProperty: vi.fn(),
       cssText: '',
       display: '',
       padding: '',
@@ -164,6 +165,7 @@ const createMockElement = (id = '') => ({
   setAttribute: vi.fn(),
   getAttribute: vi.fn(),
   style: {
+    setProperty: vi.fn(),
     display: '',
     opacity: '',
     cursor: '',
@@ -441,9 +443,9 @@ describe('repo-branch-selector', () => {
         
         await mockBtn.onclick({ stopPropagation: vi.fn() });
         
-        expect(mockMenu.style.top).toBe('154px'); // 150 + 4
-        expect(mockMenu.style.left).toBe('50px');
-        expect(mockMenu.style.width).toBe('200px');
+        expect(mockMenu.style.setProperty).toHaveBeenCalledWith('--dropdown-top', '154px');
+        expect(mockMenu.style.setProperty).toHaveBeenCalledWith('--dropdown-left', '50px');
+        expect(mockMenu.style.setProperty).toHaveBeenCalledWith('--dropdown-width', '200px');
       });
 
       it('should setup click-outside handler', async () => {
@@ -755,9 +757,9 @@ describe('repo-branch-selector', () => {
         
         mockBtn.onclick({ stopPropagation: vi.fn() });
         
-        expect(mockMenu.style.top).toBe('154px');
-        expect(mockMenu.style.left).toBe('50px');
-        expect(mockMenu.style.width).toBe('200px');
+        expect(mockMenu.style.setProperty).toHaveBeenCalledWith('--dropdown-top', '154px');
+        expect(mockMenu.style.setProperty).toHaveBeenCalledWith('--dropdown-left', '50px');
+        expect(mockMenu.style.setProperty).toHaveBeenCalledWith('--dropdown-width', '200px');
       });
     });
 

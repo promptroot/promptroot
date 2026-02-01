@@ -70,6 +70,23 @@
   display: block;
 }
 
+/* New Dropdown State Classes */
+.dropdown-menu {
+  display: none;
+}
+
+.dropdown-menu--open {
+  display: block;
+}
+
+.dropdown-menu--positioned {
+  position: fixed;
+  top: var(--dropdown-top);
+  left: var(--dropdown-left);
+  width: var(--dropdown-width);
+  z-index: 1200;
+}
+
 /* Favorites Dropdown Item - Reusable component for star-based favorites */
 .dropdown-item-with-star {
   display: flex;
@@ -249,4 +266,3 @@
 .dropdown-search-clear.hidden {
   display: none;
 }
-

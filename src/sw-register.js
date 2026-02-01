@@ -2,8 +2,13 @@
 // Provides offline support and performance improvements for repeat visits
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+  // Skip service worker on localhost to avoid caching issues during dev
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  
+  if (!isLocalhost) {
+    // Only register service worker on non-localhost environments
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
       .then(registration => {
         // Check for updates on page load
         registration.update();
@@ -22,5 +27,6 @@ if ('serviceWorker' in navigator) {
       .catch(err => {
         console.warn('Service Worker registration failed:', err);
       });
-  });
+    });
+  }
 }

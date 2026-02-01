@@ -5,7 +5,7 @@ import { getAuth } from './firebase-service.js';
 import { checkJulesKey, deleteStoredJulesKey } from './jules-keys.js';
 import { showJulesKeyModal } from './jules-modal.js';
 import { showJulesQueueModal } from './jules-queue.js';
-import { loadJulesProfileInfo, listJulesSessions, getDecryptedJulesKey } from './jules-api.js';
+import { loadJulesProfileInfo, listJulesSessions, getDecryptedJulesKey, getJulesSourceDetails } from './jules-api.js';
 import { getCache, setCache, clearCache, CACHE_KEYS } from '../utils/session-cache.js';
 import { showToast } from './toast.js';
 import { handleError, ErrorCategory } from '../utils/error-handler.js';
@@ -261,7 +261,54 @@ async function loadAndDisplayJulesProfile(uid) {
         statusSpan.className = 'queue-status';
         statusSpan.textContent = branchSummaryText;
 
-        header.append(arrow, folderIcon, pathText, statusSpan);
+        const debugBtn = document.createElement('button');
+        debugBtn.className = 'btn-icon';
+        debugBtn.title = 'Inspect Source Settings';
+        debugBtn.style.marginLeft = 'auto';
+        debugBtn.style.padding = '0 5px';
+        debugBtn.style.opacity = '0.5'; // Subtle
+
+        const debugIcon = document.createElement('span');
+        debugIcon.className = 'icon icon-inline';
+        debugIcon.setAttribute('aria-hidden', 'true');
+        debugIcon.textContent = 'info'; // or 'settings'
+        debugBtn.appendChild(debugIcon);
+
+        debugBtn.onclick = async (e) => {
+          e.stopPropagation();
+          try {
+            debugIcon.textContent = 'hourglass_empty';
+            const apiKey = await getDecryptedJulesKey(uid);
+            if (!apiKey) {
+              showToast('API Key not found', 'error');
+              debugIcon.textContent = 'info';
+              return;
+            }
+
+            const details = await getJulesSourceDetails(apiKey, source.name);
+            console.log('Source Details:', details);
+
+            // Format key fields for alert
+            const summary = {
+              name: details.name,
+              automationMode: details.automationMode || 'N/A',
+              draftPr: details.draftPr || 'N/A',
+              commitOwner: details.commitOwner || 'N/A',
+              ...details
+            };
+
+            console.log('Source Configuration:', summary);
+            showToast(`Source details logged to console. Mode: ${summary.automationMode}`, 'success');
+            debugIcon.textContent = 'check';
+            setTimeout(() => { debugIcon.textContent = 'info'; }, 2000);
+          } catch (err) {
+            console.error(err);
+            showToast('Failed to fetch source details', 'error');
+            debugIcon.textContent = 'error';
+          }
+        };
+
+        header.append(arrow, folderIcon, pathText, statusSpan, debugBtn);
 
         // Create branches container
         const branchesContainer = document.createElement('div');

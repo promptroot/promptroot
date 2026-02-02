@@ -170,3 +170,7 @@ html, body {
 .modal-hide {
   display: none !important;
 }
+
+.mobile-menu-open {
+  overflow: hidden;
+}

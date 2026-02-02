@@ -108,7 +108,9 @@ const createMockElement = (id = '') => ({
   dataset: {},
   replaceChildren: vi.fn(),
   appendChild: vi.fn(),
-  querySelectorAll: vi.fn(() => [])
+  querySelectorAll: vi.fn(() => []),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn()
 });
 
 // Setup global window
@@ -606,7 +608,7 @@ describe('jules-queue', () => {
       
       showJulesQueueModal();
       
-      expect(mockModal.onclick).toBeDefined();
+      expect(mockModal.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
       expect(global.document.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
     });
 
@@ -617,7 +619,10 @@ describe('jules-queue', () => {
       showJulesQueueModal();
       
       // Simulate click on modal itself (outside content)
-      mockModal.onclick({ target: mockModal });
+      const calls = mockModal.addEventListener.mock.calls;
+      const clickCall = calls.find(call => call[0] === 'click');
+      const handler = clickCall[1];
+      handler({ target: mockModal });
       
       expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
       expect(mockModal.removeAttribute).toHaveBeenCalledWith('style');
@@ -650,7 +655,10 @@ describe('jules-queue', () => {
       const setAttributeCalls = mockModal.setAttribute.mock.calls.length;
       
       // Simulate click on content element
-      mockModal.onclick({ target: mockContent });
+      const calls = mockModal.addEventListener.mock.calls;
+      const clickCall = calls.find(call => call[0] === 'click');
+      const handler = clickCall[1];
+      handler({ target: mockContent });
       
       // Should not add new setAttribute call
       expect(mockModal.setAttribute).toHaveBeenCalledTimes(setAttributeCalls);

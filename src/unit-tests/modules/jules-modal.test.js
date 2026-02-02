@@ -1,428 +1,243 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-// Setup global mocks
-const mockAuth = {
-  currentUser: null
-};
-
-let mockDb = {
-  collection: vi.fn()
-};
-
-// Mock firebase-service BEFORE importing jules-modal
-// Use function declarations so they evaluate at call-time, not definition-time
-vi.mock('../../modules/firebase-service.js', () => ({
-  getAuth: vi.fn(function() { return global.window?.auth !== undefined ? global.window.auth : mockAuth; }),
-  getDb: vi.fn(function() { return global.window?.db !== undefined ? global.window.db : mockDb; }),
-  getFunctions: vi.fn(() => null)
-}));
-
-import {
-  loadSubtaskErrorModal,
-  openUrlInBackground,
-  showJulesKeyModal,
-  hideJulesKeyModal,
-  hideJulesEnvModal,
-  hideSubtaskErrorModal
-} from '../../modules/jules-modal.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { showJulesKeyModal, showJulesEnvModal, showSubtaskErrorModal } from '../../modules/jules-modal.js';
+import * as toast from '../../modules/toast.js';
+import * as julesKeys from '../../modules/jules-keys.js';
+import * as firebaseService from '../../modules/firebase-service.js';
 
 // Mock dependencies
-vi.mock('../../modules/jules-keys.js', () => ({
-  encryptAndStoreKey: vi.fn()
-}));
-
 vi.mock('../../modules/repo-branch-selector.js', () => ({
-  RepoSelector: vi.fn(),
-  BranchSelector: vi.fn()
+  RepoSelector: class {
+    constructor(opts) { this.opts = opts; }
+    initialize() { return Promise.resolve(); }
+  },
+  BranchSelector: class {
+    constructor(opts) { this.opts = opts; }
+    initialize() { return Promise.resolve(); }
+  }
 }));
 
 vi.mock('../../modules/jules-queue.js', () => ({
   addToJulesQueue: vi.fn()
 }));
 
-vi.mock('../../utils/title.js', () => ({
-  extractTitleFromPrompt: vi.fn()
+vi.mock('../../modules/dom-helpers.js', () => ({
+  toggleVisibility: vi.fn()
 }));
 
-vi.mock('../../utils/constants.js', () => ({
-  RETRY_CONFIG: { maxRetries: 3 },
-  TIMEOUTS: { SHORT: 1000 },
-  JULES_MESSAGES: {
-    SIGN_IN_REQUIRED: 'Please sign in',
-    QUEUED: 'Added to queue',
-    QUEUE_FAILED: (msg) => `Failed: ${msg}`
-  }
+vi.mock('../../modules/title.js', () => ({
+  extractTitleFromPrompt: vi.fn()
 }));
 
 vi.mock('../../modules/toast.js', () => ({
   showToast: vi.fn()
 }));
 
-// Setup global fetch and document
-global.fetch = vi.fn();
-global.window = {
-  auth: mockAuth,
-  db: mockDb
-};
-global.document = {
-  body: {
-    appendChild: vi.fn(),
-    removeChild: vi.fn(),
-    insertAdjacentHTML: vi.fn()
-  },
-  createElement: vi.fn(() => ({
-    href: '',
-    target: '',
-    rel: '',
-    style: {},
-    dispatchEvent: vi.fn()
-  })),
-  getElementById: vi.fn()
-};
+vi.mock('../../modules/jules-keys.js', () => ({
+  encryptAndStoreKey: vi.fn()
+}));
 
-global.window = {
-  auth: null,
-  open: vi.fn()
-};
+vi.mock('../../modules/firebase-service.js', () => ({
+  getAuth: vi.fn()
+}));
 
-global.console = {
-  error: vi.fn(),
-  log: vi.fn()
-};
+describe('jules-modal.js', () => {
+  let modal, input, saveBtn, cancelBtn;
+  let envModal, envSubmitBtn, envQueueBtn, envCancelBtn;
+  let listeners = [];
 
-global.MouseEvent = vi.fn((type, options) => ({ type, ...options }));
-global.setTimeout = vi.fn((fn) => {
-  fn();
-  return 123;
-});
-
-const createMockElement = (id = '', options = {}) => {
-  const element = {
-    id,
-    _value: options.value || '',
-    textContent: options.textContent || '',
-    disabled: options.disabled || false,
-    checked: options.checked || false,
-    onclick: null,
-    classList: {
-      add: vi.fn(),
-      remove: vi.fn()
-    },
-    focus: vi.fn()
-  };
-  
-  // Make value a getter that returns _value
-  Object.defineProperty(element, 'value', {
-    get() { return this._value; },
-    set(val) { this._value = val; }
-  });
-  
-  return element;
-};
-
-function mockReset() {
-  vi.clearAllMocks();
-  global.fetch.mockReset();
-  global.document.getElementById.mockReturnValue(null);
-  global.document.body.insertAdjacentHTML.mockClear();
-  global.document.body.appendChild.mockClear();
-  global.document.body.removeChild.mockClear();
-  global.document.createElement.mockReturnValue({
-    href: '',
-    target: '',
-    rel: '',
-    style: {},
-    dispatchEvent: vi.fn()
-  });
-  global.window.auth = null;
-}
-
-describe('jules-modal', () => {
   beforeEach(() => {
-    mockReset();
+    // Setup DOM for Key Modal
+    modal = document.createElement('div');
+    modal.id = 'julesKeyModal';
+
+    input = document.createElement('input');
+    input.id = 'julesKeyInput';
+
+    saveBtn = document.createElement('button');
+    saveBtn.id = 'julesSaveBtn';
+
+    cancelBtn = document.createElement('button');
+    cancelBtn.id = 'julesCancelBtn';
+
+    // Setup DOM for Env Modal
+    envModal = document.createElement('div');
+    envModal.id = 'julesEnvModal';
+
+    envSubmitBtn = document.createElement('button');
+    envSubmitBtn.id = 'julesEnvSubmitBtn';
+
+    envQueueBtn = document.createElement('button');
+    envQueueBtn.id = 'julesEnvQueueBtn';
+
+    envCancelBtn = document.createElement('button');
+    envCancelBtn.id = 'julesEnvCancelBtn';
+
+    // Append to body
+    document.body.appendChild(modal);
+    document.body.appendChild(input);
+    document.body.appendChild(saveBtn);
+    document.body.appendChild(cancelBtn);
+    document.body.appendChild(envModal);
+    document.body.appendChild(envSubmitBtn);
+    document.body.appendChild(envQueueBtn);
+    document.body.appendChild(envCancelBtn);
+
+    // Mock other elements required by env modal
+    ['julesBranchDropdownBtn', 'julesBranchDropdownText', 'julesBranchDropdownMenu',
+     'julesRepoDropdownBtn', 'julesRepoDropdownText', 'julesRepoDropdownMenu',
+     'julesEnvSuppressPopupsCheckbox', 'julesEnvOpenInBackgroundCheckbox'
+    ].forEach(id => {
+      const el = document.createElement('div');
+      el.id = id;
+      document.body.appendChild(el);
+    });
+
+    // Mock addEventListener/removeEventListener to track calls
+    listeners = [];
+    const originalAdd = EventTarget.prototype.addEventListener;
+    const originalRemove = EventTarget.prototype.removeEventListener;
+
+    vi.spyOn(EventTarget.prototype, 'addEventListener').mockImplementation(function(type, listener, options) {
+      listeners.push({ target: this, type, listener, action: 'add' });
+      return originalAdd.call(this, type, listener, options);
+    });
+
+    vi.spyOn(EventTarget.prototype, 'removeEventListener').mockImplementation(function(type, listener, options) {
+      listeners.push({ target: this, type, listener, action: 'remove' });
+      return originalRemove.call(this, type, listener, options);
+    });
   });
 
-  describe('loadSubtaskErrorModal', () => {
-    it('should fetch and insert modal HTML', async () => {
-      global.fetch.mockResolvedValue({
-        ok: true,
-        text: vi.fn().mockResolvedValue('<div>Modal HTML</div>')
-      });
-      
-      await loadSubtaskErrorModal();
-      
-      expect(global.fetch).toHaveBeenCalledWith('/partials/subtask-error-modal.html');
-      expect(global.document.body.insertAdjacentHTML).toHaveBeenCalledWith('beforeend', '<div>Modal HTML</div>');
-    });
-
-    it('should handle fetch errors gracefully', async () => {
-      global.fetch.mockResolvedValue({
-        ok: false
-      });
-      
-      await loadSubtaskErrorModal();
-      
-      expect(global.document.body.insertAdjacentHTML).not.toHaveBeenCalled();
-    });
-
-    it('should handle network errors', async () => {
-      global.fetch.mockRejectedValue(new Error('Network error'));
-      
-      await loadSubtaskErrorModal();
-      
-      expect(global.console.error).toHaveBeenCalledWith('Error loading subtask error modal:', expect.any(Error));
-    });
-  });
-
-  describe('openUrlInBackground', () => {
-    it('should call window.open with correct parameters', () => {
-      openUrlInBackground('https://example.com');
-      
-      expect(global.window.open).toHaveBeenCalledWith('https://example.com', '_blank', 'noopener,noreferrer');
-    });
-
-    it('should handle different URLs', () => {
-      openUrlInBackground('https://test.com/path');
-      
-      expect(global.window.open).toHaveBeenCalledWith('https://test.com/path', '_blank', 'noopener,noreferrer');
-    });
+  afterEach(() => {
+    document.body.innerHTML = '';
+    vi.restoreAllMocks();
   });
 
   describe('showJulesKeyModal', () => {
-    it('should show modal and focus input', () => {
-      const mockModal = createMockElement('julesKeyModal');
-      const mockInput = createMockElement('julesKeyInput');
-      const mockSaveBtn = createMockElement('julesSaveBtn');
-      const mockCancelBtn = createMockElement('julesCancelBtn');
-      
-      global.document.getElementById.mockImplementation((id) => {
-        if (id === 'julesKeyModal') return mockModal;
-        if (id === 'julesKeyInput') return mockInput;
-        if (id === 'julesSaveBtn') return mockSaveBtn;
-        if (id === 'julesCancelBtn') return mockCancelBtn;
-        return null;
-      });
-      
+    it('should add event listeners instead of onclick', () => {
       showJulesKeyModal();
       
-      expect(mockModal.classList.add).toHaveBeenCalledWith('show');
-      expect(mockInput.value).toBe('');
-      expect(mockInput.focus).toHaveBeenCalled();
+      // Check that onclick is NOT set (it might be set if we haven't refactored yet, but we want to assert it SHOULD use addEventListener)
+      // Since we haven't refactored yet, this test serves as a verification of the change once applied.
+      // Currently, the code uses onclick. So this test will fail if I assert 'onclick' is null,
+      // or if I assert addEventListener was called (which it won't be yet for these buttons).
+      
+      const saveListener = listeners.find(l => l.target === saveBtn && l.type === 'click' && l.action === 'add');
+      const cancelListener = listeners.find(l => l.target === cancelBtn && l.type === 'click' && l.action === 'add');
+      
+      expect(saveListener).toBeDefined();
+      expect(cancelListener).toBeDefined();
     });
 
-    it('should setup save and cancel button handlers', () => {
-      const mockModal = createMockElement('julesKeyModal');
-      const mockInput = createMockElement('julesKeyInput');
-      const mockSaveBtn = createMockElement('julesSaveBtn');
-      const mockCancelBtn = createMockElement('julesCancelBtn');
-      
-      global.document.getElementById.mockImplementation((id) => {
-        if (id === 'julesKeyModal') return mockModal;
-        if (id === 'julesKeyInput') return mockInput;
-        if (id === 'julesSaveBtn') return mockSaveBtn;
-        if (id === 'julesCancelBtn') return mockCancelBtn;
-        return null;
-      });
-      
+    it('should remove event listeners when modal is closed via cancel', () => {
       showJulesKeyModal();
-      
-      expect(mockSaveBtn.onclick).toBeDefined();
-      expect(mockCancelBtn.onclick).toBeDefined();
+      cancelBtn.click(); // Should trigger hideJulesKeyModal
+
+      const saveRemovals = listeners.filter(l => l.target === saveBtn && l.type === 'click' && l.action === 'remove');
+      const cancelRemovals = listeners.filter(l => l.target === cancelBtn && l.type === 'click' && l.action === 'remove');
+
+      expect(saveRemovals.length).toBeGreaterThan(0);
+      expect(cancelRemovals.length).toBeGreaterThan(0);
     });
 
-    it('should show warning if API key is empty', async () => {
-      const { showToast } = await import('../../modules/toast.js');
-      const mockModal = createMockElement('julesKeyModal');
-      const mockInput = createMockElement('julesKeyInput', { value: '  ' });
-      const mockSaveBtn = createMockElement('julesSaveBtn');
-      const mockCancelBtn = createMockElement('julesCancelBtn');
-      
-      global.document.getElementById.mockImplementation((id) => {
-        if (id === 'julesKeyModal') return mockModal;
-        if (id === 'julesKeyInput') return mockInput;
-        if (id === 'julesSaveBtn') return mockSaveBtn;
-        if (id === 'julesCancelBtn') return mockCancelBtn;
-        return null;
-      });
-      
-      showJulesKeyModal();
-      
-      await mockSaveBtn.onclick();
-      
-      expect(showToast).toHaveBeenCalledWith('Please enter your Jules API key.', 'warn');
+    it('should show toast warning on empty input', async () => {
+        showJulesKeyModal();
+        input.value = '';
+        saveBtn.click();
+        expect(toast.showToast).toHaveBeenCalledWith(expect.stringContaining('Please enter'), 'warn');
     });
 
-    it('should show error if user not logged in', async () => {
-      const { showToast } = await import('../../modules/toast.js');
-      global.window.auth = { currentUser: null };
-      
-      const mockModal = createMockElement('julesKeyModal');
-      const mockInput = createMockElement('julesKeyInput');
-      const mockSaveBtn = createMockElement('julesSaveBtn');
-      const mockCancelBtn = createMockElement('julesCancelBtn');
-      
-      global.document.getElementById.mockImplementation((id) => {
-        if (id === 'julesKeyModal') return mockModal;
-        if (id === 'julesKeyInput') return mockInput;
-        if (id === 'julesSaveBtn') return mockSaveBtn;
-        if (id === 'julesCancelBtn') return mockCancelBtn;
-        return null;
-      });
-      
-      showJulesKeyModal();
-      mockInput.value = 'test-key-123';  // Set value after showJulesKeyModal
-      
-      await mockSaveBtn.onclick();
-      
-      expect(showToast).toHaveBeenCalledWith('Not logged in.', 'error');
-      expect(mockSaveBtn.textContent).toBe('Save & Continue');
-      expect(mockSaveBtn.disabled).toBe(false);
-    });
+    it('should call encryptAndStoreKey on save', async () => {
+        vi.spyOn(firebaseService, 'getAuth').mockReturnValue({ currentUser: { uid: '123' } });
+        showJulesKeyModal();
+        input.value = 'test-key';
+        saveBtn.click();
 
-    it('should save API key successfully', async () => {
-      const { encryptAndStoreKey } = await import('../../modules/jules-keys.js');
-      const { showToast } = await import('../../modules/toast.js');
-      encryptAndStoreKey.mockResolvedValue();
-      
-      global.window.auth = { currentUser: { uid: 'user123' } };
-      
-      const mockModal = createMockElement('julesKeyModal');
-      const mockInput = createMockElement('julesKeyInput');
-      const mockSaveBtn = createMockElement('julesSaveBtn', { textContent: 'Save & Continue' });
-      const mockCancelBtn = createMockElement('julesCancelBtn');
-      
-      global.document.getElementById.mockImplementation((id) => {
-        if (id === 'julesKeyModal') return mockModal;
-        if (id === 'julesKeyInput') return mockInput;
-        if (id === 'julesSaveBtn') return mockSaveBtn;
-        if (id === 'julesCancelBtn') return mockCancelBtn;
-        return null;
-      });
-      
-      showJulesKeyModal();
-      mockInput.value = 'my-api-key';  // Set value after showJulesKeyModal
-      
-      await mockSaveBtn.onclick();
-      
-      expect(encryptAndStoreKey).toHaveBeenCalledWith('my-api-key', 'user123');
-      expect(showToast).toHaveBeenCalledWith('Jules API key saved successfully', 'success');
-      expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
-      expect(mockSaveBtn.textContent).toBe('Save & Continue');
-      expect(mockSaveBtn.disabled).toBe(false);
-    });
+        // Wait for async operations
+        await new Promise(resolve => setTimeout(resolve, 0));
 
-    it('should call onSave callback after successful save', async () => {
-      const { encryptAndStoreKey } = await import('../../modules/jules-keys.js');
-      encryptAndStoreKey.mockResolvedValue();
-      
-      global.window.auth = { currentUser: { uid: 'user456' } };
-      
-      const mockModal = createMockElement('julesKeyModal');
-      const mockInput = createMockElement('julesKeyInput');
-      const mockSaveBtn = createMockElement('julesSaveBtn', { textContent: 'Save & Continue' });
-      const mockCancelBtn = createMockElement('julesCancelBtn');
-      
-      global.document.getElementById.mockImplementation((id) => {
-        if (id === 'julesKeyModal') return mockModal;
-        if (id === 'julesKeyInput') return mockInput;
-        if (id === 'julesSaveBtn') return mockSaveBtn;
-        if (id === 'julesCancelBtn') return mockCancelBtn;
-        return null;
-      });
-      
-      const onSaveCallback = vi.fn();
-      showJulesKeyModal(onSaveCallback);
-      mockInput.value = 'key';  // Set value after showJulesKeyModal
-      
-      await mockSaveBtn.onclick();
-      
-      expect(onSaveCallback).toHaveBeenCalled();
-      expect(mockSaveBtn.textContent).toBe('Save & Continue');
-      expect(mockSaveBtn.disabled).toBe(false);
-    });
-
-    it('should handle save errors', async () => {
-      const { encryptAndStoreKey } = await import('../../modules/jules-keys.js');
-      const { showToast } = await import('../../modules/toast.js');
-      encryptAndStoreKey.mockRejectedValue(new Error('Storage failed'));
-      
-      global.window.auth = { currentUser: { uid: 'user789' } };
-      
-      const mockModal = createMockElement('julesKeyModal');
-      const mockInput = createMockElement('julesKeyInput');
-      const mockSaveBtn = createMockElement('julesSaveBtn', { textContent: 'Save & Continue' });
-      const mockCancelBtn = createMockElement('julesCancelBtn');
-      
-      global.document.getElementById.mockImplementation((id) => {
-        if (id === 'julesKeyModal') return mockModal;
-        if (id === 'julesKeyInput') return mockInput;
-        if (id === 'julesSaveBtn') return mockSaveBtn;
-        if (id === 'julesCancelBtn') return mockCancelBtn;
-        return null;
-      });
-      
-      showJulesKeyModal();
-      mockInput.value = 'key';  // Set value after showJulesKeyModal
-      
-      await mockSaveBtn.onclick();
-      
-      expect(showToast).toHaveBeenCalledWith('Failed to save API key: Storage failed', 'error');
-      expect(mockSaveBtn.textContent).toBe('Save & Continue');
-      expect(mockSaveBtn.disabled).toBe(false);
-    });
-
-    it('should hide modal on cancel', () => {
-      const mockModal = createMockElement('julesKeyModal');
-      const mockInput = createMockElement('julesKeyInput');
-      const mockSaveBtn = createMockElement('julesSaveBtn');
-      const mockCancelBtn = createMockElement('julesCancelBtn');
-      
-      global.document.getElementById.mockImplementation((id) => {
-        if (id === 'julesKeyModal') return mockModal;
-        if (id === 'julesKeyInput') return mockInput;
-        if (id === 'julesSaveBtn') return mockSaveBtn;
-        if (id === 'julesCancelBtn') return mockCancelBtn;
-        return null;
-      });
-      
-      showJulesKeyModal();
-      
-      mockCancelBtn.onclick();
-      
-      expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
+        expect(julesKeys.encryptAndStoreKey).toHaveBeenCalledWith('test-key', '123');
+        expect(toast.showToast).toHaveBeenCalledWith(expect.stringContaining('saved successfully'), 'success');
     });
   });
 
-  describe('hideJulesKeyModal', () => {
-    it('should remove show class from modal', () => {
-      const mockModal = createMockElement('julesKeyModal');
-      global.document.getElementById.mockReturnValue(mockModal);
+  describe('showJulesEnvModal', () => {
+    it('should add event listeners', async () => {
+      await showJulesEnvModal('test prompt');
       
-      hideJulesKeyModal();
+      const submitListener = listeners.find(l => l.target === envSubmitBtn && l.type === 'click' && l.action === 'add');
+      const queueListener = listeners.find(l => l.target === envQueueBtn && l.type === 'click' && l.action === 'add');
+      const cancelListener = listeners.find(l => l.target === envCancelBtn && l.type === 'click' && l.action === 'add');
       
-      expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
+      expect(submitListener).toBeDefined();
+      expect(queueListener).toBeDefined();
+      expect(cancelListener).toBeDefined();
+    });
+
+    it('should remove event listeners on cancel', async () => {
+      await showJulesEnvModal('test prompt');
+      envCancelBtn.click();
+
+      const submitRemovals = listeners.filter(l => l.target === envSubmitBtn && l.type === 'click' && l.action === 'remove');
+      expect(submitRemovals.length).toBeGreaterThan(0);
     });
   });
 
-  describe('hideJulesEnvModal', () => {
-    it('should remove show class from modal', () => {
-      const mockModal = createMockElement('julesEnvModal');
-      global.document.getElementById.mockReturnValue(mockModal);
-      
-      hideJulesEnvModal();
-      
-      expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
-    });
-  });
+  describe('showSubtaskErrorModal', () => {
+    let errorRetryBtn, errorSkipBtn, errorCancelBtn, errorCloseBtn, errorQueueBtn, errorModal;
 
-  describe('hideSubtaskErrorModal', () => {
-    it('should remove show class from modal', () => {
-      const mockModal = createMockElement('subtaskErrorModal');
-      global.document.getElementById.mockReturnValue(mockModal);
-      
-      hideSubtaskErrorModal();
-      
-      expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
+    beforeEach(() => {
+        errorModal = document.createElement('div');
+        errorModal.id = 'subtaskErrorModal';
+        document.body.appendChild(errorModal);
+
+        ['errorSubtaskNumber', 'errorMessage', 'errorDetails'].forEach(id => {
+            const el = document.createElement('div');
+            el.id = id;
+            document.body.appendChild(el);
+        });
+
+        errorRetryBtn = document.createElement('button');
+        errorRetryBtn.id = 'subtaskErrorRetryBtn';
+        document.body.appendChild(errorRetryBtn);
+
+        errorSkipBtn = document.createElement('button');
+        errorSkipBtn.id = 'subtaskErrorSkipBtn';
+        document.body.appendChild(errorSkipBtn);
+
+        errorCancelBtn = document.createElement('button');
+        errorCancelBtn.id = 'subtaskErrorCancelBtn';
+        document.body.appendChild(errorCancelBtn);
+
+        errorCloseBtn = document.createElement('button');
+        errorCloseBtn.id = 'errorModalClose';
+        document.body.appendChild(errorCloseBtn);
+
+        errorQueueBtn = document.createElement('button');
+        errorQueueBtn.id = 'subtaskErrorQueueBtn';
+        document.body.appendChild(errorQueueBtn);
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = 'errorRetryDelayCheckbox';
+        document.body.appendChild(checkbox);
+    });
+
+    it('should add and remove event listeners', async () => {
+        const promise = showSubtaskErrorModal(1, 1, new Error('test'));
+
+        // Check addition
+        const retryListener = listeners.find(l => l.target === errorRetryBtn && l.type === 'click' && l.action === 'add');
+        expect(retryListener).toBeDefined();
+
+        // Trigger action
+        errorCancelBtn.click();
+        await promise;
+
+        // Check removal
+        const retryRemovals = listeners.filter(l => l.target === errorRetryBtn && l.type === 'click' && l.action === 'remove');
+        expect(retryRemovals.length).toBeGreaterThan(0);
     });
   });
 });

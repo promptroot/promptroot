@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { showJulesKeyModal, hideJulesKeyModal, showJulesEnvModal, hideJulesEnvModal, showSubtaskErrorModal, hideSubtaskErrorModal } from '../../modules/jules-modal.js';
+import { showJulesKeyModal, showJulesEnvModal, showSubtaskErrorModal } from '../../modules/jules-modal.js';
 import * as toast from '../../modules/toast.js';
 import * as julesKeys from '../../modules/jules-keys.js';
 import * as firebaseService from '../../modules/firebase-service.js';

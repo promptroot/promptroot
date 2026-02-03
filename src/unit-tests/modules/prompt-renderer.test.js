@@ -469,8 +469,9 @@ describe('prompt-renderer', () => {
       });
     });
 
-    it('should handle markdown parsing errors', async () => {
+    it('should handle markdown parsing errors with fallback', async () => {
       const { loadMarked } = await import('../../utils/lazy-loaders.js');
+      
       loadMarked.mockReset();
       loadMarked.mockRejectedValue(new Error('Markdown parsing failed'));
 

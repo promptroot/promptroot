@@ -24,6 +24,22 @@ service cloud.firestore {
       allow list: if request.auth != null && request.auth.uid == userId;
     }
     
+    // Jules Sessions - users can only access their own session tracking data
+    match /juleSessions/{userId}/sessions/{sessionId} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      allow list: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Jules Session Activities - users can only access their own activity data
+    match /juleSessions/{userId}/sessions/{sessionId}/activities/{activityId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Jules Analytics - users can only access their own analytics
+    match /juleSessions/{userId}/analytics/{period} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
     // Optional: Prompt History - users can only access their own history
     match /promptHistory/{historyId} {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;

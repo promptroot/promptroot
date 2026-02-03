@@ -1,0 +1,242 @@
+/* Analytics Page Styles */
+
+/* Metrics Grid */
+.analytics-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.metric-card {
+  background: linear-gradient(135deg, rgba(20,24,41,0.6), rgba(20,24,41,0.3));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.metric-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.metric-card__icon {
+  color: var(--accent);
+  font-size: 20px;
+}
+
+.metric-card__label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.metric-card__label .icon {
+  cursor: default;
+}
+
+.metric-card__value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.metric-card__subtitle {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Charts Grid */
+.analytics-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+.analytics-chart-panel {
+  background: linear-gradient(135deg, rgba(20,24,41,0.4), rgba(20,24,41,0.2));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.chart-container {
+  position: relative;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Analytics Panels */
+.analytics-panel {
+  background: linear-gradient(135deg, rgba(20,24,41,0.3), rgba(20,24,41,0.15));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+/* List Items in Analytics */
+.analytics-panel .item {
+  background: linear-gradient(135deg, rgba(20,24,41,0.5), rgba(20,24,41,0.3));
+  margin-bottom: 8px;
+}
+
+.analytics-panel .item:last-child {
+  margin-bottom: 0;
+}
+
+/* Prompt Item Layout */
+.prompt-item__content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.prompt-item__rank {
+  min-width: 28px;
+  justify-content: center;
+}
+
+.prompt-item__details {
+  min-width: 0;
+  flex: 1;
+}
+
+/* Repo and PR Item Layout */
+.repo-item__content,
+.pr-item__content {
+  min-width: 0;
+  flex: 1;
+}
+
+/* Failure Analysis Grid */
+.failure-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.failure-item {
+  background: linear-gradient(135deg, rgba(192,80,77,0.1), rgba(192,80,77,0.05));
+  border: 1px solid rgba(192,80,77,0.3);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.failure-item__label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.failure-item__value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.failure-item__desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge--success {
+  background: rgba(39, 174, 96, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.status-badge--danger {
+  background: rgba(192, 80, 77, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(192, 80, 77, 0.3);
+}
+
+.status-badge--warn {
+  background: rgba(243, 156, 18, 0.15);
+  color: var(--warn);
+  border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+.status-badge--info {
+  background: rgba(77, 217, 255, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(77, 217, 255, 0.3);
+}
+
+/* PR Link Styling */
+.pr-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  transition: text-decoration 0.15s;
+}
+
+.pr-link:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+.pr-link--btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pr-link--disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  font-weight: 400;
+}
+
+.pr-link--disabled:hover {
+  text-decoration: none;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1000px) {
+  .analytics-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .analytics-metrics {
+    grid-template-columns: 1fr;
+  }
+  
+  .metric-card__value {
+    font-size: 28px;
+  }
+  
+  .failure-grid {
+    grid-template-columns: 1fr;
+  }
+}

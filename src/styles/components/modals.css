@@ -29,8 +29,9 @@
 .modal-content h2 { margin: 0 0 12px; font-size: 18px; }
 .modal-content p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
 .modal-textarea { width: 100%; min-height: 200px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: #12162a; color: var(--text); outline: none; margin-bottom: 16px; box-sizing: border-box; resize: vertical; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, Noto Sans, Liberation Sans, Helvetica Neue, sans-serif; font-size: 14px; }
-.modal select, .modal-input { appearance: none; border: 1px solid var(--border); background: #11152a; color: var(--text); border-radius: 8px; padding: 8px 10px; font-size: 13px; cursor: pointer; outline: none; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, Noto Sans, Liberation Sans, Helvetica Neue, sans-serif; }
+.modal select, .modal-input, .form-select { appearance: none; border: 1px solid var(--border); background: #11152a; color: var(--text); border-radius: 8px; padding: 8px 10px; font-size: 13px; cursor: pointer; outline: none; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, Noto Sans, Liberation Sans, Helvetica Neue, sans-serif; }
 .modal select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(77, 217, 255, 0.1); }
+.form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(77, 217, 255, 0.1); }
 .modal select option { color: var(--text); background: var(--card); padding: 8px; border-radius: 0; }
 .modal select option:checked { background: linear-gradient(135deg, rgba(77,217,255,0.2), rgba(77,217,255,0.1)) !important; color: var(--accent) !important; font-weight: 600; }
 .modal select option:hover { background: rgba(77, 217, 255, 0.08); }

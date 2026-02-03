@@ -66,9 +66,18 @@
         
         <!-- Recent Sessions -->
         <div class="mb-md">
-          <div class="section-label"><span class="icon icon-inline" aria-hidden="true">menu_book</span> Recent Sessions</div>
-          <div class="mb-md">
-            <a href="../sessions/sessions.html" class="btn primary sm">View All Sessions</a>
+          <div class="mb-md" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="section-label"><span class="icon icon-inline" aria-hidden="true">access_time</span> Recent Sessions</div>
+            <div style="display: flex; gap: 8px;">
+              <a href="../sessions/sessions.html" class="btn primary sm">
+                <span class="icon icon-inline" aria-hidden="true">view_list</span>
+                All Sessions
+              </a>
+              <a href="../analytics/analytics.html" class="btn primary sm" title="Session analytics and insights">
+                <span class="icon icon-inline" aria-hidden="true">bar_chart</span>
+                Analytics
+              </a>
+            </div>
           </div>
           <div id="julesSessionsList" class="panel scrollable-list list-md jules-list">
             <div class="muted-text small-text">Loading sessions...</div>

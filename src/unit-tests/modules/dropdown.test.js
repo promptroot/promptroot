@@ -112,17 +112,44 @@ describe('dropdown', () => {
       expect(focusSpy).toHaveBeenCalled();
       expect(document.activeElement).toBe(searchInput);
     });
+
+    it('should NOT focus item if dropdown is closed quickly (race condition)', async () => {
+      const focusSpy = vi.spyOn(items[0], 'focus');
+
+      dropdown.open();
+      dropdown.close(); // Close immediately before RAF fires
+
+      // Wait for RAF
+      await new Promise(resolve => requestAnimationFrame(resolve));
+
+      expect(focusSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('keyboard navigation', () => {
     beforeEach(() => {
-      for (let i = 0; i < 3; i++) {
-        const item = createMenuItem('menuitem', `Item ${i}`);
-        mockMenu.appendChild(item);
-        items.push(item);
-      }
+      // Create mixed items
+      const menuitem = createMenuItem('menuitem', 'Menu Item');
+      const option = createMenuItem('option', 'Option');
+      const button = createMenuItem('button', 'Button'); // Test role="button"
+
+      items = [menuitem, option, button];
+      items.forEach(item => mockMenu.appendChild(item));
+
       dropdown = initDropdown(mockBtn, mockMenu, mockContainer);
       dropdown.open();
+    });
+
+    it('should navigate between mixed roles including role="button"', () => {
+      items[0].focus();
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      expect(document.activeElement).toBe(items[1]); // option
+
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      expect(document.activeElement).toBe(items[2]); // button
+
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      expect(document.activeElement).toBe(items[0]); // back to menuitem
     });
 
     it('should navigate down with ArrowDown', () => {

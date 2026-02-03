@@ -1,6 +1,6 @@
 const openDropdowns = new Set();
 
-const ITEM_SELECTOR = '[role="menuitem"], [role="option"], [role="menuitemradio"], [role="menuitemcheckbox"]';
+const ITEM_SELECTOR = '[role="menuitem"], [role="option"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="button"]';
 
 function getItems(menu) {
   // Prefer role-based items
@@ -38,6 +38,10 @@ function openDropdown(dropdown) {
 
   // Focus management
   requestAnimationFrame(() => {
+    // Guard: Check if menu is still open before moving focus
+    // This prevents race conditions where menu closes (e.g. Escape) before this callback runs
+    if (!dropdown.menu.classList.contains('open')) return;
+
     // Check for search input first (e.g. branch selector)
     const input = dropdown.menu.querySelector('input[type="text"], input[type="search"]');
     if (input && input.offsetParent !== null) {

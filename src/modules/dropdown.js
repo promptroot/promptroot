@@ -187,13 +187,10 @@ export function initDropdown(btn, menu, container = null) {
 
   // Close when focus leaves the dropdown container
   dropdownContainer.addEventListener('focusout', (e) => {
-    // Use timeout to allow activeElement to update
-    setTimeout(() => {
-      const newFocus = document.activeElement;
-      if (!dropdownContainer.contains(newFocus) && menu.classList.contains('open')) {
-        closeDropdown(dropdown);
-      }
-    }, 0);
+    // relatedTarget is where focus is moving TO
+    if (!dropdownContainer.contains(e.relatedTarget) && menu.classList.contains('open')) {
+      closeDropdown(dropdown);
+    }
   });
 
   return {

@@ -6,7 +6,7 @@
 import { waitForFirebase } from '../shared-init.js';
 import { getAuth } from '../modules/firebase-service.js';
 import { TIMEOUTS } from '../utils/constants.js';
-import { getUserCopens, addCustomCopen, updateCustomCopen, deleteCustomCopen, toggleDefaultCopen, getCustomCopenIcon } from '../modules/copen-manager.js';
+import { getUserCopens, addCustomCopen, updateCustomCopen, deleteCustomCopen, toggleDefaultCopen, getCustomCopenIcon, saveCopenOrder } from '../modules/copen-manager.js';
 import { showToast } from '../modules/toast.js';
 import { showConfirm } from '../modules/confirm-modal.js';
 import { clearCopenCache } from '../modules/copen.js';
@@ -88,6 +88,7 @@ async function loadCopens(user) {
 
   try {
     const copens = await getUserCopens(user.uid);
+    console.log('Loaded copens:', copens);
     renderCopenList(copens);
   } catch (error) {
     console.error('Error loading copens:', error);
@@ -143,7 +144,7 @@ function renderCopenList(copens) {
   // Final drop handler on container
   const dropHandler = async (e) => {
     e.preventDefault();
-    if (draggedElement) {
+    if (draggedElement && currentUser) {
       // Get new order from DOM
       const items = Array.from(copenList.querySelectorAll('.copen-item'));
       const newOrder = items.map(item => item.dataset.copenId);
@@ -155,8 +156,15 @@ function renderCopenList(copens) {
       copens.length = 0;
       copens.push(...reordered);
       
-      clearCopenCache();
-      showToast('Copen order updated');
+      // Save order to Firestore
+      try {
+        await saveCopenOrder(currentUser.uid, reordered);
+        clearCopenCache();
+        showToast('Copen order saved');
+      } catch (error) {
+        console.error('Error saving copen order:', error);
+        showToast('Failed to save order', 'error');
+      }
     }
   };
   
@@ -216,7 +224,6 @@ function showCopenEditor(copenId = null, existingData = null) {
   const title = document.getElementById('copenEditorTitle');
   const labelInput = document.getElementById('copenLabel');
   const urlInput = document.getElementById('copenUrl');
-  const iconInput = document.getElementById('copenIcon');
 
   if (!modal) return;
 
@@ -226,12 +233,10 @@ function showCopenEditor(copenId = null, existingData = null) {
     title.textContent = 'Edit Copen Link';
     labelInput.value = existingData.label;
     urlInput.value = existingData.url;
-    iconInput.value = existingData.icon || getCustomCopenIcon();
   } else {
     title.textContent = 'Add Copen Link';
     labelInput.value = '';
     urlInput.value = '';
-    iconInput.value = getCustomCopenIcon();
   }
 
   modal.style.display = 'flex';
@@ -249,11 +254,10 @@ function hideCopenEditor() {
 async function handleSaveCopen() {
   const labelInput = document.getElementById('copenLabel');
   const urlInput = document.getElementById('copenUrl');
-  const iconInput = document.getElementById('copenIcon');
 
   const label = labelInput.value.trim();
   const url = urlInput.value.trim();
-  const icon = iconInput.value.trim() || getCustomCopenIcon();
+  const icon = getCustomCopenIcon();
 
   if (!label || !url) {
     showToast('Label and URL are required', 'warn');

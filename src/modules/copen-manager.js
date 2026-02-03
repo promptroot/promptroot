@@ -39,6 +39,7 @@ export async function getUserCopens(userId) {
     const data = doc.data();
     const customCopens = data.customCopens || [];
     const disabledDefaults = data.disabledDefaults || [];
+    const savedOrder = data.order || [];
 
     // Mark disabled defaults
     const allDefaults = DEFAULT_COPENS.map(c => ({
@@ -47,7 +48,26 @@ export async function getUserCopens(userId) {
     }));
 
     // Combine defaults with custom copens
-    const allCopens = [...allDefaults, ...customCopens];
+    let allCopens = [...allDefaults, ...customCopens];
+
+    // Apply saved order if it exists
+    if (savedOrder.length > 0) {
+      const orderedCopens = [];
+      const copenMap = new Map(allCopens.map(c => [c.id, c]));
+      
+      // Add copens in saved order
+      savedOrder.forEach(id => {
+        if (copenMap.has(id)) {
+          orderedCopens.push(copenMap.get(id));
+          copenMap.delete(id);
+        }
+      });
+      
+      // Add any new copens that weren't in the saved order
+      copenMap.forEach(copen => orderedCopens.push(copen));
+      
+      allCopens = orderedCopens;
+    }
 
     return allCopens;
   } catch (error) {
@@ -178,6 +198,34 @@ export async function toggleDefaultCopen(userId, copenId, enabled) {
     }
   } catch (error) {
     console.error('Error toggling default copen:', error);
+    throw error;
+  }
+}
+
+/**
+ * Save reordered copens
+ * @param {string} userId - User ID
+ * @param {Array} copens - All copens in desired order
+ * @returns {Promise<void>}
+ */
+export async function saveCopenOrder(userId, copens) {
+  if (!userId) throw new Error('User ID required');
+
+  const db = getDb();
+  const docRef = db.collection('userCopens').doc(userId);
+  
+  try {
+    // Separate custom copens from defaults
+    const customCopens = copens.filter(c => !c.isDefault);
+    const disabledDefaults = copens.filter(c => c.isDefault && c.disabled).map(c => c.id);
+
+    await docRef.set({
+      customCopens,
+      disabledDefaults,
+      order: copens.map(c => c.id) // Save the full order
+    }, { merge: true });
+  } catch (error) {
+    console.error('Error saving copen order:', error);
     throw error;
   }
 }

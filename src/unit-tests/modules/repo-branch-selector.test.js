@@ -327,7 +327,7 @@ describe('repo-branch-selector', () => {
             simulateMenuClick(repoItem);
 
             expect(repoSelector.onSelect).toHaveBeenCalledWith('repo1', 'main', 'Repo 1');
-            expect(mockMenu.classList.remove).toHaveBeenCalledWith('open');
+            expect(mockMenu.classList.remove).toHaveBeenCalledWith('dropdown-menu--open');
         });
 
         it('should handle favorite toggle via delegation (add favorite)', async () => {
@@ -535,7 +535,7 @@ describe('repo-branch-selector', () => {
             simulateMenuClick(branchItem);
 
             expect(branchSelector.onSelect).not.toHaveBeenCalled();
-            expect(mockMenu.classList.remove).toHaveBeenCalledWith('open');
+            expect(mockMenu.classList.remove).toHaveBeenCalledWith('dropdown-menu--open');
         });
     });
 

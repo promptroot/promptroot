@@ -51,14 +51,6 @@ export async function calculateAnalytics(startDate, endDate) {
       });
     });
 
-    console.log(`[Analytics] Query returned ${snapshot.size} documents, processing ${sessions.length} sessions`);
-    console.log('[Analytics] Date range:', { startDate, endDate });
-    
-    // Sample first few sessions to verify data
-    if (sessions.length > 0) {
-      console.log('[Analytics] Sample sessions (first 3):', allDocs.slice(0, 3));
-    }
-
     return aggregateSessionData(sessions);
   } catch (error) {
     handleError(error, { source: 'calculateAnalytics' });
@@ -78,7 +70,6 @@ function aggregateSessionData(sessions) {
     const status = session.status || 'NULL_STATUS';
     allStatuses[status] = (allStatuses[status] || 0) + 1;
   });
-  console.log('[Analytics] Raw status counts from all sessions:', allStatuses);
 
   const analytics = {
     // Core metrics

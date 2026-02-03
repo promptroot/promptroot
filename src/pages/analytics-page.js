@@ -147,14 +147,12 @@ async function loadAnalytics() {
   const notSignedInDiv = document.getElementById('analyticsNotSignedIn');
 
   try {
-    console.log('[Analytics UI] Loading analytics...');
     toggleVisibility(loadingDiv, true);
     toggleVisibility(contentDiv, false);
     toggleVisibility(notSignedInDiv, false);
 
     // Get date range
     const dateRange = getSelectedDateRange();
-    console.log('[Analytics UI] Date range:', dateRange);
     
     // Calculate analytics
     currentAnalytics = await calculateAnalytics(dateRange.start, dateRange.end);
@@ -236,17 +234,6 @@ async function renderStatusChart(analytics) {
     analytics.statusDistribution.QUEUED,
     analytics.statusDistribution.STATE_UNSPECIFIED
   ];
-
-  console.log('[Analytics UI] Rendering status chart with data:', {
-    completed: chartData[0],
-    failed: chartData[1],
-    inProgress: chartData[2],
-    paused: chartData[3],
-    awaiting: chartData[4],
-    queued: chartData[5],
-    unspecified: chartData[6],
-    total: chartData.reduce((sum, val) => sum + val, 0)
-  });
 
   const data = {
     labels: ['Completed', 'Failed', 'In Progress', 'Paused', 'Awaiting', 'Queued', 'Unspecified'],

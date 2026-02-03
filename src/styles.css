@@ -29,3 +29,6 @@
 @import url('./styles/components/update-banner.css');
 @import url('./styles/components/toast.css');
 @import url('./styles/components/utilities.css');
+
+/* Page-specific styles */
+@import url('./styles/pages/analytics.css');

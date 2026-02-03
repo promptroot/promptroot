@@ -189,7 +189,8 @@ function aggregateSessionData(sessions) {
         title: session.title || 'Untitled Session',
         reason: session.failureReason,
         step: session.failureStep,
-        prompt: session.promptPath
+        prompt: session.promptPath,
+        promptContent: session.promptContent || ''
       });
 
       if (session.failureReason) {

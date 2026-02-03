@@ -485,6 +485,27 @@ function renderFailureAnalysis(analytics) {
     sessionLink.appendChild(document.createTextNode(' View Session'));
     meta.appendChild(sessionLink);
     
+    // Separator and Prompt button
+    if (failure.promptContent) {
+      const sep2 = createElement('span', 'muted', ' • ');
+      meta.appendChild(sep2);
+      
+      // Prompt viewer button
+      const promptBtn = document.createElement('button');
+      promptBtn.className = 'pr-link pr-link--btn';
+      promptBtn.title = 'View prompt content';
+      const promptIcon = createIcon('visibility', 'icon-inline');
+      promptBtn.appendChild(promptIcon);
+      promptBtn.appendChild(document.createTextNode(' View Prompt'));
+      
+      promptBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showPromptViewer(failure.promptContent, failure.sessionId);
+      });
+      
+      meta.appendChild(promptBtn);
+    }
+    
     content.appendChild(title);
     content.appendChild(meta);
     item.appendChild(content);

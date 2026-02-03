@@ -73,6 +73,9 @@ describe('jules-modal.js', () => {
     envCancelBtn = document.createElement('button');
     envCancelBtn.id = 'julesEnvCancelBtn';
 
+    const envScheduleBtn = document.createElement('button');
+    envScheduleBtn.id = 'julesEnvScheduleBtn';
+
     // Append to body
     document.body.appendChild(modal);
     document.body.appendChild(input);
@@ -81,6 +84,7 @@ describe('jules-modal.js', () => {
     document.body.appendChild(envModal);
     document.body.appendChild(envSubmitBtn);
     document.body.appendChild(envQueueBtn);
+    document.body.appendChild(envScheduleBtn);
     document.body.appendChild(envCancelBtn);
 
     // Mock other elements required by env modal

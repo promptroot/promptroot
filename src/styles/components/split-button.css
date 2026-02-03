@@ -6,6 +6,23 @@
 }
 
 /* Shared button base styles - extends .btn styles */
+
+/* Disabled state for split buttons */
+.split-btn__action:disabled,
+.split-btn__action.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  border-color: var(--border);
+  background: linear-gradient(135deg, rgba(20,24,41,0.3), rgba(20,24,41,0.2));
+}
+
+.split-btn__toggle:disabled,
+.split-btn__toggle.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 .split-btn__action,
 .split-btn__toggle {
   appearance: none;

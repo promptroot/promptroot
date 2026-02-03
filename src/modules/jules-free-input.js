@@ -112,6 +112,7 @@ export function showFreeInputForm() {
   
   textarea.focus();
 
+  // Define validatePromptText function first as it's used in button handlers
   const validatePromptText = (customMessage = 'Please enter a prompt.') => {
     const promptText = textarea.value.trim();
     if (!promptText) {
@@ -120,6 +121,49 @@ export function showFreeInputForm() {
     }
     return promptText;
   };
+
+  // Initialize split button for copen if not already initialized
+  if (!_freeInputCopenSplitBtn && copenContainer) {
+    _freeInputCopenSplitBtn = initSplitButton({
+      container: copenContainer,
+      defaultLabel: COPEN_DEFAULT_LABEL,
+      defaultIcon: COPEN_DEFAULT_ICON,
+      options: COPEN_OPTIONS,
+      onAction: async (target) => {
+        const promptText = validatePromptText();
+        if (!promptText) return;
+        await copyAndOpen(target, promptText);
+      },
+      storageKey: COPEN_STORAGE_KEY
+    });
+  }
+
+  // Function to update button states based on textarea content
+  const updateButtonStates = () => {
+    const hasText = textarea.value.trim().length > 0;
+    
+    submitBtn.disabled = !hasText;
+    queueBtn.disabled = !hasText;
+    splitBtn.disabled = !hasText;
+    saveBtn.disabled = !hasText;
+    cancelBtn.disabled = !hasText;
+    
+    // Update copen split button state (both action and toggle buttons)
+    const copenActionBtn = copenContainer.querySelector('.split-btn__action');
+    const copenToggleBtn = copenContainer.querySelector('.split-btn__toggle');
+    if (copenActionBtn) {
+      copenActionBtn.disabled = !hasText;
+    }
+    if (copenToggleBtn) {
+      copenToggleBtn.disabled = !hasText;
+    }
+  };
+
+  // Initialize button states
+  updateButtonStates();
+
+  // Add event listener to monitor textarea changes
+  textarea.addEventListener('input', updateButtonStates);
 
   const handleSubmit = async () => {
     const promptText = validatePromptText();
@@ -147,6 +191,7 @@ export function showFreeInputForm() {
     }
 
     textarea.value = '';
+    updateButtonStates();
     textarea.focus();
 
     const { callRunJulesFunction } = await import('./jules-api.js');
@@ -271,7 +316,9 @@ export function showFreeInputForm() {
   };
 
   const handleCancel = () => {
-    hideFreeInputForm();
+    textarea.value = '';
+    updateButtonStates();
+    textarea.focus();
   };
 
   const handleSave = async () => {
@@ -355,22 +402,6 @@ export function showFreeInputForm() {
       showToast('Failed to queue prompt: ' + err.message, 'error');
     }
   };
-
-  // Initialize split button for copen if not already initialized
-  if (!_freeInputCopenSplitBtn && copenContainer) {
-    _freeInputCopenSplitBtn = initSplitButton({
-      container: copenContainer,
-      defaultLabel: COPEN_DEFAULT_LABEL,
-      defaultIcon: COPEN_DEFAULT_ICON,
-      options: COPEN_OPTIONS,
-      onAction: async (target) => {
-        const promptText = validatePromptText();
-        if (!promptText) return;
-        await copyAndOpen(target, promptText);
-      },
-      storageKey: COPEN_STORAGE_KEY
-    });
-  }
 
   submitBtn.onclick = handleSubmit;
   queueBtn.onclick = handleQueue;

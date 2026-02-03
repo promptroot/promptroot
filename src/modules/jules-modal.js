@@ -103,17 +103,30 @@ export function hideJulesKeyModal() {
 
 let envModalCleanup = null;
 
-export async function showJulesEnvModal(promptText) {
+export async function showJulesEnvModal(promptText, mode = 'submit') {
   const modal = document.getElementById('julesEnvModal');
   modal.classList.add('show');
 
   const submitBtn = document.getElementById('julesEnvSubmitBtn');
   const queueBtn = document.getElementById('julesEnvQueueBtn');
+  const scheduleBtn = document.getElementById('julesEnvScheduleBtn');
   const cancelBtn = document.getElementById('julesEnvCancelBtn');
   
-  // Initialize buttons
+  // Initialize buttons based on mode
   submitBtn.disabled = true;
   queueBtn.disabled = true;
+  scheduleBtn.disabled = true;
+  
+  // Show/hide buttons based on mode
+  if (mode === 'schedule') {
+    toggleVisibility(submitBtn, false);
+    toggleVisibility(queueBtn, false);
+    toggleVisibility(scheduleBtn, true);
+  } else {
+    toggleVisibility(submitBtn, true);
+    toggleVisibility(queueBtn, true);
+    toggleVisibility(scheduleBtn, false);
+  }
   
   let selectedSourceId = null;
   let selectedBranch = null;
@@ -139,6 +152,7 @@ export async function showJulesEnvModal(promptText) {
       selectedBranch = branch;
       submitBtn.disabled = false;
       queueBtn.disabled = false;
+      scheduleBtn.disabled = false;
       branchSelector.initialize(sourceId, branch);
     }
   });
@@ -182,18 +196,52 @@ export async function showJulesEnvModal(promptText) {
     }
   };
   
+  const handleSchedule = async () => {
+    if (!selectedSourceId || !selectedBranch) return;
+    
+    const user = getAuth()?.currentUser;
+    if (!user) {
+      showToast(JULES_MESSAGES.SIGN_IN_REQUIRED, 'warn');
+      return;
+    }
+    
+    try {
+      const { handleQueueAction, showScheduleModalForPrompt } = await import('./jules-queue.js');
+      
+      const title = extractTitleFromPrompt(promptText) || 'Scheduled Prompt';
+      const success = await handleQueueAction({
+        type: 'single',
+        prompt: promptText,
+        sourceId: selectedSourceId,
+        branch: selectedBranch,
+        note: 'Scheduled from prompt toolbar',
+        title: title
+      }, true); // silent mode
+      
+      if (success) {
+        hideJulesEnvModal();
+        // Show schedule modal for the newly added item
+        await showScheduleModalForPrompt(title);
+      }
+    } catch (err) {
+      showToast('Failed to schedule prompt: ' + err.message, 'error');
+    }
+  };
+  
   const handleCancel = () => {
     hideJulesEnvModal();
   };
 
   submitBtn.addEventListener('click', handleSubmit);
   queueBtn.addEventListener('click', handleQueue);
+  scheduleBtn.addEventListener('click', handleSchedule);
   cancelBtn.addEventListener('click', handleCancel);
 
   // Store cleanup function
   envModalCleanup = () => {
     submitBtn.removeEventListener('click', handleSubmit);
     queueBtn.removeEventListener('click', handleQueue);
+    scheduleBtn.removeEventListener('click', handleSchedule);
     cancelBtn.removeEventListener('click', handleCancel);
     envModalCleanup = null;
   };

@@ -112,7 +112,6 @@ export function showFreeInputForm() {
   
   textarea.focus();
 
-  // Define validatePromptText function first as it's used in button handlers
   const validatePromptText = (customMessage = 'Please enter a prompt.') => {
     const promptText = textarea.value.trim();
     if (!promptText) {
@@ -122,7 +121,6 @@ export function showFreeInputForm() {
     return promptText;
   };
 
-  // Initialize split button for copen if not already initialized
   if (!_freeInputCopenSplitBtn && copenContainer) {
     _freeInputCopenSplitBtn = initSplitButton({
       container: copenContainer,
@@ -138,7 +136,6 @@ export function showFreeInputForm() {
     });
   }
 
-  // Function to update button states based on textarea content
   const updateButtonStates = () => {
     const hasText = textarea.value.trim().length > 0;
     
@@ -148,7 +145,6 @@ export function showFreeInputForm() {
     saveBtn.disabled = !hasText;
     cancelBtn.disabled = !hasText;
     
-    // Update copen split button state (both action and toggle buttons)
     const copenActionBtn = copenContainer.querySelector('.split-btn__action');
     const copenToggleBtn = copenContainer.querySelector('.split-btn__toggle');
     if (copenActionBtn) {
@@ -159,10 +155,8 @@ export function showFreeInputForm() {
     }
   };
 
-  // Initialize button states
   updateButtonStates();
 
-  // Add event listener to monitor textarea changes
   textarea.addEventListener('input', updateButtonStates);
 
   const handleSubmit = async () => {

@@ -123,7 +123,9 @@ export async function getJulesSession(apiKey, sessionId) {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch session: ${response.status} ${response.statusText}`);
+    const error = new Error(`Failed to fetch session: ${response.status} ${response.statusText}`);
+    error.status = response.status;
+    throw error;
   }
 
   return await response.json();
@@ -135,7 +137,9 @@ export async function getJulesSessionActivities(apiKey, sessionId) {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch session activities: ${response.status} ${response.statusText}`);
+    const error = new Error(`Failed to fetch session activities: ${response.status} ${response.statusText}`);
+    error.status = response.status;
+    throw error;
   }
 
   return await response.json();

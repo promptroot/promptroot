@@ -113,7 +113,62 @@ exports.runJules = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError("internal", "Jules did not return a session URL");
     }
 
-    return { sessionUrl: json.url };
+    // Extract session ID from the response (need it outside the try block)
+    let sessionId = null;
+    if (json.name && typeof json.name === 'string' && json.name.includes('sessions/')) {
+      sessionId = json.name.split('sessions/')[1];
+    } else if (json.id && typeof json.id === 'string' && json.id.includes('sessions/')) {
+      sessionId = json.id.split('sessions/')[1];
+    } else if (json.id && typeof json.id === 'string') {
+      sessionId = json.id;
+    } else if (json.url && typeof json.url === 'string' && json.url.includes('sessions/')) {
+      const urlParts = json.url.split('sessions/');
+      if (urlParts[1]) {
+        sessionId = urlParts[1].split('?')[0];
+      }
+    }
+
+    // Track session in Firestore
+    try {
+      if (sessionId && context.auth && context.auth.uid) {
+        await db.doc(`juleSessions/${context.auth.uid}/sessions/${sessionId}`).set({
+          sessionId: sessionId,
+          sessionName: json.name || `sessions/${sessionId}`,
+          promptPath: (data && data.promptPath) || null,
+          promptContent: promptText,
+          sourceId: sourceId,
+          branch: branch,
+          title: (data && data.title) || 'Unnamed Session',
+          status: json.state || 'UNKNOWN',
+          hasPR: false,
+          prUrl: null,
+          prTitle: null,
+          prDescription: null,
+          hasPlan: false,
+          planStepCount: 0,
+          failureStep: null,
+          failureReason: null,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          completedAt: null,
+          lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+          queueItemId: (data && data.queueItemId) || null,
+          userId: context.auth.uid
+        });
+        console.log(`Session ${sessionId} tracked in Firestore for user ${context.auth.uid}`);
+      } else {
+        console.warn('Could not extract sessionId from Jules response:', json);
+      }
+    } catch (trackError) {
+      console.error('Failed to track session:', trackError.message);
+      // Don't fail the request if tracking fails
+    }
+
+    // Return properly formatted Jules URL
+    const sessionUrl = sessionId 
+      ? `https://jules.google.com/session/${sessionId}`
+      : json.url; // fallback to raw URL if sessionId extraction failed
+    
+    return { sessionUrl };
 
   } catch (error) {
     if (error.code && error.code.startsWith("functions/")) {
@@ -224,7 +279,62 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    res.json({ sessionUrl: json.url });
+    // Extract session ID from the response (need it outside the try block)
+    let sessionId = null;
+    if (json.name && typeof json.name === 'string' && json.name.includes('sessions/')) {
+      sessionId = json.name.split('sessions/')[1];
+    } else if (json.id && typeof json.id === 'string' && json.id.includes('sessions/')) {
+      sessionId = json.id.split('sessions/')[1];
+    } else if (json.id && typeof json.id === 'string') {
+      sessionId = json.id;
+    } else if (json.url && typeof json.url === 'string' && json.url.includes('sessions/')) {
+      const urlParts = json.url.split('sessions/');
+      if (urlParts[1]) {
+        sessionId = urlParts[1].split('?')[0];
+      }
+    }
+
+    // Track session in Firestore
+    try {
+      if (sessionId && uid) {
+        await db.collection('juleSessions').doc(uid).collection('sessions').doc(sessionId).set({
+          sessionId: sessionId,
+          sessionName: json.name || `sessions/${sessionId}`,
+          promptPath: req.body.promptPath || null,
+          promptContent: promptText,
+          sourceId: source,
+          branch: startingBranch,
+          title: req.body.title || 'Unnamed Session',
+          status: json.state || 'UNKNOWN',
+          hasPR: false,
+          prUrl: null,
+          prTitle: null,
+          prDescription: null,
+          hasPlan: false,
+          planStepCount: 0,
+          failureStep: null,
+          failureReason: null,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          completedAt: null,
+          lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+          queueItemId: req.body.queueItemId || null,
+          userId: uid
+        });
+        console.log(`Session ${sessionId} tracked in Firestore for user ${uid}`);
+      } else {
+        console.warn('Could not extract sessionId from Jules response:', json);
+      }
+    } catch (trackError) {
+      console.error('Failed to track session:', trackError.message);
+      // Don't fail the request if tracking fails
+    }
+
+    // Return properly formatted Jules URL
+    const sessionUrl = sessionId 
+      ? `https://jules.google.com/session/${sessionId}`
+      : json.url; // fallback to raw URL if sessionId extraction failed
+    
+    res.json({ sessionUrl, sessionId: sessionId || null });
 
   } catch (error) {
     console.error('Error in runJulesHttp:', error.message);

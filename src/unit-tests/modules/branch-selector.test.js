@@ -605,8 +605,8 @@ describe('branch-selector', () => {
       initBranchSelector('owner1', 'repo1', 'main');
       await loadBranches();
       
-      // Check that menu.appendChild was called (for branch items)
-      expect(mockMenu.appendChild).toHaveBeenCalled();
+      // Check that replaceChildren was called (menu is populated)
+      expect(mockMenu.replaceChildren).toHaveBeenCalled();
     });
 
     it('should clear menu innerHTML before populating', async () => {

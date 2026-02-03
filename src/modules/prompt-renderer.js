@@ -522,19 +522,13 @@ export async function selectFile(f, pushHash, owner, repo, branch) {
 
     // Warning banner
     const warningDiv = document.createElement('div');
-    warningDiv.style.padding = '12px';
-    warningDiv.style.marginBottom = '16px';
-    warningDiv.style.backgroundColor = 'rgba(243, 156, 18, 0.1)';
-    warningDiv.style.border = '1px solid var(--warn)';
-    warningDiv.style.borderRadius = '8px';
-    warningDiv.style.color = 'var(--warn)';
+    warningDiv.className = 'markdown-warning';
     warningDiv.textContent = '⚠ Markdown rendering unavailable. Displaying raw text.';
     contentEl.appendChild(warningDiv);
 
     // Raw text fallback
     const pre = document.createElement('pre');
-    pre.style.whiteSpace = 'pre-wrap';
-    pre.style.fontFamily = 'var(--font-mono)';
+    pre.className = 'markdown-fallback';
     pre.textContent = raw;
     contentEl.appendChild(pre);
   }

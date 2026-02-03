@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
   <link rel="stylesheet" href="../../src/styles.css" />
   <script src="../../src/font-init.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js" integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu" crossorigin="anonymous"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" integrity="sha384-BkEIW/B4JV9w6pRfBRgZtAcYDk5goH1nUI49rLo8s5PSHgTfgxWBczRVJx+fv5kP" crossorigin="anonymous"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js" integrity="sha384-96KlrabK9X4T/tq4duY+/4JE60jZAiSs4QVJFwmY30ETT24x2+89B7qmq7O4IETX" crossorigin="anonymous"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js" integrity="sha384-LF74FIj8PQKxRVken52qSHntBSVEC6b05H04maSVJibifVGmWz9Ajc23WjrRVSCX" crossorigin="anonymous"></script>
@@ -66,9 +66,18 @@
         
         <!-- Recent Sessions -->
         <div class="mb-md">
-          <div class="section-label"><span class="icon icon-inline" aria-hidden="true">menu_book</span> Recent Sessions</div>
-          <div class="mb-md">
-            <a href="../sessions/sessions.html" class="btn primary sm">View All Sessions</a>
+          <div class="mb-md" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="section-label"><span class="icon icon-inline" aria-hidden="true">access_time</span> Recent Sessions</div>
+            <div style="display: flex; gap: 8px;">
+              <a href="../sessions/sessions.html" class="btn primary sm">
+                <span class="icon icon-inline" aria-hidden="true">view_list</span>
+                All Sessions
+              </a>
+              <a href="../analytics/analytics.html" class="btn primary sm" title="Session analytics and insights">
+                <span class="icon icon-inline" aria-hidden="true">bar_chart</span>
+                Analytics
+              </a>
+            </div>
           </div>
           <div id="julesSessionsList" class="panel scrollable-list list-md jules-list">
             <div class="muted-text small-text">Loading sessions...</div>

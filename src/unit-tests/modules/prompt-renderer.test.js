@@ -146,7 +146,32 @@ describe('prompt-renderer', () => {
       return null;
     });
 
-    global.document.createElement.mockReturnValue(mockElement);
+    global.document.createElement.mockImplementation(() => ({
+      innerHTML: '',
+      textContent: '',
+      style: { display: 'block' },
+      classList: {
+        add: vi.fn(),
+        remove: vi.fn(),
+        contains: vi.fn().mockReturnValue(false)
+      },
+      onclick: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      appendChild: vi.fn(),
+      removeChild: vi.fn(),
+      querySelectorAll: vi.fn().mockReturnValue([]),
+      closest: vi.fn().mockReturnValue(null),
+      href: '',
+      download: '',
+      title: '',
+      removeAttribute: vi.fn(),
+      setAttribute: vi.fn(),
+      getAttribute: vi.fn(),
+      dataset: {},
+      childNodes: [],
+      focus: vi.fn()
+    }));
   });
 
   afterEach(() => {
@@ -423,11 +448,12 @@ describe('prompt-renderer', () => {
         return null;
       });
       
-      global.document.createElement.mockReturnValue({
+      global.document.createElement.mockImplementation(() => ({
         style: {},
         textContent: '',
-        appendChild: vi.fn()
-      });
+        appendChild: vi.fn(),
+        className: ''
+      }));
       
       initPromptRenderer();
       
@@ -443,8 +469,9 @@ describe('prompt-renderer', () => {
       });
     });
 
-    it('should handle markdown parsing errors', async () => {
+    it('should handle markdown parsing errors with fallback', async () => {
       const { loadMarked } = await import('../../utils/lazy-loaders.js');
+      
       loadMarked.mockReset();
       loadMarked.mockRejectedValue(new Error('Markdown parsing failed'));
 
@@ -453,11 +480,17 @@ describe('prompt-renderer', () => {
       // Get the contentEl that was set during init
       const contentEl = global.document.getElementById('content');
       
+      // Capture appended elements
+      const appendedElements = [];
+      contentEl.appendChild.mockImplementation((el) => appendedElements.push(el));
+
       // Should not throw - error is handled gracefully with fallback UI
       await expect(selectFile(mockFile, true, 'owner', 'repo', 'main')).resolves.toBeUndefined();
       
       // Verify fallback rendering was used
-      expect(contentEl.appendChild).toHaveBeenCalled();
+      expect(appendedElements.length).toBe(2);
+      expect(appendedElements[0].className).toBe('markdown-warning');
+      expect(appendedElements[1].className).toBe('markdown-fallback');
     });
 
     it('should handle DOM manipulation errors gracefully', () => {

@@ -30,6 +30,8 @@ export function openUrlInBackground(url) {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
+let keyModalCleanup = null;
+
 export function showJulesKeyModal(onSave) {
   const modal = document.getElementById('julesKeyModal');
   const input = document.getElementById('julesKeyInput');
@@ -40,6 +42,9 @@ export function showJulesKeyModal(onSave) {
 
   const saveBtn = document.getElementById('julesSaveBtn');
   const cancelBtn = document.getElementById('julesCancelBtn');
+
+  // Clean up any existing listeners
+  if (keyModalCleanup) keyModalCleanup();
 
   const handleSave = async () => {
     const apiKey = input.value.trim();
@@ -79,14 +84,24 @@ export function showJulesKeyModal(onSave) {
     hideJulesKeyModal();
   };
 
-  saveBtn.onclick = handleSave;
-  cancelBtn.onclick = handleCancel;
+  saveBtn.addEventListener('click', handleSave);
+  cancelBtn.addEventListener('click', handleCancel);
+
+  // Store cleanup function
+  keyModalCleanup = () => {
+    saveBtn.removeEventListener('click', handleSave);
+    cancelBtn.removeEventListener('click', handleCancel);
+    keyModalCleanup = null;
+  };
 }
 
 export function hideJulesKeyModal() {
   const modal = document.getElementById('julesKeyModal');
   modal.classList.remove('show');
+  if (keyModalCleanup) keyModalCleanup();
 }
+
+let envModalCleanup = null;
 
 export async function showJulesEnvModal(promptText) {
   const modal = document.getElementById('julesEnvModal');
@@ -132,7 +147,10 @@ export async function showJulesEnvModal(promptText) {
   await repoSelector.initialize();
   branchSelector.initialize(null, null);
 
-  submitBtn.onclick = () => {
+  // Clean up any existing listeners
+  if (envModalCleanup) envModalCleanup();
+
+  const handleSubmit = () => {
     if (selectedSourceId && selectedBranch) {
       const suppressPopups = document.getElementById('julesEnvSuppressPopupsCheckbox')?.checked || false;
       const openInBackground = document.getElementById('julesEnvOpenInBackgroundCheckbox')?.checked || false;
@@ -140,7 +158,7 @@ export async function showJulesEnvModal(promptText) {
     }
   };
   
-  queueBtn.onclick = async () => {
+  const handleQueue = async () => {
     if (!selectedSourceId || !selectedBranch) return;
     
     const user = getAuth()?.currentUser;
@@ -164,8 +182,20 @@ export async function showJulesEnvModal(promptText) {
     }
   };
   
-  cancelBtn.onclick = () => {
+  const handleCancel = () => {
     hideJulesEnvModal();
+  };
+
+  submitBtn.addEventListener('click', handleSubmit);
+  queueBtn.addEventListener('click', handleQueue);
+  cancelBtn.addEventListener('click', handleCancel);
+
+  // Store cleanup function
+  envModalCleanup = () => {
+    submitBtn.removeEventListener('click', handleSubmit);
+    queueBtn.removeEventListener('click', handleQueue);
+    cancelBtn.removeEventListener('click', handleCancel);
+    envModalCleanup = null;
   };
 }
 
@@ -284,6 +314,7 @@ async function handleRepoSelect(sourceId, branch, promptText, suppressPopups = f
 export function hideJulesEnvModal() {
   const modal = document.getElementById('julesEnvModal');
   modal.classList.remove('show');
+  if (envModalCleanup) envModalCleanup();
 }
 
 export async function showSubtaskErrorModal(subtaskNumber, totalSubtasks, error, hideQueueButton = false) {
@@ -320,38 +351,50 @@ export async function showSubtaskErrorModal(subtaskNumber, totalSubtasks, error,
 
     modal.classList.add('show');
 
-    const handleAction = (action) => {
-      retryBtn.onclick = null;
-      skipBtn.onclick = null;
-      cancelBtn.onclick = null;
-      closeBtn.onclick = null;
-      if (queueBtn) queueBtn.onclick = null;
+    // Define handlers for later cleanup
+    let handleRetry, handleSkip, handleCancel, handleQueue, escapeHandler, backgroundClickHandler;
 
+    const cleanup = () => {
+      if (retryBtn) retryBtn.removeEventListener('click', handleRetry);
+      if (skipBtn) skipBtn.removeEventListener('click', handleSkip);
+      if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
+      if (closeBtn) closeBtn.removeEventListener('click', handleCancel);
+      if (queueBtn) queueBtn.removeEventListener('click', handleQueue);
+
+      document.removeEventListener('keydown', escapeHandler);
+      modal.removeEventListener('click', backgroundClickHandler);
+    };
+
+    const handleAction = (action) => {
+      cleanup();
       hideSubtaskErrorModal();
 
       const shouldDelay = action === 'retry' ? retryDelayCheckbox.checked : false;
       resolve({ action, shouldDelay });
     };
 
-    retryBtn.onclick = () => handleAction('retry');
-    skipBtn.onclick = () => handleAction('skip');
-    cancelBtn.onclick = () => handleAction('cancel');
-    closeBtn.onclick = () => handleAction('cancel');
-    if (queueBtn) queueBtn.onclick = () => handleAction('queue');
+    handleRetry = () => handleAction('retry');
+    handleSkip = () => handleAction('skip');
+    handleCancel = () => handleAction('cancel');
+    handleQueue = () => handleAction('queue');
+
+    if (retryBtn) retryBtn.addEventListener('click', handleRetry);
+    if (skipBtn) skipBtn.addEventListener('click', handleSkip);
+    if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
+    if (closeBtn) closeBtn.addEventListener('click', handleCancel);
+    if (queueBtn) queueBtn.addEventListener('click', handleQueue);
     
     // Handle Escape key
-    const escapeHandler = (e) => {
+    escapeHandler = (e) => {
       if (e.key === 'Escape') {
-        document.removeEventListener('keydown', escapeHandler);
         handleAction('cancel');
       }
     };
     document.addEventListener('keydown', escapeHandler);
     
     // Handle background click
-    const backgroundClickHandler = (e) => {
+    backgroundClickHandler = (e) => {
       if (e.target === modal) {
-        modal.removeEventListener('click', backgroundClickHandler);
         handleAction('cancel');
       }
     };

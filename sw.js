@@ -67,6 +67,13 @@ const CACHE_EXCLUDE_PATTERNS = [
   /hot-update/
 ];
 
+// Assets that should use network-first strategy (frequently updated content)
+const NETWORK_FIRST_PATTERNS = [
+  /raw\.githubusercontent\.com.*\.md$/,
+  /gist\.githubusercontent\.com/,
+  /github\.com\/.*\/contents\//
+];
+
 // Install event - cache critical static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -112,6 +119,11 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
   
+  // Skip caching on localhost entirely
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    return; // Let browser handle normally
+  }
+  
   // Skip caching for excluded patterns (API calls, external auth, etc.)
   if (CACHE_EXCLUDE_PATTERNS.some(pattern => pattern.test(request.url))) {
     return; // Let browser handle normally
@@ -127,10 +139,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
+  // Use network-first for frequently updated content (markdown files, etc.)
+  if (NETWORK_FIRST_PATTERNS.some(pattern => pattern.test(request.url))) {
+    event.respondWith(networkFirstStrategy(request));
+    return;
+  }
   event.respondWith(
     cacheFirstStrategy(request)
   );
 });
+
+async function networkFirstStrategy(request) {
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse && networkResponse.status >= 200 && networkResponse.status < 300) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    throw error;
+  }
+}
 
 // Cache-first strategy: Try cache, fallback to network, then cache response
 async function cacheFirstStrategy(request) {

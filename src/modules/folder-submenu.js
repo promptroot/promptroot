@@ -1,3 +1,6 @@
+import { FOLDER_SUBMENU_TEXT } from '../utils/constants.js';
+import { ICONS, createIcon } from '../utils/icon-helpers.js';
+
 let submenuEl = null;
 let activeSubmenuHeaders = new Set();
 let currentOwner = null;
@@ -139,8 +142,8 @@ function createSubmenu() {
     return item;
   };
 
-  submenuEl.appendChild(makeMenuItem('Prompt (blank)', '<span class="icon icon-inline" aria-hidden="true">edit_note</span>', 'create-prompt'));
-  submenuEl.appendChild(makeMenuItem('Conversation (template)', '<span class="icon icon-inline" aria-hidden="true">chat_bubble</span>', 'create-conversation'));
+  submenuEl.appendChild(makeMenuItem(FOLDER_SUBMENU_TEXT.NEW_PROMPT, createIcon(ICONS.FREE_INPUT, { size: 'inline' }), FOLDER_SUBMENU_TEXT.ACTIONS.CREATE_PROMPT));
+  submenuEl.appendChild(makeMenuItem(FOLDER_SUBMENU_TEXT.NEW_CONVERSATION, createIcon(ICONS.CHAT, { size: 'inline' }), FOLDER_SUBMENU_TEXT.ACTIONS.CREATE_CONVERSATION));
 
   document.body.appendChild(submenuEl);
 }
@@ -156,23 +159,16 @@ function handleDocumentClick(event) {
 
     closeAll();
 
-    if (action === 'create-prompt') {
+    if (action === FOLDER_SUBMENU_TEXT.ACTIONS.CREATE_PROMPT) {
       const now = new Date();
       const timestamp = `${now.getFullYear().toString().slice(-2)}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}-${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
-      const newFilePath = path ? `${path}/prompt-${timestamp}.md` : `prompt-${timestamp}.md`;
+      const newFilePath = path ? `${path}/${FOLDER_SUBMENU_TEXT.NEW_PROMPT_FILENAME_PREFIX}${timestamp}.md` : `${FOLDER_SUBMENU_TEXT.NEW_PROMPT_FILENAME_PREFIX}${timestamp}.md`;
       const ghUrl = `https://github.com/${currentOwner}/${currentRepo}/new/${currentBranch}?filename=${encodeURIComponent(newFilePath)}&ref=${encodeURIComponent(currentBranch)}`;
       window.open(ghUrl, '_blank', 'noopener,noreferrer');
-    } else if (action === 'create-conversation') {
-      const template = `**Conversation Link (Codex, Jules, etc):** [https://chatgpt.com/s/...]
-
-### Prompt
-[paste your full prompt here]
-
-### Output
-[response(s), context, notes, or follow-up thoughts]
-`;
+    } else if (action === FOLDER_SUBMENU_TEXT.ACTIONS.CREATE_CONVERSATION) {
+      const template = FOLDER_SUBMENU_TEXT.CONVERSATION_TEMPLATE;
       const encoded = encodeURIComponent(template);
-      const newFilePath = path ? `${path}/new-conversation.md` : 'new-conversation.md';
+      const newFilePath = path ? `${path}/${FOLDER_SUBMENU_TEXT.NEW_CONVERSATION_FILENAME}` : FOLDER_SUBMENU_TEXT.NEW_CONVERSATION_FILENAME;
       const ghUrl = `https://github.com/${currentOwner}/${currentRepo}/new/${currentBranch}?filename=${encodeURIComponent(newFilePath)}&value=${encoded}&ref=${encodeURIComponent(currentBranch)}`;
       window.open(ghUrl, '_blank', 'noopener,noreferrer');
     }

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jules Analytics - Prompt Sharing</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="../../src/styles.css">
+  <script src="../../src/font-init.js"></script>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script type="module" src="../../src/firebase-init.js"></script>
+  <script type="module" src="../../src/sw-register.js"></script>
+</head>
+<body data-page="analytics">
+
+  <div class="wrap">
+    <main class="card pad-lg">
+      <div class="page-header mb-lg">
+        <h1 class="section-title-lg">
+          <span class="icon icon-inline" aria-hidden="true">bar_chart</span> Jules Analytics
+        </h1>
+      </div>
+
+      <!-- Not Signed In Message -->
+      <div id="analyticsNotSignedIn" class="panel text-center pad-xl hidden">
+        <div class="muted-text small-text">Please sign in to view your analytics.</div>
+      </div>
+
+      <!-- Loading Message -->
+      <div id="analyticsLoading" class="panel text-center pad-xl muted-text hidden">
+        Loading analytics...
+      </div>
+
+      <!-- Analytics Content -->
+      <div id="analyticsContent" class="hidden">
+        <!-- Toolbar with Actions -->
+        <div class="toolbar mb-md" style="justify-content: space-between;">
+          <a href="../jules/jules.html" class="btn primary sm"><span class="icon icon-inline" aria-hidden="true">arrow_back</span> Back to Jules</a>
+          <div class="toolbar-actions">
+            <button id="importHistoryBtn" class="btn primary sm" title="Import all Jules history">
+              <span class="icon icon-inline" aria-hidden="true">download</span>
+              Import History
+            </button>
+            <button id="refreshAnalyticsBtn" class="btn primary sm" title="Refresh data">
+              <span class="icon icon-inline" aria-hidden="true">refresh</span>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Time Period Filter -->
+        <div class="mb-md">
+          <label class="form-label small-text">
+            Time Period:
+            <select id="dateRangeSelect" class="form-select">
+              <option value="7">Last 7 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="365">Last year</option>
+              <option value="all">All time</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- Key Metrics Grid -->
+        <div class="analytics-metrics mb-lg">
+          <div class="metric-card">
+            <div class="metric-card__header">
+              <span class="icon metric-card__icon" aria-hidden="true">fact_check</span>
+              <span class="metric-card__label">
+                Total Sessions
+                <span class="icon icon-inline icon-sm muted" aria-hidden="true" title="Total number of Jules sessions tracked in this time period">info</span>
+              </span>
+            </div>
+            <div class="metric-card__value" id="totalSessionsValue">0</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-card__header">
+              <span class="icon metric-card__icon" aria-hidden="true">check_circle</span>
+              <span class="metric-card__label">
+                Completion Rate
+                <span class="icon icon-inline icon-sm muted" aria-hidden="true" title="Percentage of finished sessions that completed successfully">info</span>
+              </span>
+            </div>
+            <div class="metric-card__value" id="successRateValue">0.0%</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-card__header">
+              <span class="icon metric-card__icon" aria-hidden="true">merge</span>
+              <span class="metric-card__label">
+                PRs Created
+                <span class="icon icon-inline icon-sm muted" aria-hidden="true" title="Number of sessions that resulted in GitHub pull requests">info</span>
+              </span>
+            </div>
+            <div class="metric-card__value" id="prsCreatedValue">0</div>
+            <div class="metric-card__subtitle muted" id="prRateValue">0.0% of sessions</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-card__header">
+              <span class="icon metric-card__icon" aria-hidden="true">cancel</span>
+              <span class="metric-card__label">
+                Failed Sessions
+                <span class="icon icon-inline icon-sm muted" aria-hidden="true" title="Number of sessions that encountered errors and failed to complete">info</span>
+              </span>
+            </div>
+            <div class="metric-card__value" id="failedSessionsValue">0</div>
+          </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="analytics-charts-grid mb-lg">
+          <div class="analytics-chart-panel">
+            <h2 class="section-title-md mb-md">Session Status Distribution</h2>
+            <div class="chart-container">
+              <canvas id="statusChart"></canvas>
+            </div>
+          </div>
+
+          <div class="analytics-chart-panel">
+            <h2 class="section-title-md mb-md">Sessions Over Time</h2>
+            <div class="chart-container">
+              <canvas id="timelineChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Sections -->
+        <div class="analytics-sections">
+          <!-- Failure Analysis -->
+          <div class="analytics-panel mb-lg">
+            <h2 class="section-title-md mb-md">
+              <span class="icon icon-inline" aria-hidden="true">error</span>
+              Failure Analysis
+            </h2>
+            <div id="failureAnalysisContainer">
+              <p class="muted small-text text-center pad-lg">No failures recorded</p>
+            </div>
+          </div>
+
+          <!-- Repository Performance -->
+          <div class="analytics-panel mb-lg">
+            <h2 class="section-title-md mb-md">
+              <span class="icon icon-inline" aria-hidden="true">folder</span>
+              Repository Performance
+            </h2>
+            <div id="repoPerformanceContainer" class="vlist">
+              <p class="muted small-text text-center pad-lg">No data available</p>
+            </div>
+          </div>
+
+          <!-- Recent PRs -->
+          <div class="analytics-panel">
+            <h2 class="section-title-md mb-md">
+              <span class="icon icon-inline" aria-hidden="true">merge</span>
+              Recent Pull Requests
+            </h2>
+            <div id="recentPRsContainer" class="vlist">
+              <p class="muted small-text text-center pad-lg">No PRs created yet</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="statusBar" class="hidden" aria-live="polite">
+    <div class="status-inner">
+      <div class="status-msg flex-1">Ready</div>
+      <div class="status-progress hidden"></div>
+      <button class="status-action btn hidden">Action</button>
+      <button class="status-close btn-icon" title="Close" aria-label="Close">✕</button>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-nav">
+      <a href="https://github.com/promptroot/promptroot/blob/main/README.md" target="_blank" rel="noopener" class="footer-nav__item">Help</a>
+      <span class="footer-nav__sep">•</span>
+      <button id="footerFeedbackBtn" class="footer-nav__item">Feedback</button>
+      <span class="footer-nav__sep">•</span>
+      <a href="../../pages/privacy/privacy.html" class="footer-nav__item">Privacy Policy</a>
+      <span class="footer-nav__sep">•</span>
+      <a href="https://github.com/promptroot/promptroot" target="_blank" rel="noopener" class="footer-nav__item">GitHub</a>
+    </div>
+  </footer>
+
+  <script type="module" src="../../src/shared-init.js"></script>
+  <script type="module" src="../../src/pages/analytics-page.js"></script>
+</body>
+</html>

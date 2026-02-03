@@ -177,7 +177,7 @@ describe('header', () => {
       
       expect(mobileSidebar.classList.contains('open')).toBe(true);
       expect(mobileOverlay.classList.contains('show')).toBe(true);
-      expect(document.body.style.overflow).toBe('hidden');
+      expect(document.body.classList.contains('mobile-menu-open')).toBe(true);
     });
 
     it('should close mobile sidebar when close button is clicked', () => {
@@ -189,7 +189,7 @@ describe('header', () => {
       
       expect(mobileSidebar.classList.contains('open')).toBe(false);
       expect(mobileOverlay.classList.contains('show')).toBe(false);
-      expect(document.body.style.overflow).toBe('');
+      expect(document.body.classList.contains('mobile-menu-open')).toBe(false);
     });
 
     it('should close mobile sidebar when overlay is clicked', () => {
@@ -400,13 +400,13 @@ describe('header', () => {
       mobileMenuBtn.click();
       expect(mobileSidebar.classList.contains('open')).toBe(true);
       expect(mobileOverlay.classList.contains('show')).toBe(true);
-      expect(document.body.style.overflow).toBe('hidden');
+      expect(document.body.classList.contains('mobile-menu-open')).toBe(true);
       
       // Close via overlay
       mobileOverlay.click();
       expect(mobileSidebar.classList.contains('open')).toBe(false);
       expect(mobileOverlay.classList.contains('show')).toBe(false);
-      expect(document.body.style.overflow).toBe('');
+      expect(document.body.classList.contains('mobile-menu-open')).toBe(false);
     });
 
     it('should initialize all components when header loads successfully', async () => {

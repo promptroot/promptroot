@@ -13,6 +13,9 @@ import { openUrlInBackground, showSubtaskErrorModal } from './jules-modal.js';
 import { getServerTimestamp, getFieldDelete } from '../utils/firestore-helpers.js';
 import { showPromptViewer } from './prompt-viewer.js';
 
+// Global processing state
+let isProcessingQueue = false;
+
 // Service layer imports
 import {
   addToJulesQueue as serviceAddToQueue,
@@ -95,6 +98,30 @@ export async function handleQueueAction(queueItemData) {
 
 export async function addToJulesQueue(uid, queueItem) {
   return await serviceAddToQueue(uid, queueItem);
+}
+
+export async function checkAndNotifyRecentErrors() {
+  const user = getAuth()?.currentUser;
+  if (!user) return;
+  
+  try {
+    const items = await listJulesQueue(user.uid);
+    const recentErrors = items.filter(item => {
+      if (!item.lastError || !item.lastError.timestamp) return false;
+      const errorTime = item.lastError.timestamp.seconds ? item.lastError.timestamp.seconds * 1000 : item.lastError.timestamp;
+      const ageMinutes = (Date.now() - errorTime) / 60000;
+      return ageMinutes < 60; // Last hour
+    });
+    
+    if (recentErrors.length > 0) {
+      const errorCount = recentErrors.length;
+      const itemText = errorCount === 1 ? 'item' : 'items';
+      const firstError = recentErrors[0].lastError.message || 'Unknown error';
+      showToast(`${errorCount} queue ${itemText} failed recently. Last error: ${firstError}`, 'error', 8000);
+    }
+  } catch (err) {
+    console.warn('Failed to check for recent errors:', err);
+  }
 }
 
 export async function updateJulesQueueItem(uid, docId, updates) {
@@ -1118,6 +1145,24 @@ function createCardHeader(item, status) {
   const titleText = document.createTextNode(item.type === 'subtasks' ? JULES_UI_TEXT.SUBTASKS_BATCH : JULES_UI_TEXT.SINGLE_PROMPT);
   titleDiv.appendChild(titleText);
   
+  // Error badge if item has recent errors
+  if (item.lastError && item.lastError.timestamp) {
+    const errorTime = item.lastError.timestamp.seconds ? item.lastError.timestamp.seconds * 1000 : item.lastError.timestamp;
+    const ageMinutes = (Date.now() - errorTime) / 60000;
+    if (ageMinutes < 60) { // Show error badge for errors in last hour
+      const errorBadge = document.createElement('span');
+      errorBadge.className = 'queue-error-badge';
+      errorBadge.title = `Error ${Math.round(ageMinutes)}m ago: ${item.lastError.message || 'Unknown error'}`;
+      const errorIcon = document.createElement('span');
+      errorIcon.className = 'icon';
+      errorIcon.setAttribute('aria-hidden', 'true');
+      errorIcon.textContent = 'error';
+      errorBadge.appendChild(errorIcon);
+      titleDiv.appendChild(document.createTextNode(' '));
+      titleDiv.appendChild(errorBadge);
+    }
+  }
+  
   const statusSpan = document.createElement('span');
   statusSpan.className = 'queue-status';
   statusSpan.textContent = status;
@@ -1358,26 +1403,49 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
         await new Promise(r => setTimeout(r, TIMEOUTS.queueDelay));
         retry = false;
       } catch (err) {
-        const result = await showSubtaskErrorModal(i + 1, toRun.length, err, true);
+        // Save error to Firestore first
+        const errorMessage = err.message || 'Unknown error';
+        try {
+          await updateJulesQueueItem(user.uid, docId, {
+            lastError: {
+              message: errorMessage,
+              timestamp: getServerTimestamp(),
+              itemIndex: originalIndex
+            },
+            updatedAt: getServerTimestamp()
+          });
+        } catch (saveErr) {
+          console.warn('Failed to save error to Firestore:', saveErr);
+        }
         
-        if (result.action === 'retry') {
-          if (result.shouldDelay) await new Promise(r => setTimeout(r, TIMEOUTS.longDelay));
-          continue;
-        } else if (result.action === 'skip') {
+        // Try to show modal, but if page is unloading, continue gracefully
+        try {
+          const result = await showSubtaskErrorModal(i + 1, toRun.length, err, true);
+          
+          if (result.action === 'retry') {
+            if (result.shouldDelay) await new Promise(r => setTimeout(r, TIMEOUTS.longDelay));
+            continue;
+          } else if (result.action === 'skip') {
+            skippedIndices.push(originalIndex);
+            retry = false;
+          } else if (result.action === 'queue') {
+            if (successfulIndices.length > 0) {
+              await deleteSelectedSubtasks(docId, successfulIndices);
+            }
+            return { successful: successfulIndices.length, skipped: skippedIndices.length };
+          } else {
+            if (successfulIndices.length > 0) {
+              await deleteSelectedSubtasks(docId, successfulIndices);
+            }
+            const err = new Error('User cancelled');
+            err.successfulCount = successfulIndices.length;
+            throw err;
+          }
+        } catch (modalErr) {
+          // If modal fails (user navigated away), skip this subtask and continue
+          console.warn('Modal failed, continuing processing:', modalErr);
           skippedIndices.push(originalIndex);
           retry = false;
-        } else if (result.action === 'queue') {
-          if (successfulIndices.length > 0) {
-            await deleteSelectedSubtasks(docId, successfulIndices);
-          }
-          return { successful: successfulIndices.length, skipped: skippedIndices.length };
-        } else {
-          if (successfulIndices.length > 0) {
-            await deleteSelectedSubtasks(docId, successfulIndices);
-          }
-          const err = new Error('User cancelled');
-          err.successfulCount = successfulIndices.length;
-          throw err;
         }
       }
     }
@@ -1627,6 +1695,45 @@ async function runSelectedQueueItems() {
     return;
   }
 
+  // Set processing flag and add navigation prevention
+  isProcessingQueue = true;
+  
+  // Prevent page unload/navigation
+  const beforeUnloadHandler = (e) => {
+    if (isProcessingQueue) {
+      e.preventDefault();
+      e.returnValue = 'Queue processing in progress. If you leave, processing will stop.';
+      return e.returnValue;
+    }
+  };
+  window.addEventListener('beforeunload', beforeUnloadHandler);
+  
+  // Intercept internal navigation clicks
+  const clickHandler = async (e) => {
+    if (!isProcessingQueue) return;
+    
+    const link = e.target.closest('a[href]');
+    if (link && !link.target && link.href.startsWith(window.location.origin)) {
+      e.preventDefault();
+      const confirmed = await showConfirm(
+        'Queue processing is in progress. If you navigate away, processing will stop and incomplete items will remain in the queue.',
+        {
+          title: 'Queue Processing',
+          confirmText: 'Leave Anyway',
+          confirmStyle: 'warn',
+          cancelText: 'Stay on Page'
+        }
+      );
+      if (confirmed) {
+        isProcessingQueue = false;
+        window.removeEventListener('beforeunload', beforeUnloadHandler);
+        document.removeEventListener('click', clickHandler, true);
+        window.location.href = link.href;
+      }
+    }
+  };
+  document.addEventListener('click', clickHandler, true);
+
   const suppressPopups = document.getElementById('queueSuppressPopupsCheckbox')?.checked || false;
   const openInBackground = document.getElementById('queueOpenInBackgroundCheckbox')?.checked || false;
   const pauseBtn = document.getElementById('queuePauseBtn');
@@ -1691,6 +1798,9 @@ async function runSelectedQueueItems() {
         if (err.successfulCount) {
           totalSuccessful += err.successfulCount;
         }
+        isProcessingQueue = false;
+        window.removeEventListener('beforeunload', beforeUnloadHandler);
+        document.removeEventListener('click', clickHandler, true);
         showToast(JULES_MESSAGES.cancelled(totalSuccessful, totalItems), 'warn');
         statusBar.clear();
         await loadQueuePage();
@@ -1724,20 +1834,45 @@ async function runSelectedQueueItems() {
             totalSuccessful++;
             retry = false;
           } catch (singleErr) {
-            const result = await showSubtaskErrorModal(currentItemNumber, totalItems, singleErr, true);
-            if (result.action === 'retry') {
-              if (result.shouldDelay) await new Promise(r => setTimeout(r, TIMEOUTS.longDelay));
-              continue;
-            } else if (result.action === 'skip') {
+            // Save error to Firestore first
+            const errorMessage = singleErr.message || 'Unknown error';
+            try {
+              await updateJulesQueueItem(user.uid, id, {
+                lastError: {
+                  message: errorMessage,
+                  timestamp: getServerTimestamp()
+                },
+                updatedAt: getServerTimestamp()
+              });
+            } catch (saveErr) {
+              console.warn('Failed to save error to Firestore:', saveErr);
+            }
+            
+            // Try to show modal, but handle navigation gracefully
+            try {
+              const result = await showSubtaskErrorModal(currentItemNumber, totalItems, singleErr, true);
+              if (result.action === 'retry') {
+                if (result.shouldDelay) await new Promise(r => setTimeout(r, TIMEOUTS.longDelay));
+                continue;
+              } else if (result.action === 'skip') {
+                totalSkipped++;
+                retry = false;
+              } else if (result.action === 'queue') {
+                retry = false;
+              } else {
+                isProcessingQueue = false;
+                window.removeEventListener('beforeunload', beforeUnloadHandler);
+                document.removeEventListener('click', clickHandler, true);
+                showToast(JULES_MESSAGES.cancelled(totalSuccessful, totalItems), 'warn');
+                statusBar.clear();
+                await loadQueuePage();
+                return;
+              }
+            } catch (modalErr) {
+              // If modal fails (user navigated away), skip and continue
+              console.warn('Modal failed, skipping item:', modalErr);
               totalSkipped++;
               retry = false;
-            } else if (result.action === 'queue') {
-              retry = false;
-            } else {
-              showToast(JULES_MESSAGES.cancelled(totalSuccessful, totalItems), 'warn');
-              statusBar.clear();
-              await loadQueuePage();
-              return;
             }
           }
         }
@@ -1761,6 +1896,9 @@ async function runSelectedQueueItems() {
             statusBar.showMessage('Paused — progress saved', { timeout: TIMEOUTS.statusBar });
             statusBar.clearProgress();
             statusBar.clearAction();
+            isProcessingQueue = false;
+            window.removeEventListener('beforeunload', beforeUnloadHandler);
+            document.removeEventListener('click', clickHandler, true);
             await loadQueuePage();
             return;
           }
@@ -1806,12 +1944,81 @@ async function runSelectedQueueItems() {
               await new Promise(r => setTimeout(r, TIMEOUTS.queueDelay));
               subtaskRetry = false;
             } catch (err) {
-              const result = await showSubtaskErrorModal(subtaskNumber, initialCount, err, true);
+              // Save error to Firestore first
+              const errorMessage = err.message || 'Unknown error';
+              try {
+                await updateJulesQueueItem(user.uid, id, {
+                  lastError: {
+                    message: errorMessage,
+                    timestamp: getServerTimestamp(),
+                    itemIndex: subtaskNumber - 1
+                  },
+                  updatedAt: getServerTimestamp()
+                });
+              } catch (saveErr) {
+                console.warn('Failed to save error to Firestore:', saveErr);
+              }
               
-              if (result.action === 'retry') {
-                if (result.shouldDelay) await new Promise(r => setTimeout(r, TIMEOUTS.longDelay));
-                continue;
-              } else if (result.action === 'skip') {
+              // Try to show modal, but handle navigation gracefully
+              try {
+                const result = await showSubtaskErrorModal(subtaskNumber, initialCount, err, true);
+                
+                if (result.action === 'retry') {
+                  if (result.shouldDelay) await new Promise(r => setTimeout(r, TIMEOUTS.longDelay));
+                  continue;
+                } else if (result.action === 'skip') {
+                  totalSkipped++;
+                  skippedSubtasks.push(remaining.shift());
+                  try {
+                    await updateJulesQueueItem(user.uid, id, {
+                      remaining: [...skippedSubtasks, ...remaining],
+                      status: 'pending',
+                      updatedAt: getServerTimestamp()
+                    });
+                  } catch (e) {
+                    console.warn('Failed to persist remaining after skip', e);
+                  }
+                  statusBar.showMessage(JULES_MESSAGES.SKIPPED_SUBTASK, { timeout: TIMEOUTS.actionFeedback });
+                  subtaskRetry = false;
+                } else if (result.action === 'queue') {
+                  try {
+                    await updateJulesQueueItem(user.uid, id, {
+                      remaining,
+                      status: 'pending',
+                      updatedAt: getServerTimestamp()
+                    });
+                  } catch (e) {
+                    console.warn('Failed to persist queue state', e);
+                  }
+                  statusBar.showMessage('Remainder queued for later', { timeout: TIMEOUTS.statusBar });
+                  statusBar.clearProgress();
+                  statusBar.clearAction();
+                  isProcessingQueue = false;
+                  window.removeEventListener('beforeunload', beforeUnloadHandler);
+                  document.removeEventListener('click', clickHandler, true);
+                  await loadQueuePage();
+                  return;
+                } else {
+                  try {
+                    await updateJulesQueueItem(user.uid, id, {
+                      remaining,
+                      status: 'error',
+                      updatedAt: getServerTimestamp()
+                    });
+                  } catch (e) {
+                    console.warn('Failed to persist error state', e);
+                  }
+                  isProcessingQueue = false;
+                  window.removeEventListener('beforeunload', beforeUnloadHandler);
+                  document.removeEventListener('click', clickHandler, true);
+                  showToast(JULES_MESSAGES.cancelled(totalSuccessful, totalItems), 'warn');
+                  statusBar.clear();
+                  await loadQueuePage();
+                  return;
+                }
+              } catch (modalErr) {
+                // If modal fails (user navigated away), skip and continue
+                console.warn('Modal failed, skipping subtask:', modalErr);
                 totalSkipped++;
                 skippedSubtasks.push(remaining.shift());
                 try {
@@ -1823,37 +2030,7 @@ async function runSelectedQueueItems() {
                 } catch (e) {
                   console.warn('Failed to persist remaining after skip', e);
                 }
-                statusBar.showMessage(JULES_MESSAGES.SKIPPED_SUBTASK, { timeout: TIMEOUTS.actionFeedback });
                 subtaskRetry = false;
-              } else if (result.action === 'queue') {
-                try {
-                  await updateJulesQueueItem(user.uid, id, {
-                    remaining,
-                    status: 'pending',
-                    updatedAt: getServerTimestamp()
-                  });
-                } catch (e) {
-                  console.warn('Failed to persist queue state', e);
-                }
-                statusBar.showMessage('Remainder queued for later', { timeout: TIMEOUTS.statusBar });
-                statusBar.clearProgress();
-                statusBar.clearAction();
-                await loadQueuePage();
-                return;
-              } else {
-                try {
-                  await updateJulesQueueItem(user.uid, id, {
-                    remaining,
-                    status: 'error',
-                    updatedAt: getServerTimestamp()
-                  });
-                } catch (e) {
-                  console.warn('Failed to persist error state', e);
-                }
-                showToast(JULES_MESSAGES.cancelled(totalSuccessful, totalItems), 'warn');
-                statusBar.clear();
-                await loadQueuePage();
-                return;
               }
             }
           }
@@ -1882,6 +2059,9 @@ async function runSelectedQueueItems() {
         await loadQueuePage();
         return;
       }
+      isProcessingQueue = false;
+      window.removeEventListener('beforeunload', beforeUnloadHandler);
+      document.removeEventListener('click', clickHandler, true);
       handleError(err, { source: 'runSelectedQueueItems' }, { category: ErrorCategory.UNEXPECTED });
       statusBar.clearProgress();
       statusBar.clearAction();
@@ -1898,6 +2078,11 @@ async function runSelectedQueueItems() {
     showToast(JULES_MESSAGES.COMPLETED_RUNNING, 'success');
   }
   statusBar.clear();
+  
+  // Clear processing flag and remove navigation listeners
+  isProcessingQueue = false;
+  window.removeEventListener('beforeunload', beforeUnloadHandler);
+  document.removeEventListener('click', clickHandler, true);
   statusBar.clearAction();
   await loadQueuePage();
 }

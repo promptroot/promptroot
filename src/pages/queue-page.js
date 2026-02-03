@@ -5,7 +5,7 @@
 
 import { getAuth } from '../modules/firebase-service.js';
 import { initMutualExclusivity } from '../utils/checkbox-helpers.js';
-import { attachQueueHandlers, listJulesQueue, renderQueueListDirectly, subscribeToQueueUpdates } from '../modules/jules-queue.js';
+import { attachQueueHandlers, listJulesQueue, renderQueueListDirectly, subscribeToQueueUpdates, checkAndNotifyRecentErrors } from '../modules/jules-queue.js';
 import { createElement, clearElement, waitForDOMReady, waitForHeader } from '../utils/dom-helpers.js';
 import { handleError } from '../utils/error-handler.js';
 import { clearCache, CACHE_KEYS } from '../utils/session-cache.js';
@@ -89,6 +89,9 @@ async function loadQueue() {
     const items = await listJulesQueue(user.uid);
     renderQueueListDirectly(items);
     attachQueueHandlers();
+    
+    // Check for recent errors and notify user
+    await checkAndNotifyRecentErrors();
     
     queueUnsubscribe = subscribeToQueueUpdates(user.uid, (updatedItems) => {
       const hasModalOpen = document.querySelector('.modal-overlay.show');

@@ -28,8 +28,13 @@ export function validateBranch(branch) {
     return false;
   }
 
-  // Allowlist: alphanumeric, -, _, /
-  const validBranchRegex = /^[-a-zA-Z0-9_\/]+$/;
+  // Reject path traversal and double dots
+  if (branch.includes('..')) {
+    return false;
+  }
+
+  // Allowlist: alphanumeric, -, _, /, .
+  const validBranchRegex = /^[-a-zA-Z0-9_\/.]+$/;
   return validBranchRegex.test(branch);
 }
 

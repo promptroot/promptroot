@@ -40,17 +40,19 @@ describe('validation.js', () => {
           expect(validateBranch('main')).toBe(true);
           expect(validateBranch('feature/branch')).toBe(true);
           expect(validateBranch('user-name/branch_name')).toBe(true);
+          expect(validateBranch('feature/v1.0')).toBe(true);
+          expect(validateBranch('release/2.1.3')).toBe(true);
+          expect(validateBranch('user.name/branch')).toBe(true);
       });
 
       it('should invalidate incorrect branch characters', () => {
-          expect(validateBranch('branch.name')).toBe(false); // dot not allowed by strict allowlist
           expect(validateBranch('branch$name')).toBe(false);
           expect(validateBranch('branch~name')).toBe(false);
           expect(validateBranch('branch with spaces')).toBe(false);
       });
 
       it('should invalidate path traversal sequences', () => {
-          expect(validateBranch('../parent')).toBe(false); // dot not allowed
+          expect(validateBranch('../parent')).toBe(false);
           expect(validateBranch('..')).toBe(false);
       });
   });

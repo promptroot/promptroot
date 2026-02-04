@@ -72,7 +72,7 @@ export async function handleFreeInputAfterAuth() {
   }
 }
 
-export function showFreeInputForm() {
+export async function showFreeInputForm() {
   const freeInputSection = document.getElementById('freeInputSection');
   const empty = document.getElementById('empty');
   const title = document.getElementById('title');
@@ -134,11 +134,12 @@ export function showFreeInputForm() {
   };
 
   if (!_freeInputCopenSplitBtn && copenContainer) {
+    const options = await getCopenOptions();
     _freeInputCopenSplitBtn = initSplitButton({
       container: copenContainer,
       defaultLabel: COPEN_DEFAULT_LABEL,
       defaultIcon: COPEN_DEFAULT_ICON,
-      options: COPEN_OPTIONS,
+      options: options,
       onAction: async (target) => {
         const promptText = validatePromptText();
         if (!promptText) return;
@@ -161,15 +162,31 @@ export function showFreeInputForm() {
     const copenToggleBtn = copenContainer.querySelector('.split-btn__toggle');
     if (copenActionBtn) {
       copenActionBtn.disabled = !hasText;
+      console.log('[Copen Action] disabled:', copenActionBtn.disabled, 'classList:', copenActionBtn.classList.toString(), 'computed style pointer-events:', window.getComputedStyle(copenActionBtn).pointerEvents);
     }
     if (copenToggleBtn) {
       copenToggleBtn.disabled = !hasText;
+      console.log('[Copen Toggle] disabled:', copenToggleBtn.disabled, 'classList:', copenToggleBtn.classList.toString(), 'computed style pointer-events:', window.getComputedStyle(copenToggleBtn).pointerEvents);
     }
   };
 
   updateButtonStates();
 
   textarea.addEventListener('input', updateButtonStates);
+
+  // Add hover logging to debug disabled hover issue
+  const copenActionBtn = copenContainer.querySelector('.split-btn__action');
+  const copenToggleBtn = copenContainer.querySelector('.split-btn__toggle');
+  if (copenActionBtn) {
+    copenActionBtn.addEventListener('mouseenter', () => {
+      console.log('[Copen Action MOUSEENTER] disabled:', copenActionBtn.disabled, 'pointer-events:', window.getComputedStyle(copenActionBtn).pointerEvents);
+    });
+  }
+  if (copenToggleBtn) {
+    copenToggleBtn.addEventListener('mouseenter', () => {
+      console.log('[Copen Toggle MOUSEENTER] disabled:', copenToggleBtn.disabled, 'pointer-events:', window.getComputedStyle(copenToggleBtn).pointerEvents);
+    });
+  }
 
   const handleSubmit = async () => {
     const promptText = validatePromptText();

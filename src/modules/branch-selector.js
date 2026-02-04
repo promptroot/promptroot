@@ -22,7 +22,7 @@ let searchClearBtn = null;
 let currentSearchTerm = '';
 let cachedFuseInstance = null;
 
-export function initBranchSelector(owner, repo, branch) {
+export async function initBranchSelector(owner, repo, branch) {
   branchSelect = document.getElementById('branchSelect');
   branchDropdownBtn = document.getElementById('branchDropdownBtn');
   branchDropdownMenu = document.getElementById('branchDropdownMenu');
@@ -33,7 +33,7 @@ export function initBranchSelector(owner, repo, branch) {
   currentBranch = savedBranch || branch;
 
   // Load favorites from Firestore
-  loadFavoriteBranches();
+  await loadFavoriteBranches();
 
   if (branchSelect) {
     branchSelect.addEventListener('change', handleBranchChange);

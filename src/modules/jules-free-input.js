@@ -121,6 +121,44 @@ export function showFreeInputForm() {
     return promptText;
   };
 
+  if (!_freeInputCopenSplitBtn && copenContainer) {
+    _freeInputCopenSplitBtn = initSplitButton({
+      container: copenContainer,
+      defaultLabel: COPEN_DEFAULT_LABEL,
+      defaultIcon: COPEN_DEFAULT_ICON,
+      options: COPEN_OPTIONS,
+      onAction: async (target) => {
+        const promptText = validatePromptText();
+        if (!promptText) return;
+        await copyAndOpen(target, promptText);
+      },
+      storageKey: COPEN_STORAGE_KEY
+    });
+  }
+
+  const updateButtonStates = () => {
+    const hasText = textarea.value.trim().length > 0;
+    
+    submitBtn.disabled = !hasText;
+    queueBtn.disabled = !hasText;
+    splitBtn.disabled = !hasText;
+    saveBtn.disabled = !hasText;
+    cancelBtn.disabled = !hasText;
+    
+    const copenActionBtn = copenContainer.querySelector('.split-btn__action');
+    const copenToggleBtn = copenContainer.querySelector('.split-btn__toggle');
+    if (copenActionBtn) {
+      copenActionBtn.disabled = !hasText;
+    }
+    if (copenToggleBtn) {
+      copenToggleBtn.disabled = !hasText;
+    }
+  };
+
+  updateButtonStates();
+
+  textarea.addEventListener('input', updateButtonStates);
+
   const handleSubmit = async () => {
     const promptText = validatePromptText();
     if (!promptText) return;
@@ -147,6 +185,7 @@ export function showFreeInputForm() {
     }
 
     textarea.value = '';
+    updateButtonStates();
     textarea.focus();
 
     const { callRunJulesFunction } = await import('./jules-api.js');
@@ -271,7 +310,9 @@ export function showFreeInputForm() {
   };
 
   const handleCancel = () => {
-    hideFreeInputForm();
+    textarea.value = '';
+    updateButtonStates();
+    textarea.focus();
   };
 
   const handleSave = async () => {
@@ -355,22 +396,6 @@ export function showFreeInputForm() {
       showToast('Failed to queue prompt: ' + err.message, 'error');
     }
   };
-
-  // Initialize split button for copen if not already initialized
-  if (!_freeInputCopenSplitBtn && copenContainer) {
-    _freeInputCopenSplitBtn = initSplitButton({
-      container: copenContainer,
-      defaultLabel: COPEN_DEFAULT_LABEL,
-      defaultIcon: COPEN_DEFAULT_ICON,
-      options: COPEN_OPTIONS,
-      onAction: async (target) => {
-        const promptText = validatePromptText();
-        if (!promptText) return;
-        await copyAndOpen(target, promptText);
-      },
-      storageKey: COPEN_STORAGE_KEY
-    });
-  }
 
   submitBtn.onclick = handleSubmit;
   queueBtn.onclick = handleQueue;

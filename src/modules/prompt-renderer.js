@@ -87,6 +87,7 @@ let shareBtn = null;
 let julesBtn = null;
 let freeInputBtn = null;
 let queueBtn = null;
+let scheduleBtn = null;
 let moreBtn = null;
 
 export function initPromptRenderer() {
@@ -116,6 +117,7 @@ export function initPromptRenderer() {
   julesBtn = document.getElementById('julesBtn');
   freeInputBtn = document.getElementById('freeInputBtn');
   queueBtn = document.getElementById('queueBtn');
+  scheduleBtn = document.getElementById('scheduleBtn');
   moreBtn = document.getElementById('moreBtn');
 
   document.addEventListener('click', handleDocumentClick);
@@ -195,6 +197,25 @@ function handleDocumentClick(event) {
       } catch (err) {
         console.error('Failed to add prompt to queue:', err);
         showToast('Failed to add prompt to queue', 'error');
+      }
+    })();
+    return;
+  }
+
+  if (target === scheduleBtn) {
+    if (!currentFile || !currentPromptText || !currentOwner || !currentRepo || !currentBranch) {
+      showToast('No prompt selected to schedule', 'warn');
+      return;
+    }
+    
+    (async () => {
+      try {
+        const { showJulesEnvModal } = await import('./jules-modal.js');
+        // Show repo/branch selection modal in schedule mode
+        await showJulesEnvModal(currentPromptText, 'schedule');
+      } catch (err) {
+        console.error('Failed to show schedule modal:', err);
+        showToast('Failed to show schedule options', 'error');
       }
     })();
     return;

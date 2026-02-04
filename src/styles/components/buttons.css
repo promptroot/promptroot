@@ -21,6 +21,15 @@
   transform: translateY(1px);
 }
 
+.btn:disabled,
+.btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  border-color: var(--border);
+  background: linear-gradient(135deg, rgba(20,24,41,0.3), rgba(20,24,41,0.2));
+}
+
 /* Icon-only button variant - inherits from .btn */
 .btn-icon {
   appearance: none;
@@ -45,6 +54,15 @@
 
 .btn-icon:active {
   transform: translateY(1px);
+}
+
+.btn-icon:disabled,
+.btn-icon.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  border-color: var(--border);
+  background: linear-gradient(135deg, rgba(20,24,41,0.3), rgba(20,24,41,0.2));
 }
 
 /* Primary emphasis variant */

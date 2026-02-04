@@ -353,6 +353,8 @@ async function filterAndRenderBranches() {
       const showMoreBtn = document.createElement('div');
       showMoreBtn.className = 'dropdown-show-more';
       showMoreBtn.textContent = favBranches.length > 0 ? '▼ Show more branches...' : '▼ Show all branches...';
+      showMoreBtn.setAttribute('role', 'button');
+      showMoreBtn.setAttribute('tabindex', '-1');
       
       showMoreBtn.onclick = () => {
         showMoreBtn.classList.add('hidden');
@@ -458,7 +460,14 @@ function createBranchItem(branchName, isSelected, onClickItem, onClickStar) {
   
   const item = document.createElement('div');
   item.className = 'dropdown-item-with-star';
-  if (isSelected) item.classList.add('selected');
+  item.setAttribute('role', 'option');
+  item.setAttribute('tabindex', '-1');
+  if (isSelected) {
+    item.classList.add('selected');
+    item.setAttribute('aria-selected', 'true');
+  } else {
+    item.setAttribute('aria-selected', 'false');
+  }
   
   const star = document.createElement('span');
   star.className = 'icon icon-inline star-icon';
@@ -594,7 +603,6 @@ export async function loadBranches() {
     allBranches = branches;
     allBranchesLoaded = true;
     cachedFuseInstance = null; // Clear Fuse cache when branches change
-    cachedFuseInstance = null; // Clear Fuse cache when branches change
 
     const mainBranches = [];
     const userBranchesArr = [];
@@ -697,7 +705,6 @@ async function populateCustomDropdownMenu(branches) {
   searchInput = null;
   searchClearBtn = null;
   cachedFuseInstance = null;
-  cachedFuseInstance = null;
   
   // Add search input at the top
   const searchElement = createSearchInput();
@@ -765,6 +772,8 @@ async function populateCustomDropdownMenu(branches) {
     const showMoreBtn = document.createElement('div');
     showMoreBtn.className = 'dropdown-show-more';
     showMoreBtn.textContent = favBranches.length > 0 ? '▼ Show more branches...' : '▼ Show all branches...';
+    showMoreBtn.setAttribute('role', 'button');
+    showMoreBtn.setAttribute('tabindex', '-1');
     
     showMoreBtn.onclick = () => {
       showMoreBtn.classList.add('hidden');

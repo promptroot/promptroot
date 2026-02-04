@@ -6,7 +6,7 @@
 import { waitForFirebase } from '../shared-init.js';
 import { getAuth } from '../modules/firebase-service.js';
 import { TIMEOUTS } from '../utils/constants.js';
-import { getUserCopens, addCustomCopen, updateCustomCopen, deleteCustomCopen, toggleDefaultCopen, getCustomCopenIcon, saveCopenOrder } from '../modules/copen-manager.js';
+import { getUserCopens, addCustomCopen, updateCustomCopen, deleteCustomCopen, toggleDefaultCopen, getCustomCopenIcon, saveCopenOrder, resetToDefaultCopens } from '../modules/copen-manager.js';
 import { showToast } from '../modules/toast.js';
 import { showConfirm } from '../modules/confirm-modal.js';
 import { clearCopenCache } from '../modules/copen.js';
@@ -352,6 +352,32 @@ function handleSelectAllCopens(checked) {
   });
 }
 
+async function handleResetToDefaultCopens() {
+  if (!currentUser) return;
+
+  const confirmed = await showConfirm(
+    'This will remove all custom copen links and re-enable all default copens. This action cannot be undone.',
+    {
+      title: 'Reset to Default Copens',
+      confirmText: 'Reset',
+      confirmClass: 'warn'
+    }
+  );
+
+  if (!confirmed) return;
+
+  try {
+    await resetToDefaultCopens(currentUser.uid);
+    clearCopenCache();
+    window.dispatchEvent(new CustomEvent('copensChanged'));
+    showToast('Reset to default copens', 'success');
+    await loadCopens(currentUser);
+  } catch (error) {
+    console.error('Error resetting to defaults:', error);
+    showToast('Failed to reset copens', 'error');
+  }
+}
+
 async function handleToggleCopen(copenId, currentlyEnabled) {
   if (!currentUser) return;
 
@@ -407,6 +433,11 @@ async function initApp() {
 
     if (copenDeleteBtn) {
       copenDeleteBtn.addEventListener('click', handleDeleteSelectedCopens);
+    }
+    
+    const copenResetBtn = document.getElementById('copenResetBtn');
+    if (copenResetBtn) {
+      copenResetBtn.addEventListener('click', handleResetToDefaultCopens);
     }
 
     if (copenEditorSave) {

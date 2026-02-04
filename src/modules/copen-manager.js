@@ -231,6 +231,29 @@ export async function saveCopenOrder(userId, copens) {
 }
 
 /**
+ * Reset to default copens (remove all custom copens and enable all defaults)
+ * @param {string} userId - User ID
+ * @returns {Promise<void>}
+ */
+export async function resetToDefaultCopens(userId) {
+  if (!userId) throw new Error('User ID required');
+
+  const db = getDb();
+  const docRef = db.collection('userCopens').doc(userId);
+  
+  try {
+    await docRef.set({
+      customCopens: [],
+      disabledDefaults: [],
+      order: DEFAULT_COPENS.map(c => c.id)
+    }, { merge: true });
+  } catch (error) {
+    console.error('Error resetting to default copens:', error);
+    throw error;
+  }
+}
+
+/**
  * Get icon for custom copens
  * @returns {string} Material icon name
  */

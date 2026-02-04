@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.gstatic.com; connect-src 'self' https://api.github.com https://jules.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://runjuleshttp-fjbc67s6eq-uc.a.run.app https://raw.githubusercontent.com https://gist.githubusercontent.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com; frame-src 'self' https://*.firebaseapp.com; connect-src 'self' https://api.github.com https://jules.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://runjuleshttp-fjbc67s6eq-uc.a.run.app https://raw.githubusercontent.com https://gist.githubusercontent.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com" />
   <title>PromptRoot</title>
   <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
   
@@ -126,6 +126,7 @@
         </div>
         <button class="btn" id="julesBtn" title="Try this prompt in Jules"><span class="icon icon-inline" aria-hidden="true">smart_toy</span> Try in Jules</button>
         <button class="btn" id="queueBtn" title="Add this prompt to queue"><span class="icon icon-inline" aria-hidden="true">list_alt</span> Queue</button>
+        <button class="btn" id="scheduleBtn" title="Schedule this prompt"><span class="icon icon-inline" aria-hidden="true">schedule</span> Schedule</button>
         <button class="btn" id="shareBtn" title="Copy a link to this prompt"><span class="icon icon-inline" aria-hidden="true">link</span> Copy link</button>
         <div class="menu-anchor">
           <button class="btn" id="moreBtn" title="More actions">⋯ More</button>
@@ -198,6 +199,7 @@
       <div class="modal-buttons">
         <button id="julesEnvCancelBtn" class="btn">Cancel</button>
         <button id="julesEnvQueueBtn" class="btn" disabled>Queue</button>
+        <button id="julesEnvScheduleBtn" class="btn" disabled>Schedule</button>
         <button id="julesEnvSubmitBtn" class="btn primary" disabled>Submit</button>
       </div>
     </div>
@@ -252,6 +254,9 @@
       <button class="status-close btn-icon" title="Close" aria-label="Close">✕</button>
     </div>
   </div>
+
+  <!-- Schedule Modal Container (reused for stored prompts) -->
+  <div id="scheduleQueueModalContainer"></div>
 
   <footer>
     <div class="footer-nav">

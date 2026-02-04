@@ -215,6 +215,8 @@ function rebuildMenu(menu, options) {
   options.forEach(option => {
     const item = createElement('div', CLASSES.MENU_ITEM);
     item.dataset.value = option.value;
+    item.setAttribute('role', 'menuitem');
+    item.setAttribute('tabindex', '-1');
     
     if (option.icon) {
       item.appendChild(createIcon(option.icon, 'icon-inline'));

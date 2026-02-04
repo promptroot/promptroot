@@ -77,7 +77,7 @@ function getSelectedQueueIds() {
   return { queueSelections, subtaskSelections };
 }
 
-export async function handleQueueAction(queueItemData) {
+export async function handleQueueAction(queueItemData, silent = false) {
   const user = getAuth()?.currentUser;
   if (!user) {
     handleError(JULES_MESSAGES.SIGN_IN_REQUIRED, { source: 'handleQueueAction' }, { category: ErrorCategory.AUTH, toastType: 'warn' });
@@ -85,7 +85,9 @@ export async function handleQueueAction(queueItemData) {
   }
   try {
     await addToJulesQueue(user.uid, queueItemData);
-    showToast(JULES_MESSAGES.QUEUED, 'success');
+    if (!silent) {
+      showToast(JULES_MESSAGES.QUEUED, 'success');
+    }
     return true;
   } catch (err) {
     handleError(err, { source: 'handleQueueAction' });
@@ -896,6 +898,61 @@ async function showScheduleModal() {
   newModal.show();
 }
 
+export async function showScheduleModalForPrompt(promptTitle) {
+  const user = getAuth()?.currentUser;
+  if (!user) {
+    handleError(JULES_MESSAGES.SIGN_IN_REQUIRED, { source: 'showScheduleModalForPrompt' }, { category: ErrorCategory.AUTH, toastType: 'warn' });
+    return;
+  }
+  
+  // Find the most recently added queue item with matching title
+  const items = await listJulesQueue(user.uid);
+  const matchingItem = items
+    .filter(item => item.title === promptTitle)
+    .sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toMillis?.() || 0;
+      return bTime - aTime; // Most recent first
+    })[0];
+  
+  if (!matchingItem) {
+    handleError('Could not find queue item to schedule', { source: 'showScheduleModalForPrompt' }, { category: ErrorCategory.VALIDATION, toastType: 'error' });
+    return;
+  }
+  
+  const userTimeZone = await serviceGetUserTimeZone(user.uid);
+  
+  const existingModal = getActiveScheduleModal();
+  if (existingModal) {
+    existingModal.destroy();
+    setActiveScheduleModal(null);
+  }
+
+  await loadScheduleModal();
+
+  const modalElement = document.getElementById('scheduleQueueModal');
+  if (!modalElement) {
+    console.error('Failed to load schedule modal');
+    return;
+  }
+  
+  const newModal = createModal({
+    element: modalElement,
+    closeOnBackdropClick: false,
+    onDestroy: () => { 
+      setActiveScheduleModal(null);
+    }
+  });
+  
+  setActiveScheduleModal(newModal);
+
+  populateTimeZoneDropdown(userTimeZone);
+  initializeScheduleModalInputs();
+  attachScheduleModalHandlersForPrompt(matchingItem.id);
+  
+  newModal.show();
+}
+
 async function loadScheduleModal() {
   const container = document.getElementById('scheduleQueueModalContainer');
   if (!container) {
@@ -1006,6 +1063,24 @@ function attachScheduleModalHandlers() {
   });
 }
 
+function attachScheduleModalHandlersForPrompt(itemId) {
+  const activeModal = getActiveScheduleModal();
+  if (!activeModal) return;
+  
+  const modal = activeModal.element;
+  const closeBtn = document.getElementById('closeScheduleModal');
+  const cancelBtn = document.getElementById('cancelSchedule');
+  const confirmBtn = document.getElementById('confirmSchedule');
+  
+  if (closeBtn) activeModal.addListener(closeBtn, 'click', hideScheduleModal);
+  if (cancelBtn) activeModal.addListener(cancelBtn, 'click', hideScheduleModal);
+  if (confirmBtn) activeModal.addListener(confirmBtn, 'click', () => confirmScheduleItemById(itemId));
+  
+  activeModal.addListener(modal, 'click', (e) => {
+    if (e.target === modal) hideScheduleModal();
+  });
+}
+
 function hideScheduleModal() {
   const activeModal = getActiveScheduleModal();
   if (activeModal) {
@@ -1084,6 +1159,73 @@ async function confirmScheduleItems() {
   } catch (err) {
     const errorInfo = handleError(err, { source: 'confirmScheduleItems' }, { showDisplay: false });
     errorDiv.textContent = `Failed to schedule items: ${errorInfo.message}`;
+    errorDiv.classList.remove('hidden');
+  }
+}
+
+async function confirmScheduleItemById(itemId) {
+  const user = getAuth()?.currentUser;
+  if (!user) return;
+  
+  const dateInput = document.getElementById('scheduleDate');
+  const timeInput = document.getElementById('scheduleTime');
+  const timeZoneSelect = document.getElementById('scheduleTimeZone');
+  const retryCheckbox = document.getElementById('scheduleRetryOnFailure');
+  const errorDiv = document.getElementById('scheduleError');
+  
+  errorDiv.classList.add('hidden');
+  errorDiv.textContent = '';
+  
+  if (!dateInput.value || !timeInput.value) {
+    errorDiv.textContent = 'Date and time are required';
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  const selectedDate = dateInput.value;
+  const selectedTime = timeInput.value;
+  const selectedTimeZone = timeZoneSelect.value;
+  
+  const dateTimeStr = `${selectedDate}T${selectedTime}:00`;
+  const scheduledDate = parseDateInTimeZone(dateTimeStr, selectedTimeZone);
+  
+  const validation = validateSchedule(scheduledDate);
+  if (!validation.valid) {
+    errorDiv.textContent = validation.error;
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  await serviceSaveUserTimeZone(user.uid, selectedTimeZone);
+  
+  try {
+    const scheduledAt = firebase.firestore.Timestamp.fromDate(scheduledDate);
+    const retryOnFailure = retryCheckbox ? retryCheckbox.checked : false;
+    
+    await updateJulesQueueItem(user.uid, itemId, {
+      status: 'scheduled',
+      scheduledAt: scheduledAt,
+      scheduledTimeZone: selectedTimeZone,
+      retryOnFailure: retryOnFailure,
+      retryCount: 0,
+      updatedAt: getServerTimestamp()
+    });
+    
+    const formattedScheduledAt = new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: selectedTimeZone,
+      timeZoneName: 'short'
+    }).format(scheduledDate);
+    
+    showToast(`Scheduled prompt for ${formattedScheduledAt}`, 'success');
+    hideScheduleModal();
+  } catch (err) {
+    const errorInfo = handleError(err, { source: 'confirmScheduleItemById' }, { showDisplay: false });
+    errorDiv.textContent = `Failed to schedule prompt: ${errorInfo.message}`;
     errorDiv.classList.remove('hidden');
   }
 }

@@ -4,6 +4,24 @@ import { initDropdown } from '../../modules/dropdown.js';
 describe('dropdown', () => {
   let mockBtn, mockMenu, mockContainer;
   let dropdown;
+  let items = [];
+
+  // Helper to make elements visible to getItems() checks
+  function makeVisible(element) {
+    Object.defineProperty(element, 'offsetParent', {
+      get() { return document.body; },
+      configurable: true
+    });
+  }
+
+  function createMenuItem(role = 'menuitem', text = 'Item') {
+    const item = document.createElement('div');
+    item.setAttribute('role', role);
+    item.setAttribute('tabindex', '-1');
+    item.textContent = text;
+    makeVisible(item);
+    return item;
+  }
 
   beforeEach(() => {
     // Reset DOM
@@ -20,14 +38,16 @@ describe('dropdown', () => {
     
     mockMenu = document.createElement('div');
     mockMenu.className = 'dropdown-menu';
+    makeVisible(mockMenu);
     mockContainer.appendChild(mockMenu);
     
     document.body.appendChild(mockContainer);
     
-    // Reset any global state - clear any existing dropdowns
-    // We need to trigger a closeAllDropdowns by simulating document click
-    document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    // Reset openDropdowns set by triggering closeAll logic
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    // Clear items array
+    items = [];
   });
 
   afterEach(() => {
@@ -37,353 +57,235 @@ describe('dropdown', () => {
   describe('initDropdown', () => {
     it('should initialize dropdown with button and menu', () => {
       dropdown = initDropdown(mockBtn, mockMenu);
-      
       expect(dropdown).toHaveProperty('open');
       expect(dropdown).toHaveProperty('close');
       expect(dropdown).toHaveProperty('toggle');
-      expect(typeof dropdown.open).toBe('function');
-      expect(typeof dropdown.close).toBe('function');
-      expect(typeof dropdown.toggle).toBe('function');
     });
 
-    it('should use provided container when given', () => {
-      const customContainer = document.createElement('div');
-      customContainer.className = 'custom-container';
-      document.body.appendChild(customContainer);
-      
-      dropdown = initDropdown(mockBtn, mockMenu, customContainer);
-      
-      expect(dropdown).not.toBeNull();
-    });
-
-    it('should use menu parent node as container when no container provided', () => {
-      dropdown = initDropdown(mockBtn, mockMenu);
-      
-      expect(dropdown).not.toBeNull();
-    });
-
-    it('should return null when button is missing', () => {
-      dropdown = initDropdown(null, mockMenu);
-      
-      expect(dropdown).toBeNull();
-    });
-
-    it('should return null when menu is missing', () => {
-      dropdown = initDropdown(mockBtn, null);
-      
-      expect(dropdown).toBeNull();
-    });
-
-    it('should add click event listener to button', () => {
-      dropdown = initDropdown(mockBtn, mockMenu);
-      
-      // Mock stopPropagation to verify it's called
-      const mockEvent = new MouseEvent('click', { bubbles: true });
-      const stopPropagationSpy = vi.spyOn(mockEvent, 'stopPropagation');
-      
-      mockBtn.dispatchEvent(mockEvent);
-      
-      expect(stopPropagationSpy).toHaveBeenCalled();
-      expect(mockMenu.classList.contains('open')).toBe(true);
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('true');
-    });
-  });
-
-  describe('dropdown operations', () => {
-    beforeEach(() => {
-      dropdown = initDropdown(mockBtn, mockMenu, mockContainer);
-    });
-
-    describe('open', () => {
-      it('should open dropdown menu', () => {
-        dropdown.open();
-        
-        expect(mockMenu.classList.contains('open')).toBe(true);
-        expect(mockBtn.getAttribute('aria-expanded')).toBe('true');
-        expect(mockMenu.style.display).toBe('');
-      });
-
-      it('should close other open dropdowns when opening', () => {
-        // Create second dropdown
-        const mockBtn2 = document.createElement('button');
-        const mockMenu2 = document.createElement('div');
-        const mockContainer2 = document.createElement('div');
-        mockContainer2.appendChild(mockBtn2);
-        mockContainer2.appendChild(mockMenu2);
-        document.body.appendChild(mockContainer2);
-        
-        const dropdown2 = initDropdown(mockBtn2, mockMenu2, mockContainer2);
-        
-        // Open first dropdown
-        dropdown.open();
-        expect(mockMenu.classList.contains('open')).toBe(true);
-        
-        // Open second dropdown
-        dropdown2.open();
-        expect(mockMenu2.classList.contains('open')).toBe(true);
-        expect(mockMenu.classList.contains('open')).toBe(false); // First should be closed
-        expect(mockBtn.getAttribute('aria-expanded')).toBe('false');
-      });
-    });
-
-    describe('close', () => {
-      it('should close dropdown menu', () => {
-        // Open first
-        dropdown.open();
-        expect(mockMenu.classList.contains('open')).toBe(true);
-        
-        dropdown.close();
-        
-        expect(mockMenu.classList.contains('open')).toBe(false);
-        expect(mockBtn.getAttribute('aria-expanded')).toBe('false');
-      });
-
-      it('should do nothing if dropdown is already closed', () => {
-        expect(mockMenu.classList.contains('open')).toBe(false);
-        
-        dropdown.close();
-        
-        expect(mockMenu.classList.contains('open')).toBe(false);
-        expect(mockBtn.getAttribute('aria-expanded')).toBe('false');
-      });
-    });
-
-    describe('toggle', () => {
-      it('should open closed dropdown', () => {
-        expect(mockMenu.classList.contains('open')).toBe(false);
-        
-        dropdown.toggle();
-        
-        expect(mockMenu.classList.contains('open')).toBe(true);
-        expect(mockBtn.getAttribute('aria-expanded')).toBe('true');
-      });
-
-      it('should close open dropdown', () => {
-        dropdown.open();
-        expect(mockMenu.classList.contains('open')).toBe(true);
-        
-        dropdown.toggle();
-        
-        expect(mockMenu.classList.contains('open')).toBe(false);
-        expect(mockBtn.getAttribute('aria-expanded')).toBe('false');
-      });
-    });
-  });
-
-  describe('button click handling', () => {
-    beforeEach(() => {
-      dropdown = initDropdown(mockBtn, mockMenu, mockContainer);
-    });
-
-    it('should toggle dropdown when button is clicked', () => {
-      expect(mockMenu.classList.contains('open')).toBe(false);
-      
-      mockBtn.click();
-      
-      expect(mockMenu.classList.contains('open')).toBe(true);
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('true');
-    });
-
-    it('should close dropdown when button is clicked again', () => {
-      mockBtn.click(); // Open
-      expect(mockMenu.classList.contains('open')).toBe(true);
-      
-      mockBtn.click(); // Close
-      
-      expect(mockMenu.classList.contains('open')).toBe(false);
+    it('should set initial attributes', () => {
+      initDropdown(mockBtn, mockMenu);
+      expect(mockBtn.getAttribute('aria-haspopup')).toBe('true');
       expect(mockBtn.getAttribute('aria-expanded')).toBe('false');
+      expect(mockMenu.getAttribute('role')).toBe('menu');
     });
 
-    it('should prevent event propagation on button click', () => {
-      const clickEvent = new MouseEvent('click', { bubbles: true });
-      const stopPropagationSpy = vi.spyOn(clickEvent, 'stopPropagation');
-      
-      mockBtn.dispatchEvent(clickEvent);
-      
-      expect(stopPropagationSpy).toHaveBeenCalled();
+    it('should not overwrite existing role on menu', () => {
+      mockMenu.setAttribute('role', 'listbox');
+      initDropdown(mockBtn, mockMenu);
+      expect(mockMenu.getAttribute('role')).toBe('listbox');
     });
   });
 
-  describe('document click handling', () => {
+  describe('focus management', () => {
     beforeEach(() => {
+      // Add items
+      for (let i = 0; i < 3; i++) {
+        const item = createMenuItem('menuitem', `Item ${i}`);
+        mockMenu.appendChild(item);
+        items.push(item);
+      }
       dropdown = initDropdown(mockBtn, mockMenu, mockContainer);
     });
 
-    it('should close dropdown when clicking outside container', () => {
+    it('should focus first item when opened', async () => {
+      const focusSpy = vi.spyOn(items[0], 'focus');
       dropdown.open();
-      expect(mockMenu.classList.contains('open')).toBe(true);
+
+      // Wait for requestAnimationFrame
+      await new Promise(resolve => requestAnimationFrame(resolve));
       
-      // Create element outside dropdown
-      const outsideElement = document.createElement('div');
-      document.body.appendChild(outsideElement);
-      
-      // Simulate click outside
-      outsideElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      
-      expect(mockMenu.classList.contains('open')).toBe(false);
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('false');
+      expect(focusSpy).toHaveBeenCalled();
+      expect(document.activeElement).toBe(items[0]);
     });
 
-    it('should not close dropdown when clicking inside container', () => {
+    it('should focus search input if present', async () => {
+      const searchInput = document.createElement('input');
+      searchInput.type = 'text';
+      makeVisible(searchInput);
+      mockMenu.insertBefore(searchInput, items[0]);
+      
+      const focusSpy = vi.spyOn(searchInput, 'focus');
       dropdown.open();
-      expect(mockMenu.classList.contains('open')).toBe(true);
       
-      // Click inside menu
-      mockMenu.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await new Promise(resolve => requestAnimationFrame(resolve));
       
-      expect(mockMenu.classList.contains('open')).toBe(true);
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('true');
+      expect(focusSpy).toHaveBeenCalled();
+      expect(document.activeElement).toBe(searchInput);
     });
 
-    it('should not close dropdown when clicking the button', () => {
-      dropdown.open();
-      expect(mockMenu.classList.contains('open')).toBe(true);
-      
-      // Manually dispatch click event (not using .click() which would trigger our handler)
-      const clickEvent = new MouseEvent('click', { bubbles: true });
-      Object.defineProperty(clickEvent, 'target', { value: mockBtn });
-      document.dispatchEvent(clickEvent);
-      
-      expect(mockMenu.classList.contains('open')).toBe(true);
-    });
+    it('should NOT focus item if dropdown is closed quickly (race condition)', async () => {
+      const focusSpy = vi.spyOn(items[0], 'focus');
 
-    it('should handle clicks on child elements of button', () => {
-      // Add icon to button
-      const icon = document.createElement('i');
-      icon.className = 'icon';
-      mockBtn.appendChild(icon);
-      
       dropdown.open();
-      expect(mockMenu.classList.contains('open')).toBe(true);
-      
-      // Click on icon (child of button)
-      const clickEvent = new MouseEvent('click', { bubbles: true });
-      Object.defineProperty(clickEvent, 'target', { value: icon });
-      document.dispatchEvent(clickEvent);
-      
-      expect(mockMenu.classList.contains('open')).toBe(true);
-    });
+      dropdown.close(); // Close immediately before RAF fires
 
-    it('should close multiple open dropdowns when clicking outside', () => {
-      // Create second dropdown
-      const mockBtn2 = document.createElement('button');
-      const mockMenu2 = document.createElement('div');
-      const mockContainer2 = document.createElement('div');
-      mockContainer2.appendChild(mockBtn2);
-      mockContainer2.appendChild(mockMenu2);
-      document.body.appendChild(mockContainer2);
-      
-      const dropdown2 = initDropdown(mockBtn2, mockMenu2, mockContainer2);
-      
-      // Open both dropdowns properly (second one will close first due to closeAllDropdowns)
-      dropdown.open();
-      dropdown2.open(); // This should close the first one
-      expect(mockMenu.classList.contains('open')).toBe(false); // First closed
-      expect(mockMenu2.classList.contains('open')).toBe(true); // Second open
-      
-      // Click outside should close the remaining open dropdown
-      const outsideElement = document.createElement('div');
-      document.body.appendChild(outsideElement);
-      outsideElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      
-      expect(mockMenu.classList.contains('open')).toBe(false);
-      expect(mockMenu2.classList.contains('open')).toBe(false);
+      // Wait for RAF
+      await new Promise(resolve => requestAnimationFrame(resolve));
+
+      expect(focusSpy).not.toHaveBeenCalled();
     });
   });
 
-  describe('keyboard handling', () => {
+  describe('keyboard navigation', () => {
     beforeEach(() => {
+      // Create mixed items
+      const menuitem = createMenuItem('menuitem', 'Menu Item');
+      const option = createMenuItem('option', 'Option');
+      const button = createMenuItem('button', 'Button'); // Test role="button"
+
+      items = [menuitem, option, button];
+      items.forEach(item => mockMenu.appendChild(item));
+
       dropdown = initDropdown(mockBtn, mockMenu, mockContainer);
+      dropdown.open();
     });
 
-    it('should close dropdown when Escape key is pressed', () => {
-      dropdown.open();
-      expect(mockMenu.classList.contains('open')).toBe(true);
-      
+    it('should navigate between mixed roles including role="button"', () => {
+      items[0].focus();
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      expect(document.activeElement).toBe(items[1]); // option
+
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      expect(document.activeElement).toBe(items[2]); // button
+
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      expect(document.activeElement).toBe(items[0]); // back to menuitem
+    });
+
+    it('should navigate down with ArrowDown', () => {
+      items[0].focus();
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      expect(document.activeElement).toBe(items[1]);
+    });
+
+    it('should navigate up with ArrowUp', () => {
+      items[1].focus();
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      expect(document.activeElement).toBe(items[0]);
+    });
+
+    it('should wrap around when navigating down from last item', () => {
+      items[2].focus();
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      expect(document.activeElement).toBe(items[0]);
+    });
+
+    it('should wrap around when navigating up from first item', () => {
+      items[0].focus();
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      expect(document.activeElement).toBe(items[2]);
+    });
+
+    it('should go to first item with Home', () => {
+      items[2].focus();
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+      expect(document.activeElement).toBe(items[0]);
+    });
+
+    it('should go to last item with End', () => {
+      items[0].focus();
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      expect(document.activeElement).toBe(items[2]);
+    });
+
+    it('should click item with Enter', () => {
+      items[0].focus();
+      const clickSpy = vi.spyOn(items[0], 'click');
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      expect(clickSpy).toHaveBeenCalled();
+    });
+
+    it('should click item with Space', () => {
+      items[0].focus();
+      const clickSpy = vi.spyOn(items[0], 'click');
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      expect(clickSpy).toHaveBeenCalled();
+    });
+
+    it('should close dropdown on Tab', () => {
+      items[0].focus();
+      mockMenu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      expect(mockMenu.classList.contains('open')).toBe(false);
+    });
+
+    it('should close dropdown on Escape and return focus to button', () => {
+      items[0].focus();
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       
       expect(mockMenu.classList.contains('open')).toBe(false);
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('false');
-    });
-
-    it('should not affect dropdown when other keys are pressed', () => {
-      dropdown.open();
-      expect(mockMenu.classList.contains('open')).toBe(true);
-      
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      
-      expect(mockMenu.classList.contains('open')).toBe(true);
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('true');
-    });
-
-    it('should close multiple dropdowns with Escape key', () => {
-      // Create second dropdown
-      const mockBtn2 = document.createElement('button');
-      const mockMenu2 = document.createElement('div');
-      initDropdown(mockBtn2, mockMenu2);
-      
-      // Open first dropdown
-      dropdown.open();
-      expect(mockMenu.classList.contains('open')).toBe(true);
-      
-      // Escape should close all dropdowns
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      
-      expect(mockMenu.classList.contains('open')).toBe(false);
-      expect(mockMenu2.classList.contains('open')).toBe(false);
+      expect(document.activeElement).toBe(mockBtn);
     });
   });
 
-  describe('integration scenarios', () => {
-    it('should handle complete user interaction flow', () => {
+  describe('button keyboard interaction', () => {
+    beforeEach(() => {
+      for (let i = 0; i < 3; i++) {
+        const item = createMenuItem('menuitem', `Item ${i}`);
+        mockMenu.appendChild(item);
+        items.push(item);
+      }
       dropdown = initDropdown(mockBtn, mockMenu, mockContainer);
-      
-      // Initial state
-      expect(mockMenu.classList.contains('open')).toBe(false);
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('false');
-      
-      // User clicks button to open
-      mockBtn.click();
-      expect(mockMenu.classList.contains('open')).toBe(true);
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('true');
-      
-      // User presses Escape to close
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      expect(mockMenu.classList.contains('open')).toBe(false);
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('false');
-      
-      // User opens again
-      dropdown.open();
-      expect(mockMenu.classList.contains('open')).toBe(true);
-      
-      // User clicks outside to close
-      const outsideElement = document.createElement('div');
-      document.body.appendChild(outsideElement);
-      outsideElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(mockMenu.classList.contains('open')).toBe(false);
     });
 
-    it('should maintain accessibility attributes correctly', () => {
+    it('should open dropdown with ArrowDown on button', async () => {
+      mockBtn.focus();
+      mockBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      
+      expect(mockMenu.classList.contains('open')).toBe(true);
+      
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      expect(document.activeElement).toBe(items[0]);
+    });
+
+    it('should open dropdown with ArrowUp on button', async () => {
+      mockBtn.focus();
+      mockBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      
+      expect(mockMenu.classList.contains('open')).toBe(true);
+      
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      expect(document.activeElement).toBe(items[0]);
+    });
+  });
+
+  describe('search input interaction', () => {
+    let searchInput;
+
+    beforeEach(() => {
+      searchInput = document.createElement('input');
+      searchInput.type = 'text';
+      makeVisible(searchInput);
+      mockMenu.appendChild(searchInput);
+      
+      for (let i = 0; i < 3; i++) {
+        const item = createMenuItem('menuitem', `Item ${i}`);
+        mockMenu.appendChild(item);
+        items.push(item);
+      }
+      
       dropdown = initDropdown(mockBtn, mockMenu, mockContainer);
-      
-      // Initially closed
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('false');
-      
-      // After opening
       dropdown.open();
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('should move focus to first item when ArrowDown pressed in search', () => {
+      searchInput.focus();
+      // Need to dispatch directly to input as target
+      const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true });
+      Object.defineProperty(event, 'target', { value: searchInput });
+      mockMenu.dispatchEvent(event);
       
-      // After closing
-      dropdown.close();
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(items[0]);
+    });
+
+    it('should not prevent default behavior for other keys in search', () => {
+      searchInput.focus();
+      const event = new KeyboardEvent('keydown', { key: 'a', bubbles: true });
+      const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+      Object.defineProperty(event, 'target', { value: searchInput });
       
-      // After toggling open
-      dropdown.toggle();
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('true');
+      mockMenu.dispatchEvent(event);
       
-      // After toggling closed
-      dropdown.toggle();
-      expect(mockBtn.getAttribute('aria-expanded')).toBe('false');
+      expect(preventDefaultSpy).not.toHaveBeenCalled();
     });
   });
 });

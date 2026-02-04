@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   getCopenOptions,
+  clearCopenOptionsCache,
   COPEN_OPTIONS_STATIC,
   COPEN_OPTIONS,
   COPEN_STORAGE_KEY,
@@ -23,6 +24,7 @@ describe('copen-config', () => {
   
   beforeEach(async () => {
     vi.clearAllMocks();
+    clearCopenOptionsCache(); // Clear cache before each test
     const copenManager = await import('../../modules/copen-manager.js');
     const firebaseService = await import('../../modules/firebase-service.js');
     mockGetUserCopens = copenManager.getUserCopens;

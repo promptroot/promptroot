@@ -150,10 +150,6 @@ html, body {
 }
 
 /* Display utilities */
-.d-block {
-  display: block !important;
-}
-
 .d-none {
   display: none !important;
 }
@@ -163,14 +159,6 @@ html, body {
 }
 
 /* Modal utilities */
-.modal-show {
-  display: flex !important;
-}
-
-.modal-hide {
-  display: none !important;
-}
-
 .mobile-menu-open {
   overflow: hidden;
 }

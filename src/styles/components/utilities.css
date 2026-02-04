@@ -2,7 +2,6 @@
 /* Additional utility classes for common patterns and layouts */
 
 /* Display */
-.d-block { display: block !important; }
 .d-none { display: none !important; }
 .d-flex { display: flex !important; }
 .d-flex-center { display: flex; align-items: center; }
@@ -57,10 +56,6 @@
 
 /* Cursor */
 .cursor-pointer { cursor: pointer; }
-
-/* Modal States */
-.modal-show { display: flex !important; }
-.modal-hide { display: none !important; }
 
 /* Component-Specific Utilities */
 .label-flex {

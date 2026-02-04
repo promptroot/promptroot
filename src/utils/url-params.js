@@ -1,24 +1,25 @@
 // ===== URL Parameter Parsing =====
-import { validateOwner, validateRepo, validateBranch } from './validation.js';
+import { validateOwner, validateRepo, validateBranch, validatePath } from './validation.js';
 
 export function parseParams() {
   const out = {};
   const sources = [
     location.search || "",
-    location.hash && location.hash.includes("?")
-      ? location.hash.slice(location.hash.indexOf("?"))
-      : ""
+    location.hash ? location.hash.slice(1) : ""
   ];
 
   const validationMap = {
     owner: validateOwner,
     repo: validateRepo,
-    branch: validateBranch
+    branch: validateBranch,
+    path: validatePath,
+    p: validatePath
   };
 
   for (const src of sources) {
     const p = new URLSearchParams(src);
     for (const [k, v] of p.entries()) {
+      if (v === "") continue;
       const key = k.toLowerCase();
       // URLSearchParams values are already decoded.
       const value = v;

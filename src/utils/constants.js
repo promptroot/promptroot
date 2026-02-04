@@ -220,6 +220,23 @@ export const UI_TEXT = {
   SAVE_KEY: "Save & Continue"
 };
 
+// Jules Modal Text
+export const JULES_MODAL_TEXT = {
+  ENTER_KEY_WARNING: 'Please enter your Jules API key.',
+  NOT_LOGGED_IN: 'Not logged in.',
+  SAVING: 'Saving...',
+  SAVE_BUTTON: 'Save & Continue',
+  KEY_SAVED_SUCCESS: 'Jules API key saved successfully',
+  KEY_SAVE_ERROR_PREFIX: 'Failed to save API key: ',
+  NOTE_QUEUED_TRY: 'Queued from Try in Jules modal',
+  NOTE_QUEUED_PARTIAL_RETRY: 'Queued from Try in Jules flow (partial retries)',
+  NOTE_QUEUED_FINAL_FAILURE: 'Queued from Try in Jules flow (final failure)',
+  SUBTASK_PROGRESS: (current, total) => `Task ${current} of ${total}`,
+  CANCEL_BUTTON: 'Cancel',
+  QUEUE_BUTTON: 'Queue',
+  SUBMIT_BUTTON: 'Submit'
+};
+
 // Folder Submenu Text
 export const FOLDER_SUBMENU_TEXT = {
   NEW_PROMPT: 'Prompt (blank)',

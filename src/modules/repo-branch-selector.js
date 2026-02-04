@@ -23,7 +23,7 @@ function setupClickOutsideClose(targetBtn, targetMenu) {
   
   const closeDropdown = (e) => {
     if (!targetBtn.contains(e.target) && !targetMenu.contains(e.target)) {
-      targetMenu.classList.remove('open');
+      targetMenu.classList.remove('dropdown-menu--open');
       targetBtn.setAttribute('aria-expanded', 'false');
     }
   };
@@ -196,10 +196,14 @@ export class RepoSelector {
 
   async handleDropdownToggle(e) {
     e.stopPropagation();
-    if (this.dropdownMenu.classList.contains('open')) {
-      this.dropdownMenu.classList.remove('open');
-      this.dropdownMenu.style.display = '';
+    if (this.dropdownMenu.classList.contains('dropdown-menu--open')) {
+      this.dropdownMenu.classList.remove('dropdown-menu--open');
       this.dropdownBtn.setAttribute('aria-expanded', 'false');
+      // Cleanup custom properties if present
+      this.dropdownMenu.classList.remove('dropdown-menu--positioned');
+      this.dropdownMenu.style.removeProperty('--dropdown-top');
+      this.dropdownMenu.style.removeProperty('--dropdown-left');
+      this.dropdownMenu.style.removeProperty('--dropdown-width');
       return;
     }
 
@@ -209,9 +213,10 @@ export class RepoSelector {
     const computedStyle = window.getComputedStyle(this.dropdownMenu);
     if (computedStyle.position === 'fixed') {
       const rect = this.dropdownBtn.getBoundingClientRect();
-      this.dropdownMenu.style.top = `${rect.bottom + 4}px`;
-      this.dropdownMenu.style.left = `${rect.left}px`;
-      this.dropdownMenu.style.width = `${rect.width}px`;
+      this.dropdownMenu.classList.add('dropdown-menu--positioned');
+      this.dropdownMenu.style.setProperty('--dropdown-top', `${rect.bottom + 4}px`);
+      this.dropdownMenu.style.setProperty('--dropdown-left', `${rect.left}px`);
+      this.dropdownMenu.style.setProperty('--dropdown-width', `${rect.width}px`);
     }
 
     await this.populateDropdown();
@@ -253,8 +258,7 @@ export class RepoSelector {
         if (isFavorite) {
             await this.removeFavorite(id);
             // Refresh logic - close dropdown and repopulate
-            this.dropdownMenu.classList.remove('open');
-            this.dropdownMenu.style.display = '';
+            this.dropdownMenu.classList.remove('dropdown-menu--open');
             this.dropdownBtn.setAttribute('aria-expanded', 'false');
             setTimeout(() => this.populateDropdown(), 0);
         } else {
@@ -284,8 +288,7 @@ export class RepoSelector {
   async handleFavoriteSelection(id, name) {
       this.selectedSourceId = id;
       this.dropdownText.textContent = name;
-      this.dropdownMenu.classList.remove('open');
-      this.dropdownMenu.style.display = '';
+      this.dropdownMenu.classList.remove('dropdown-menu--open');
 
       this.saveToStorage();
       this.dropdownBtn.setAttribute('aria-expanded', 'false');
@@ -319,8 +322,7 @@ export class RepoSelector {
   async handleRepoSelection(id, name, defaultBranch) {
       this.selectedSourceId = id;
       this.dropdownText.textContent = name;
-      this.dropdownMenu.classList.remove('open');
-      this.dropdownMenu.style.display = '';
+      this.dropdownMenu.classList.remove('dropdown-menu--open');
 
       this.saveToStorage();
       this.dropdownBtn.setAttribute('aria-expanded', 'false');
@@ -537,8 +539,7 @@ export class RepoSelector {
     loadingIndicator.className = 'dropdown-loading';
     loadingIndicator.textContent = 'Loading...';
     this.dropdownMenu.appendChild(loadingIndicator);
-    this.dropdownMenu.classList.add('open');
-    this.dropdownMenu.style.display = '';
+    this.dropdownMenu.classList.add('dropdown-menu--open');
     
     await new Promise(resolve => setTimeout(resolve, 0));
     
@@ -557,8 +558,7 @@ export class RepoSelector {
       this.renderAllRepos();
     }
     
-    this.dropdownMenu.classList.add('open');
-    this.dropdownMenu.style.display = '';
+    this.dropdownMenu.classList.add('dropdown-menu--open');
   }
 
   async renderFavorites() {
@@ -873,10 +873,14 @@ export class BranchSelector {
 
   handleDropdownToggle(e) {
     e.stopPropagation();
-    if (this.dropdownMenu.classList.contains('open')) {
-      this.dropdownMenu.classList.remove('open');
-      this.dropdownMenu.style.display = '';
+    if (this.dropdownMenu.classList.contains('dropdown-menu--open')) {
+      this.dropdownMenu.classList.remove('dropdown-menu--open');
       this.dropdownBtn.setAttribute('aria-expanded', 'false');
+      // Cleanup custom properties if present
+      this.dropdownMenu.classList.remove('dropdown-menu--positioned');
+      this.dropdownMenu.style.removeProperty('--dropdown-top');
+      this.dropdownMenu.style.removeProperty('--dropdown-left');
+      this.dropdownMenu.style.removeProperty('--dropdown-width');
       return;
     }
 
@@ -886,9 +890,10 @@ export class BranchSelector {
     const computedStyle = window.getComputedStyle(this.dropdownMenu);
     if (computedStyle.position === 'fixed') {
       const rect = this.dropdownBtn.getBoundingClientRect();
-      this.dropdownMenu.style.top = `${rect.bottom + 4}px`;
-      this.dropdownMenu.style.left = `${rect.left}px`;
-      this.dropdownMenu.style.width = `${rect.width}px`;
+      this.dropdownMenu.classList.add('dropdown-menu--positioned');
+      this.dropdownMenu.style.setProperty('--dropdown-top', `${rect.bottom + 4}px`);
+      this.dropdownMenu.style.setProperty('--dropdown-left', `${rect.left}px`);
+      this.dropdownMenu.style.setProperty('--dropdown-width', `${rect.width}px`);
     }
 
     this.populateDropdown();
@@ -917,13 +922,11 @@ export class BranchSelector {
           const branchName = branchItem.dataset.branchName;
           if (branchName && branchName !== this.selectedBranch) {
               this.setSelectedBranch(branchName);
-              this.dropdownMenu.classList.remove('open');
-              this.dropdownMenu.style.display = '';
+              this.dropdownMenu.classList.remove('dropdown-menu--open');
               this.dropdownBtn.setAttribute('aria-expanded', 'false');
           } else if (branchName === this.selectedBranch) {
                // Current branch clicked
-              this.dropdownMenu.classList.remove('open');
-              this.dropdownMenu.style.display = '';
+              this.dropdownMenu.classList.remove('dropdown-menu--open');
               this.dropdownBtn.setAttribute('aria-expanded', 'false');
           }
       }
@@ -1156,10 +1159,7 @@ export class BranchSelector {
     
     this.dropdownMenu.appendChild(showMoreBtn);
     
-    this.dropdownMenu.classList.add('open');
-    if (this.dropdownMenu.style.display === 'none') {
-      this.dropdownMenu.style.display = '';
-    }
+    this.dropdownMenu.classList.add('dropdown-menu--open');
   }
 
   setSelectedBranch(branch) {

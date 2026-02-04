@@ -250,3 +250,24 @@
   display: none;
 }
 
+
+/* Base styles for refactored dropdowns */
+.dropdown-menu {
+  display: none;
+}
+
+/* Open state */
+.dropdown-menu--open,
+.custom-dropdown-menu.dropdown-menu--open {
+  display: block;
+}
+
+/* Positioned state for dynamic fixed positioning */
+.dropdown-menu--positioned {
+  position: fixed !important;
+  top: var(--dropdown-top);
+  left: var(--dropdown-left);
+  width: var(--dropdown-width);
+  margin-top: 0;
+  z-index: 1100;
+}

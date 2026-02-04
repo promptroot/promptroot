@@ -136,7 +136,6 @@ export async function showFreeInputForm() {
 
   if (!_freeInputCopenSplitBtn && copenContainer) {
     const options = await getCopenOptions();
-    console.log('[jules-free-input] Creating split button with options:', options.length);
     _freeInputCopenSplitBtn = initSplitButton({
       container: copenContainer,
       defaultLabel: COPEN_DEFAULT_LABEL,
@@ -153,9 +152,7 @@ export async function showFreeInputForm() {
   
   // Always refresh copen options when form is shown (in case user logged in or copens changed)
   if (_freeInputCopenSplitBtn && copenContainer) {
-    console.log('[jules-free-input] Refreshing copen options');
     const options = await getCopenOptions();
-    console.log('[jules-free-input] Got options:', options.length, options);
     updateSplitButtonOptions(copenContainer, options);
   }
   
@@ -186,31 +183,15 @@ export async function showFreeInputForm() {
     const copenToggleBtn = copenContainer.querySelector('.split-btn__toggle');
     if (copenActionBtn) {
       copenActionBtn.disabled = !hasText;
-      console.log('[Copen Action] disabled:', copenActionBtn.disabled, 'classList:', copenActionBtn.classList.toString(), 'computed style pointer-events:', window.getComputedStyle(copenActionBtn).pointerEvents);
     }
     if (copenToggleBtn) {
       copenToggleBtn.disabled = !hasText;
-      console.log('[Copen Toggle] disabled:', copenToggleBtn.disabled, 'classList:', copenToggleBtn.classList.toString(), 'computed style pointer-events:', window.getComputedStyle(copenToggleBtn).pointerEvents);
     }
   };
 
   updateButtonStates();
 
   textarea.addEventListener('input', updateButtonStates);
-
-  // Add hover logging to debug disabled hover issue
-  const copenActionBtn = copenContainer.querySelector('.split-btn__action');
-  const copenToggleBtn = copenContainer.querySelector('.split-btn__toggle');
-  if (copenActionBtn) {
-    copenActionBtn.addEventListener('mouseenter', () => {
-      console.log('[Copen Action MOUSEENTER] disabled:', copenActionBtn.disabled, 'pointer-events:', window.getComputedStyle(copenActionBtn).pointerEvents);
-    });
-  }
-  if (copenToggleBtn) {
-    copenToggleBtn.addEventListener('mouseenter', () => {
-      console.log('[Copen Toggle MOUSEENTER] disabled:', copenToggleBtn.disabled, 'pointer-events:', window.getComputedStyle(copenToggleBtn).pointerEvents);
-    });
-  }
 
   const handleSubmit = async () => {
     const promptText = validatePromptText();

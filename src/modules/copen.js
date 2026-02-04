@@ -1,6 +1,7 @@
 import { showToast } from './toast.js';
 import { getUserCopens } from './copen-manager.js';
 import { getAuth } from './firebase-service.js';
+import { clearCopenOptionsCache } from '../utils/copen-config.js';
 
 // Cache for user copens
 let copenCache = null;
@@ -26,6 +27,7 @@ async function getCopenUrl(target) {
  */
 export function clearCopenCache() {
   copenCache = null;
+  clearCopenOptionsCache(); // Also clear the memory cache
 }
 
 /**

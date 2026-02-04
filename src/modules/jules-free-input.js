@@ -13,6 +13,7 @@ let _lastSelectedSourceId = null;
 let _lastSelectedBranch = null;
 let _branchChangeListenerAdded = false;
 let _freeInputCopenSplitBtn = null;
+let _authListenerAdded = false;
 
 async function refreshFreeInputCopenOptions() {
   const copenContainer = document.getElementById('freeInputCopenContainer');
@@ -135,6 +136,7 @@ export async function showFreeInputForm() {
 
   if (!_freeInputCopenSplitBtn && copenContainer) {
     const options = await getCopenOptions();
+    console.log('[jules-free-input] Creating split button with options:', options.length);
     _freeInputCopenSplitBtn = initSplitButton({
       container: copenContainer,
       defaultLabel: COPEN_DEFAULT_LABEL,
@@ -147,6 +149,28 @@ export async function showFreeInputForm() {
       },
       storageKey: COPEN_STORAGE_KEY
     });
+  }
+  
+  // Always refresh copen options when form is shown (in case user logged in or copens changed)
+  if (_freeInputCopenSplitBtn && copenContainer) {
+    console.log('[jules-free-input] Refreshing copen options');
+    const options = await getCopenOptions();
+    console.log('[jules-free-input] Got options:', options.length, options);
+    updateSplitButtonOptions(copenContainer, options);
+  }
+  
+  // Also refresh when user logs in (for hard refresh case)
+  if (!_authListenerAdded) {
+    const auth = getAuth();
+    if (auth) {
+      auth.onAuthStateChanged(async (user) => {
+        if (user && _freeInputCopenSplitBtn && copenContainer) {
+          const options = await getCopenOptions();
+          updateSplitButtonOptions(copenContainer, options);
+        }
+      });
+    }
+    _authListenerAdded = true;
   }
 
   const updateButtonStates = () => {

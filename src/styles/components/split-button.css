@@ -1,11 +1,8 @@
 /* Split Button Component - GitHub-like button with dropdown */
-
 .split-btn {
   display: inline-flex;
   position: relative;
 }
-
-/* Shared button base styles - extends .btn styles */
 
 /* Disabled state for split buttons */
 .split-btn__action:disabled,
@@ -23,6 +20,8 @@
   cursor: not-allowed;
   pointer-events: none;
 }
+
+/* Shared button base styles - extends .btn styles */
 .split-btn__action,
 .split-btn__toggle {
   appearance: none;

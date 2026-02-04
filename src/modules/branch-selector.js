@@ -353,8 +353,6 @@ async function filterAndRenderBranches() {
       const showMoreBtn = document.createElement('div');
       showMoreBtn.className = 'dropdown-show-more';
       showMoreBtn.textContent = favBranches.length > 0 ? '▼ Show more branches...' : '▼ Show all branches...';
-      showMoreBtn.setAttribute('role', 'button');
-      showMoreBtn.setAttribute('tabindex', '-1');
       
       showMoreBtn.onclick = () => {
         showMoreBtn.classList.add('hidden');

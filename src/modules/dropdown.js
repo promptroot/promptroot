@@ -66,6 +66,10 @@ function closeDropdown(dropdown) {
 
 // Centralized document click listener
 document.addEventListener('click', (e) => {
+  if (e.target.closest('.dropdown-show-more')) {
+    return;
+  }
+  
   const toClose = [];
   for (const dropdown of openDropdowns) {
     const clickedInsideContainer = dropdown.container.contains(e.target);
@@ -187,10 +191,15 @@ export function initDropdown(btn, menu, container = null) {
 
   // Close when focus leaves the dropdown container
   dropdownContainer.addEventListener('focusout', (e) => {
-    // relatedTarget is where focus is moving TO
-    if (!dropdownContainer.contains(e.relatedTarget) && menu.classList.contains('open')) {
+    requestAnimationFrame(() => {
+      const activeElement = document.activeElement;
+      if (dropdownContainer.contains(activeElement) || 
+          activeElement === document.body || 
+          !menu.classList.contains('open')) {
+        return;
+      }
       closeDropdown(dropdown);
-    }
+    });
   });
 
   return {

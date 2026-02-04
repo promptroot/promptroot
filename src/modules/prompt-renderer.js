@@ -123,6 +123,12 @@ export function initPromptRenderer() {
     });
   }
   
+  // Listen for copen changes
+  window.addEventListener('copensChanged', () => {
+    clearCopenCache();
+    refreshCopenOptions();
+  });
+  
   rawBtn = document.getElementById('rawBtn');
   ghBtn = document.getElementById('ghBtn');
   editBtn = document.getElementById('editBtn');
@@ -150,6 +156,7 @@ async function refreshCopenOptions() {
 export function destroyPromptRenderer() {
   document.removeEventListener('click', handleDocumentClick);
   window.removeEventListener('branchChanged', handleBranchChanged);
+  window.removeEventListener('copensChanged', refreshCopenOptions);
   
   if (copenContainer) {
     destroySplitButton(copenContainer);

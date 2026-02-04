@@ -394,6 +394,12 @@ export function showFreeInputForm() {
         refreshFreeInputCopenOptions();
       });
     }
+    
+    // Listen for copen changes
+    window.addEventListener('copensChanged', () => {
+      clearCopenCache();
+      refreshFreeInputCopenOptions();
+    });
   }
 
   submitBtn.onclick = handleSubmit;

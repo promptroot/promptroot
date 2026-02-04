@@ -160,6 +160,7 @@ function renderCopenList(copens) {
       try {
         await saveCopenOrder(currentUser.uid, reordered);
         clearCopenCache();
+        window.dispatchEvent(new CustomEvent('copensChanged'));
         showToast('Copen order saved');
       } catch (error) {
         console.error('Error saving copen order:', error);
@@ -287,6 +288,7 @@ async function handleSaveCopen() {
     }
 
     clearCopenCache();
+    window.dispatchEvent(new CustomEvent('copensChanged'));
     hideCopenEditor();
     await loadCopens(currentUser);
   } catch (error) {
@@ -334,6 +336,7 @@ async function handleDeleteSelectedCopens() {
     
     await Promise.all(deletePromises);
     clearCopenCache();
+    window.dispatchEvent(new CustomEvent('copensChanged'));
     showToast(`${selectedCheckboxes.length} copen${selectedCheckboxes.length > 1 ? 's' : ''} deleted`, 'success');
     await loadCopens(currentUser);
   } catch (error) {
@@ -355,6 +358,7 @@ async function handleToggleCopen(copenId, currentlyEnabled) {
   try {
     await toggleDefaultCopen(currentUser.uid, copenId, !currentlyEnabled);
     clearCopenCache();
+    window.dispatchEvent(new CustomEvent('copensChanged'));
     showToast(currentlyEnabled ? 'Copen disabled' : 'Copen enabled', 'success');
     await loadCopens(currentUser);
   } catch (error) {

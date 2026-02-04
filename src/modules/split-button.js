@@ -49,12 +49,12 @@ export function initSplitButton(config) {
     container,
     defaultLabel,
     defaultIcon,
-    options,
+    options: initialOptions,
     onAction,
     storageKey
   } = config;
 
-  if (!container || !options || !onAction) {
+  if (!container || !initialOptions || !onAction) {
     console.error('Split button requires container, options, and onAction');
     return null;
   }
@@ -67,6 +67,9 @@ export function initSplitButton(config) {
     console.error('Split button container missing required child elements');
     return null;
   }
+
+  // Store current options (mutable)
+  let options = [...initialOptions];
 
   // Load last selection from storage if available
   let currentSelection = null;
@@ -91,20 +94,8 @@ export function initSplitButton(config) {
 
   updateActionButton(actionBtn, currentSelection);
 
-  menu.innerHTML = '';
-  options.forEach(option => {
-    const item = createElement('div', CLASSES.MENU_ITEM);
-    item.dataset.value = option.value;
-    
-    if (option.icon) {
-      item.appendChild(createIcon(option.icon, 'icon-inline'));
-    }
-    
-    const label = createElement('span', '', option.label);
-    item.appendChild(label);
-    
-    menu.appendChild(item);
-  });
+  // Build initial menu
+  rebuildMenu(menu, options);
 
   const dropdown = initDropdown(toggleBtn, menu, container);
   
@@ -178,7 +169,24 @@ export function initSplitButton(config) {
       }
     },
     
-    getSelection: () => currentSelection.value
+    getSelection: () => currentSelection.value,
+    
+    updateOptions: (newOptions) => {
+      options = [...newOptions];
+      rebuildMenu(menu, options);
+      
+      // If there's a stored selection and we didn't have it before, update the button
+      if (storageKey && !currentSelection.value && options.length > 0) {
+        const stored = sessionStorage.getItem(storageKey);
+        if (stored) {
+          const storedOption = options.find(opt => opt.value === stored);
+          if (storedOption) {
+            currentSelection = storedOption;
+            updateActionButton(actionBtn, storedOption);
+          }
+        }
+      }
+    }
   };
 
   activeButtons.set(container, api);
@@ -200,6 +208,26 @@ function updateActionButton(button, option) {
 }
 
 /**
+ * Rebuild menu items
+ */
+function rebuildMenu(menu, options) {
+  menu.innerHTML = '';
+  options.forEach(option => {
+    const item = createElement('div', CLASSES.MENU_ITEM);
+    item.dataset.value = option.value;
+    
+    if (option.icon) {
+      item.appendChild(createIcon(option.icon, 'icon-inline'));
+    }
+    
+    const label = createElement('span', '', option.label);
+    item.appendChild(label);
+    
+    menu.appendChild(item);
+  });
+}
+
+/**
  * Destroy a split button instance
  */
 export function destroySplitButton(container) {
@@ -218,22 +246,5 @@ export function updateSplitButtonOptions(container, newOptions) {
   const api = activeButtons.get(container);
   if (!api || !newOptions) return;
   
-  // Rebuild the menu with new options
-  const menu = container.querySelector(SELECTORS.MENU);
-  if (!menu) return;
-  
-  menu.innerHTML = '';
-  newOptions.forEach(option => {
-    const item = createElement('div', CLASSES.MENU_ITEM);
-    item.dataset.value = option.value;
-    
-    if (option.icon) {
-      item.appendChild(createIcon(option.icon, 'icon-inline'));
-    }
-    
-    const label = createElement('span', '', option.label);
-    item.appendChild(label);
-    
-    menu.appendChild(item);
-  });
+  api.updateOptions(newOptions);
 }

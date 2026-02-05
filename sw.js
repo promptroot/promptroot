@@ -65,7 +65,6 @@ const CACHE_EXCLUDE_PATTERNS = [
   /firebaselogging\.googleapis\.com/,
   /chrome-extension:\/\//,
   /hot-update/,
-  // Font files - let browser handle directly (CORS/opaque response issues in SW)
   /fonts\.gstatic\.com.*\.(woff2|woff|ttf|eot)$/
 ];
 

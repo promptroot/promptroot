@@ -110,17 +110,7 @@ export async function checkAndNotifyRecentErrors() {
       if (!item.lastError || !item.lastError.timestamp) return false;
       const errorTime = item.lastError.timestamp.seconds ? item.lastError.timestamp.seconds * 1000 : item.lastError.timestamp;
       const ageMinutes = (Date.now() - errorTime) / 60000;
-      return ageMinutes < 60; // Last hour
-    });
-    
-    if (recentErrors.length > 0) {
-      const errorCount = recentErrors.length;
-      const itemText = errorCount === 1 ? 'item' : 'items';
-      const firstError = recentErrors[0].lastError.message || 'Unknown error';
-      showToast(`${errorCount} queue ${itemText} failed recently. Last error: ${firstError}`, 'error', 8000);
-    }
-  } catch (err) {
-    console.warn('Failed to check for recent errors:', err);
+      return ageMinutes < JULES_MESSAGES.ERROR_VISIBILITY_WINDOW_MINUTES;
   }
 }
 
@@ -1149,7 +1139,7 @@ function createCardHeader(item, status) {
   if (item.lastError && item.lastError.timestamp) {
     const errorTime = item.lastError.timestamp.seconds ? item.lastError.timestamp.seconds * 1000 : item.lastError.timestamp;
     const ageMinutes = (Date.now() - errorTime) / 60000;
-    if (ageMinutes < 60) { // Show error badge for errors in last hour
+    if (ageMinutes < JULES_MESSAGES.ERROR_VISIBILITY_WINDOW_MINUTES) {
       const errorBadge = document.createElement('span');
       errorBadge.className = 'queue-error-badge';
       errorBadge.title = `Error ${Math.round(ageMinutes)}m ago: ${item.lastError.message || 'Unknown error'}`;

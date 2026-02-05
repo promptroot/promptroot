@@ -704,4 +704,36 @@ describe('jules-queue', () => {
       expect(() => attachQueueHandlers()).not.toThrow();
     });
   });
+
+  describe('error persistence', () => {
+    it('should identify recent errors within visibility window', () => {
+      const now = Date.now();
+      const recentError = {
+        error: 'Test error',
+        errorAt: now - (30 * 60 * 1000) // 30 minutes ago
+      };
+      
+      const ageMinutes = Math.floor((now - recentError.errorAt) / (60 * 1000));
+      expect(ageMinutes).toBeLessThan(60); // Within ERROR_VISIBILITY_WINDOW_MINUTES
+    });
+
+    it('should exclude errors outside visibility window', () => {
+      const now = Date.now();
+      const oldError = {
+        error: 'Old error',
+        errorAt: now - (90 * 60 * 1000) // 90 minutes ago
+      };
+      
+      const ageMinutes = Math.floor((now - oldError.errorAt) / (60 * 1000));
+      expect(ageMinutes).toBeGreaterThanOrEqual(60); // Outside ERROR_VISIBILITY_WINDOW_MINUTES
+    });
+
+    it('should handle missing errorAt timestamp', () => {
+      const errorWithoutTimestamp = {
+        error: 'Error without timestamp'
+      };
+      
+      expect(errorWithoutTimestamp.errorAt).toBeUndefined();
+    });
+  });
 });

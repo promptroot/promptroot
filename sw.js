@@ -2,7 +2,7 @@
 // Provides offline support and dramatic performance improvements for repeat visits
 // Expected: 88% faster repeat loads (~50ms vs 409ms)
 
-const CACHE_VERSION = 'promptroot-v7';
+const CACHE_VERSION = 'promptroot-v8';
 const CACHE_NAME = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -64,7 +64,9 @@ const CACHE_EXCLUDE_PATTERNS = [
   /oauth2\.googleapis\.com/,
   /firebaselogging\.googleapis\.com/,
   /chrome-extension:\/\//,
-  /hot-update/
+  /hot-update/,
+  // Font files - let browser handle directly (CORS/opaque response issues in SW)
+  /fonts\.gstatic\.com.*\.(woff2|woff|ttf|eot)$/
 ];
 
 // Assets that should use network-first strategy (frequently updated content)

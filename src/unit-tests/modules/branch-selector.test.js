@@ -200,14 +200,14 @@ describe('branch-selector', () => {
       expect(global.document.getElementById).toHaveBeenCalledWith('branchSelect');
     });
 
-    it('should add change event listener to branchSelect', () => {
+    it('should add change event listener to branchSelect', async () => {
       const mockSelect = createMockElement('branchSelect');
       global.document.getElementById.mockImplementation((id) => {
         if (id === 'branchSelect') return mockSelect;
         return null;
       });
 
-      initBranchSelector('owner1', 'repo1', 'main');
+      await initBranchSelector('owner1', 'repo1', 'main');
       
       expect(mockSelect.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
     });
@@ -225,7 +225,7 @@ describe('branch-selector', () => {
         return createMockElement(id);
       });
 
-      initBranchSelector('owner1', 'repo1', 'main');
+      await initBranchSelector('owner1', 'repo1', 'main');
       
       expect(initDropdown).toHaveBeenCalledWith(mockBtn, mockMenu, mockDropdown);
     });

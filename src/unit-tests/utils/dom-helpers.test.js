@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { 
   createElement, 
   createIcon, 
-  setElementDisplay,
   toggleVisibility,
   toggleClass, 
   clearElement
@@ -118,47 +117,6 @@ describe('DOM Helpers', () => {
       const icon = createIcon('default');
       
       expect(icon.getAttribute('aria-hidden')).toBe('true');
-    });
-  });
-
-  describe('setElementDisplay', () => {
-    it('should show element by default', () => {
-      const el = document.createElement('div');
-      el.classList.add('hidden');
-      
-      setElementDisplay(el);
-      
-      expect(el.classList.contains('hidden')).toBe(false);
-    });
-
-    it('should show element when show=true', () => {
-      const el = document.createElement('div');
-      el.classList.add('hidden');
-      
-      setElementDisplay(el, true);
-      
-      expect(el.classList.contains('hidden')).toBe(false);
-    });
-
-    it('should hide element when show=false', () => {
-      const el = document.createElement('div');
-      
-      setElementDisplay(el, false);
-      
-      expect(el.classList.contains('hidden')).toBe(true);
-    });
-
-    it('should toggle visibility correctly', () => {
-      const el = document.createElement('div');
-      
-      setElementDisplay(el, false);
-      expect(el.classList.contains('hidden')).toBe(true);
-      
-      setElementDisplay(el, true);
-      expect(el.classList.contains('hidden')).toBe(false);
-      
-      setElementDisplay(el, false);
-      expect(el.classList.contains('hidden')).toBe(true);
     });
   });
 

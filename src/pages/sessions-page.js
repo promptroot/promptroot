@@ -57,7 +57,7 @@ async function loadSessionsPage() {
       }
     } else if (allSessionsCache.length === 0) {
       allSessionsList.replaceChildren();
-      const noSessionsDiv = createElement('div', { className: 'muted text-center pad-lg' });
+      const noSessionsDiv = createElement('div', { className: 'list-empty' });
       noSessionsDiv.textContent = 'No sessions found';
       allSessionsList.appendChild(noSessionsDiv);
     }
@@ -65,7 +65,7 @@ async function loadSessionsPage() {
     if (allSessionsCache.length === 0) {
       allSessionsList.replaceChildren();
       const errorDiv = createElement('div', { 
-        className: 'text-center pad-lg color-error'
+        className: 'list-empty color-error'
       });
       errorDiv.textContent = `Failed to load sessions: ${error.message}`;
       allSessionsList.appendChild(errorDiv);

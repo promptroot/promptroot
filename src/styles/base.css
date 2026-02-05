@@ -128,8 +128,7 @@ html, body {
 }
 
 /* Global utility class for toggling visibility */
-.hidden,
-.is-hidden {
+.hidden {
   display: none !important;
 }
 

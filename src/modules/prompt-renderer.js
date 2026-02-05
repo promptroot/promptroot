@@ -470,18 +470,26 @@ export async function selectFile(f, pushHash, owner, repo, branch) {
   }
 
   // Lazy load marked.js
-  const marked = await loadMarked();
+  try {
+    const marked = await loadMarked();
 
-  if (isGistContent) {
-    const looksLikeMarkdown = /^#|^\*|^-|^\d+\.|```/.test(raw.trim());
-    if (!looksLikeMarkdown) {
-      const wrappedContent = '```\n' + raw + '\n```';
-      contentEl.innerHTML = sanitizeHtml(marked.parse(wrappedContent, { breaks: true }));
+    if (isGistContent) {
+      const looksLikeMarkdown = /^#|^\*|^-|^\d+\.|```/.test(raw.trim());
+      if (!looksLikeMarkdown) {
+        const wrappedContent = '```\n' + raw + '\n```';
+        contentEl.innerHTML = sanitizeHtml(marked.parse(wrappedContent, { breaks: true }));
+      } else {
+        contentEl.innerHTML = sanitizeHtml(marked.parse(raw, { breaks: true }));
+      }
     } else {
       contentEl.innerHTML = sanitizeHtml(marked.parse(raw, { breaks: true }));
     }
-  } else {
-    contentEl.innerHTML = sanitizeHtml(marked.parse(raw, { breaks: true }));
+  } catch (error) {
+    console.error('Failed to load marked.js or parse markdown:', error);
+    if (contentEl) {
+      contentEl.innerHTML = `<div class="status-msg-box status-msg-box--error">Failed to load markdown renderer: ${error.message}</div>`;
+    }
+    throw error;
   }
 
   setCurrentPromptText(raw);

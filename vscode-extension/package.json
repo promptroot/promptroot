@@ -33,6 +33,18 @@
         "command": "promptroot.refreshAssets",
         "title": "Promptroot: Refresh Assets",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "promptroot.configureJulesApi",
+        "title": "Promptroot: Configure Jules API"
+      },
+      {
+        "command": "promptroot.viewJulesSources",
+        "title": "Promptroot: View Jules Sources"
+      },
+      {
+        "command": "promptroot.viewJulesSessions",
+        "title": "Promptroot: View Jules Sessions"
       }
     ],
     "views": {

@@ -1,11 +1,11 @@
 # Promptroot VS Code Extension Architecture
 
 **Version:** 1.0  
-**Last Updated:** February 4, 2026
+**Last Updated:** February 5, 2026
 
 ## Overview
 
-This document describes the architecture of the Promptroot VS Code extension, designed to streamline Promptroot workflows directly inside the editor.
+This document describes the architecture of the Promptroot VS Code extension, designed to streamline Promptroot workflows directly inside the editor. Currently at Phase 4 with Jules API integration (read-only).
 
 ## Design Principles
 
@@ -22,6 +22,9 @@ vscode-extension/
 ├── src/
 │   ├── extension.ts        # Entry point (activate/deactivate)
 │   ├── constants.ts         # Command IDs, view IDs, config keys
+│   ├── tree-provider.ts     # Tree view provider for asset browsing
+│   ├── jules-config.ts      # Jules API configuration & SecretStorage
+│   ├── jules-client.ts      # Jules API HTTP client
 │   └── test/                # Test files (future)
 ├── out/                     # Compiled JavaScript (generated)
 ├── package.json             # Extension manifest
@@ -39,10 +42,14 @@ The main entry point implements two required functions:
 - `activate(context)` - Called when extension activates. Registers commands, views, and event handlers. All disposables must be added to context.subscriptions.
 - `deactivate()` - Called when extension deactivates. Cleanup and resource disposal.
 
-**Current Implementation:**
+**Current Implementation (Phase 4):**
 - Creates output channel for logging
-- Registers three commands: initialize, openDocs, browseAssets
+- Initializes Jules configuration (SecretStorage)
+- Initializes Jules API client
+- Creates tree view provider for assets
+- Registers seven commands: initialize, openDocs, browseAssets, refreshAssets, configureJulesApi, viewJulesSources, viewJulesSessions
 - Logs activation and command execution to output channel
+- Helper functions for viewing Jules sources and sessions with progress indicators
 
 ### Constants (constants.ts)
 
@@ -66,7 +73,7 @@ Declares:
 - `onCommand:promptroot.initialize` - Activate on command execution
 - `workspaceContains:**/prompts/**` - Activate when workspace contains prompts directory
 
-## Phase 1 Implementation Details
+## Phase 1-4 Implementation Details
 
 ### Commands
 
@@ -74,7 +81,11 @@ Declares:
 |------------|-------|--------|
 | `promptroot.initialize` | Promptroot: Initialize Workspace | Logs message, shows info notification |
 | `promptroot.openDocs` | Promptroot: Open Documentation | Opens GitHub repo in browser |
-| `promptroot.browseAssets` | Promptroot: Browse Assets | Placeholder notification |
+| `promptroot.browseAssets` | Promptroot: Browse Assets | Focuses on assets tree view |
+| `promptroot.refreshAssets` | Promptroot: Refresh Assets | Refreshes tree view from file system |
+| `promptroot.configureJulesApi` | Promptroot: Configure Jules API | Prompts for API key, stores in SecretStorage |
+| `promptroot.viewJulesSources` | Promptroot: View Jules Sources | Lists sources from Jules API |
+| `promptroot.viewJulesSessions` | Promptroot: View Jules Sessions | Lists and displays session details |
 
 ### Configuration
 
@@ -126,21 +137,6 @@ Press F5 in VS Code to launch Extension Development Host with extension loaded.
 
 ## Future Phases
 
-### Phase 2: UI Surface
-- Implement tree view provider for assets view
-- Add more commands for asset operations
-
-### Phase 3: Promptroot Integration
-- Detect workspace structure (prompts/ directory)
-- Read markdown files from disk
-- Populate tree view with real data
-- Add validation and error handling
-
-### Phase 4: Jules API Integration
-- Add Jules API configuration settings
-- Implement read-only API calls
-- Display API data in extension
-
 ### Phase 5: Write Operations
 - Commands to create new assets
 - Template support
@@ -151,6 +147,87 @@ Press F5 in VS Code to launch Extension Development Host with extension loaded.
 - E2E tests for user flows
 - Package extension (.vsix)
 - Publish to marketplace
+
+### Phase 7+: Advanced Features
+- Jules API write operations
+- Batch operations
+- Advanced search
+- Workspace synchronization
+
+## Core Modules (Phase 4)
+
+### Tree Provider (tree-provider.ts)
+
+Implements VS Code's TreeDataProvider interface for the assets view.
+
+**Classes:**
+- `PromptrootTreeItem` - Represents a file or folder in the tree
+  - Extends `vscode.TreeItem`
+  - Sets icons, tooltips, and click behavior based on item type
+  - Files are clickable (open in editor), folders are collapsible
+
+- `PromptrootTreeProvider` - Provides tree data to VS Code
+  - Implements `vscode.TreeDataProvider<PromptrootTreeItem>`
+  - `detectPromptrootStructure()` - Finds workspace root with prompts/ directory
+  - `getDirectoryChildren()` - Reads directory contents, filters .md files
+  - `getChildren()` - Returns tree items for root or directory
+  - `getTreeItem()` - Converts internal item to VS Code tree item
+  - `refresh()` - Triggers tree update via event emitter
+
+**Features:**
+- Automatic workspace detection (looks for prompts/ directory)
+- Folders sorted before files
+- Click to open markdown files
+- Refresh button in view title bar
+- Error handling for invalid workspaces
+
+### Jules Configuration (jules-config.ts)
+
+Manages Jules API configuration using VS Code SecretStorage.
+
+**Class:**
+- `JulesConfig` - API key management wrapper
+  - Constructor takes `vscode.ExtensionContext`
+  - `hasApiKey()` - Check if API key is stored
+  - `getApiKey()` - Retrieve stored API key
+  - `setApiKey(key)` - Store API key securely
+  - `clearApiKey()` - Delete stored API key
+  - `promptForApiKey()` - Show input box for API key entry
+  - `showConfigurationMenu()` - Quick Pick menu (set/clear/test)
+  - `ensureApiKey()` - Get key or prompt if missing
+
+**Features:**
+- Secure storage via VS Code SecretStorage (encrypted)
+- API key validation (non-empty, trimmed)
+- User-friendly prompts and error messages
+- Configuration menu with set/clear/test options
+
+### Jules Client (jules-client.ts)
+
+HTTP client for Jules API operations.
+
+**Interfaces:**
+- `JulesSource` - Source metadata (id, displayName, updateTime)
+- `JulesSession` - Session metadata (name, displayName, updateTime, state)
+- `ListSourcesResponse` - Response from /sources endpoint
+- `ListSessionsResponse` - Response from /sessions endpoint
+
+**Class:**
+- `JulesClient` - HTTP client wrapper
+  - Constructor takes API key and output channel
+  - `listSources()` - GET /sources (list available sources)
+  - `listSessions()` - GET /sessions (list user sessions)
+  - `getSession(sessionName)` - GET /sessions/{sessionName} (session details)
+  - `testApiKey()` - Test connection with API key
+  - `fetchWithTimeout()` - Fetch wrapper with 10s timeout and AbortController
+
+**Features:**
+- Base URL: https://jules.googleapis.com/v1alpha
+- Authentication via X-Goog-Api-Key header
+- 10-second timeout for all requests
+- Detailed error handling (network, HTTP, timeout)
+- Logging to output channel
+- Type-safe responses with TypeScript interfaces
 
 ## Dependencies
 
@@ -167,10 +244,12 @@ Press F5 in VS Code to launch Extension Development Host with extension loaded.
 
 ## Security Considerations
 
-- No external network calls in Phase 1
+- No external network calls except Jules API (Phase 4+)
 - All file operations workspace-relative (Phase 3+)
 - User confirmation before file writes (Phase 5)
-- No API keys in code (Phase 4+ will use VS Code SecretStorage)
+- API keys stored in VS Code SecretStorage (encrypted, not in settings or code)
+- Jules API key never logged or exposed in UI
+- HTTPS-only for Jules API calls
 
 ## Code Quality Standards
 

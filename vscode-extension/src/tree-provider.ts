@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * Represents a node in the Promptroot assets tree view.
@@ -9,7 +11,8 @@ export class PromptrootTreeItem extends vscode.TreeItem {
     public readonly label: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly resourceUri?: vscode.Uri,
-    public readonly itemType: 'folder' | 'prompt' | 'template' | 'root' = 'root'
+    public readonly itemType: 'folder' | 'prompt' | 'template' | 'root' = 'root',
+    public readonly fullPath?: string
   ) {
     super(label, collapsibleState);
 
@@ -25,6 +28,14 @@ export class PromptrootTreeItem extends vscode.TreeItem {
     // Set resource URI for file-based items
     if (resourceUri) {
       this.resourceUri = resourceUri;
+      // Allow clicking on files to open them
+      if (itemType !== 'folder') {
+        this.command = {
+          command: 'vscode.open',
+          title: 'Open File',
+          arguments: [resourceUri]
+        };
+      }
     }
   }
 
@@ -75,12 +86,34 @@ export class PromptrootTreeProvider implements vscode.TreeDataProvider<Promptroo
   readonly onDidChangeTreeData: vscode.Event<PromptrootTreeItem | undefined | null | void> = 
     this._onDidChangeTreeData.event;
 
-  constructor(private workspaceRoot: string | undefined) {}
+  private assetsPath: string | undefined;
+
+  constructor(private workspaceRoot: string | undefined) {
+    this.detectPromptrootStructure();
+  }
+
+  /**
+   * Detect Promptroot workspace structure by looking for prompts directory.
+   */
+  private detectPromptrootStructure(): void {
+    if (!this.workspaceRoot) {
+      return;
+    }
+
+    // Check for prompts directory in workspace root
+    const promptsDir = path.join(this.workspaceRoot, 'prompts');
+    if (fs.existsSync(promptsDir) && fs.statSync(promptsDir).isDirectory()) {
+      this.assetsPath = promptsDir;
+    } else {
+      this.assetsPath = undefined;
+    }
+  }
 
   /**
    * Refresh the tree view.
    */
   refresh(): void {
+    this.detectPromptrootStructure();
     this._onDidChangeTreeData.fire();
   }
 
@@ -97,106 +130,99 @@ export class PromptrootTreeProvider implements vscode.TreeDataProvider<Promptroo
    */
   getChildren(element?: PromptrootTreeItem): Thenable<PromptrootTreeItem[]> {
     if (!this.workspaceRoot) {
-      vscode.window.showInformationMessage('No workspace folder open');
+      vscode.window.showInformationMessage('No workspace folder open. Open a folder to browse Promptroot assets.');
       return Promise.resolve([]);
     }
 
-    if (element) {
-      // Return children for the given element (Phase 3 will implement this)
-      return Promise.resolve(this.getElementChildren(element));
+    if (!this.assetsPath) {
+      vscode.window.showWarningMessage('Promptroot structure not detected. Expected a "prompts" directory in workspace root.');
+      return Promise.resolve([]);
+    }
+
+    if (element && element.fullPath) {
+      // Return children for the given element
+      return Promise.resolve(this.getDirectoryChildren(element.fullPath));
     } else {
-      // Return root-level items (Phase 2: sample data)
-      return Promise.resolve(this.getRootElements());
+      // Return root-level items (contents of prompts directory)
+      return Promise.resolve(this.getDirectoryChildren(this.assetsPath));
     }
   }
 
   /**
-   * Get root-level tree items.
-   * Phase 2: Returns sample/placeholder data.
-   * Phase 3: Will read actual workspace structure.
+   * Read directory contents and create tree items.
+   * Reads actual files and folders from the file system.
    */
-  private getRootElements(): PromptrootTreeItem[] {
-    // Sample data for Phase 2 verification
-    return [
-      new PromptrootTreeItem(
-        'prompts',
-        vscode.TreeItemCollapsibleState.Collapsed,
-        undefined,
-        'folder'
-      ),
-      new PromptrootTreeItem(
-        'templates',
-        vscode.TreeItemCollapsibleState.Collapsed,
-        undefined,
-        'folder'
-      ),
-      new PromptrootTreeItem(
-        'sample-prompt.md',
-        vscode.TreeItemCollapsibleState.None,
-        undefined,
-        'prompt'
-      )
-    ];
+  private getDirectoryChildren(dirPath: string): PromptrootTreeItem[] {
+    try {
+      if (!fs.existsSync(dirPath)) {
+        return [];
+      }
+
+      const items = fs.readdirSync(dirPath);
+      const treeItems: PromptrootTreeItem[] = [];
+
+      for (const item of items) {
+        const itemPath = path.join(dirPath, item);
+        const stat = fs.statSync(itemPath);
+
+        if (stat.isDirectory()) {
+          // Directory
+          treeItems.push(new PromptrootTreeItem(
+            item,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            vscode.Uri.file(itemPath),
+            'folder',
+            itemPath
+          ));
+        } else if (stat.isFile() && this.isPromptrootFile(item)) {
+          // File (only show markdown files)
+          const itemType = this.getFileType(item);
+          treeItems.push(new PromptrootTreeItem(
+            item,
+            vscode.TreeItemCollapsibleState.None,
+            vscode.Uri.file(itemPath),
+            itemType,
+            itemPath
+          ));
+        }
+      }
+
+      // Sort: directories first, then files, both alphabetically
+      treeItems.sort((a, b) => {
+        if (a.itemType === 'folder' && b.itemType !== 'folder') {
+          return -1;
+        }
+        if (a.itemType !== 'folder' && b.itemType === 'folder') {
+          return 1;
+        }
+        return a.label.localeCompare(b.label);
+      });
+
+      return treeItems;
+    } catch (error) {
+      vscode.window.showErrorMessage(`Error reading directory: ${error}`);
+      return [];
+    }
   }
 
   /**
-   * Get children for a specific tree element.
-   * Phase 2: Returns sample data for demonstration.
-   * Phase 3: Will read actual file system.
+   * Check if a file should be displayed in the tree.
+   * Currently only shows markdown files.
    */
-  private getElementChildren(element: PromptrootTreeItem): PromptrootTreeItem[] {
-    // Sample nested data
-    if (element.label === 'prompts') {
-      return [
-        new PromptrootTreeItem(
-          'tutorial',
-          vscode.TreeItemCollapsibleState.Collapsed,
-          undefined,
-          'folder'
-        ),
-        new PromptrootTreeItem(
-          'example-prompt.md',
-          vscode.TreeItemCollapsibleState.None,
-          undefined,
-          'prompt'
-        )
-      ];
-    }
+  private isPromptrootFile(filename: string): boolean {
+    return filename.endsWith('.md');
+  }
 
-    if (element.label === 'templates') {
-      return [
-        new PromptrootTreeItem(
-          'basic-template.md',
-          vscode.TreeItemCollapsibleState.None,
-          undefined,
-          'template'
-        ),
-        new PromptrootTreeItem(
-          'advanced-template.md',
-          vscode.TreeItemCollapsibleState.None,
-          undefined,
-          'template'
-        )
-      ];
+  /**
+   * Determine the item type based on filename or location.
+   * Can be extended to detect templates vs prompts based on directory structure.
+   */
+  private getFileType(filename: string): 'prompt' | 'template' {
+    // Simple heuristic: files in 'templates' directory are templates
+    // This can be enhanced with more sophisticated detection
+    if (filename.toLowerCase().includes('template')) {
+      return 'template';
     }
-
-    if (element.label === 'tutorial') {
-      return [
-        new PromptrootTreeItem(
-          'getting-started.md',
-          vscode.TreeItemCollapsibleState.None,
-          undefined,
-          'prompt'
-        ),
-        new PromptrootTreeItem(
-          'advanced-usage.md',
-          vscode.TreeItemCollapsibleState.None,
-          undefined,
-          'prompt'
-        )
-      ];
-    }
-
-    return [];
+    return 'prompt';
   }
 }

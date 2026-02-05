@@ -4,13 +4,33 @@ A VS Code extension that streamlines Promptroot workflows directly inside the ed
 
 ## Features
 
-### Phase 1 (Current)
-- Basic extension activation and command registration
-- Three core commands:
-  - `Promptroot: Initialize Workspace` - Initialize or validate Promptroot configuration
-  - `Promptroot: Open Documentation` - Open Promptroot documentation
-  - `Promptroot: Browse Assets` - Browse Promptroot assets (placeholder)
+### Current Features (Phase 4)
+
+#### Asset Management
+- Tree view in Explorer sidebar showing all Promptroot assets
+- Real-time file system integration (reads from `prompts/` directory)
+- Click to open markdown files in editor
+- Refresh button to reload asset tree
+- Folder expansion with icons and tooltips
+
+#### Core Commands
+- `Promptroot: Initialize Workspace` - Initialize or validate Promptroot configuration
+- `Promptroot: Open Documentation` - Open Promptroot documentation
+- `Promptroot: Browse Assets` - Browse Promptroot assets in tree view
+- `Promptroot: Refresh Assets` - Reload asset tree from file system
+
+#### Jules API Integration (Read-Only)
+- `Promptroot: Configure Jules API` - Set up Jules API key (stored securely in SecretStorage)
+- `Promptroot: View Jules Sources` - List available sources from Jules API
+- `Promptroot: View Jules Sessions` - Browse sessions and view session details
+- Secure API key storage using VS Code SecretStorage
+- Error handling with user-friendly messages
+- Progress indicators during API calls
+- Quick Pick UI for browsing sources and sessions
+
+#### General
 - Output channel for extension logging
+- Automatic Promptroot workspace detection
 
 ## Installation
 

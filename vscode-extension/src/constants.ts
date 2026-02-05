@@ -7,7 +7,10 @@ export const COMMANDS = {
   initialize: 'promptroot.initialize',
   openDocs: 'promptroot.openDocs',
   browseAssets: 'promptroot.browseAssets',
-  refreshAssets: 'promptroot.refreshAssets'
+  refreshAssets: 'promptroot.refreshAssets',
+  configureJulesApi: 'promptroot.configureJulesApi',
+  viewJulesSources: 'promptroot.viewJulesSources',
+  viewJulesSessions: 'promptroot.viewJulesSessions'
 } as const;
 
 export const VIEWS = {

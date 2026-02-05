@@ -65,7 +65,54 @@ A VS Code extension that streamlines Promptroot workflows directly inside the ed
 
 ## Usage
 
-Open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P) and search for "Promptroot" to see available commands.
+### Getting Started
+
+1. **Open a Workspace** - Open a folder in VS Code that contains (or will contain) your Promptroot assets
+2. **View Assets** - Look for "Promptroot Assets" in the Explorer sidebar
+3. **Create Your First Prompt** - Click the "+" button in the tree view or use Command Palette
+
+### Creating a New Prompt Asset
+
+1. Open Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
+2. Type "Promptroot: Create New Prompt Asset"
+3. Select a template:
+   - **Basic Prompt** - Simple prompt with metadata
+   - **Task Prompt** - Structured task with steps and verification
+   - **Tutorial Prompt** - Comprehensive tutorial with learning objectives
+4. Fill in metadata:
+   - **Name** - Display name for your prompt
+   - **Description** - Brief description of what it does
+   - **Category** - Select from predefined categories
+   - **Author** - Your name (defaults to system username)
+5. Preview the generated content
+6. Confirm creation - Click "Create" in the dialog
+
+The new file will be:
+- Created in `prompts/` directory
+- Automatically opened in editor
+- Visible in the tree view
+
+### Working with Jules API
+
+1. **Configure API Key**
+   - Command: "Promptroot: Configure Jules API"
+   - Select "Set API Key"
+   - Enter your Jules API key (stored securely in VS Code)
+
+2. **View Jules Sources**
+   - Command: "Promptroot: View Jules Sources"
+   - Lists all connected repositories
+
+3. **View Jules Sessions**
+   - Command: "Promptroot: View Jules Sessions"
+   - Browse recent coding sessions with status indicators
+
+### Tips
+
+- Use the **refresh button** (↻) in tree view to reload assets from disk
+- **Filename sanitization** - Spaces become hyphens, special characters removed
+- **Overwrite protection** - Extension warns before replacing existing files
+- **Check the Output channel** - View > Output > Select "Promptroot" for logs
 
 ## Configuration
 
@@ -78,6 +125,9 @@ Open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P) and search for "Promptroot
 - `npm run compile` - Compile TypeScript to JavaScript
 - `npm run watch` - Watch for changes and compile automatically
 - `npm run lint` - Run ESLint on source files
+- `npm run test` - Run unit tests with Vitest
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage report
 - `npm run test` - Run tests
 
 ### Architecture

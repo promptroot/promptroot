@@ -1,0 +1,74 @@
+{
+  "name": "promptroot-vscode",
+  "displayName": "Promptroot",
+  "description": "VS Code extension for Promptroot workflows and asset management",
+  "version": "0.1.0",
+  "publisher": "promptroot",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:promptroot.initialize",
+    "workspaceContains:**/prompts/**"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "promptroot.initialize",
+        "title": "Promptroot: Initialize Workspace"
+      },
+      {
+        "command": "promptroot.openDocs",
+        "title": "Promptroot: Open Documentation"
+      },
+      {
+        "command": "promptroot.browseAssets",
+        "title": "Promptroot: Browse Assets"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "promptroot.assetsView",
+          "name": "Promptroot Assets"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Promptroot",
+      "properties": {
+        "promptroot.assetsPath": {
+          "type": "string",
+          "default": "prompts",
+          "description": "Path to Promptroot assets directory relative to workspace root"
+        },
+        "promptroot.autoDetect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect Promptroot workspaces"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.x",
+    "@typescript-eslint/eslint-plugin": "^6.x",
+    "@typescript-eslint/parser": "^6.x",
+    "eslint": "^8.x",
+    "typescript": "^5.3.0",
+    "@vscode/test-electron": "^2.3.0"
+  }
+}

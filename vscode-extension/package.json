@@ -28,6 +28,11 @@
       {
         "command": "promptroot.browseAssets",
         "title": "Promptroot: Browse Assets"
+      },
+      {
+        "command": "promptroot.refreshAssets",
+        "title": "Promptroot: Refresh Assets",
+        "icon": "$(refresh)"
       }
     ],
     "views": {
@@ -35,6 +40,15 @@
         {
           "id": "promptroot.assetsView",
           "name": "Promptroot Assets"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "promptroot.refreshAssets",
+          "when": "view == promptroot.assetsView",
+          "group": "navigation"
         }
       ]
     },

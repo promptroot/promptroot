@@ -6,7 +6,8 @@
 export const COMMANDS = {
   initialize: 'promptroot.initialize',
   openDocs: 'promptroot.openDocs',
-  browseAssets: 'promptroot.browseAssets'
+  browseAssets: 'promptroot.browseAssets',
+  refreshAssets: 'promptroot.refreshAssets'
 } as const;
 
 export const VIEWS = {

@@ -98,6 +98,7 @@ export async function updateAuthUI(user) {
   const userAvatar = document.getElementById('userAvatar');
   const dropdownUserName = document.getElementById('dropdownUserName');
   const dropdownAvatar = document.getElementById('dropdownAvatar');
+  const profileItem = document.getElementById('headerProfile');
   const signInItem = document.getElementById('headerSignIn');
   const switchAccountItem = document.getElementById('headerSwitchAccount');
   const signOutItem = document.getElementById('headerSignOut');
@@ -155,6 +156,10 @@ export async function updateAuthUI(user) {
       dropdownAvatar.classList.remove('hidden');
     }
     
+    if (profileItem) {
+      profileItem.classList.remove('hidden');
+      profileItem.onclick = () => window.location.href = '/pages/profile/profile.html';
+    }
     if (signInItem) {
       signInItem.classList.add('hidden');
       signInItem.onclick = null;
@@ -179,6 +184,10 @@ export async function updateAuthUI(user) {
     }
     if (dropdownAvatar) dropdownAvatar.classList.add('hidden');
     
+    if (profileItem) {
+      profileItem.classList.add('hidden');
+      profileItem.onclick = null;
+    }
     if (signInItem) {
       signInItem.classList.remove('hidden');
       signInItem.onclick = signInWithGitHub;

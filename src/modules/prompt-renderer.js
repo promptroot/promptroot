@@ -5,11 +5,12 @@ import { toggleVisibility } from '../utils/dom-helpers.js';
 import { loadMarked } from '../utils/lazy-loaders.js';
 import { ensureAncestorsExpanded, loadExpandedState, persistExpandedState, renderList, updateActiveItem, setCurrentSlug, getCurrentSlug, getFiles } from './prompt-list.js';
 import { showToast } from './toast.js';
-import { copyAndOpen } from './copen.js';
+import { copyAndOpen, clearCopenCache } from './copen.js';
 import { copyText } from '../utils/clipboard.js';
 import statusBar from './status-bar.js';
-import { initSplitButton, destroySplitButton } from './split-button.js';
-import { COPEN_OPTIONS, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_ICON } from '../utils/copen-config.js';
+import { initSplitButton, destroySplitButton, updateSplitButtonOptions } from './split-button.js';
+import { getCopenOptions, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_ICON } from '../utils/copen-config.js';
+import { getAuth } from './firebase-service.js';
 
 let domPurifyHooksInitialized = false;
 
@@ -100,15 +101,34 @@ export function initPromptRenderer() {
   
   copenContainer = document.getElementById('copenContainer');
   if (copenContainer) {
+    // Initialize with static options, will be updated when user auth changes
     copenSplitBtn = initSplitButton({
       container: copenContainer,
       defaultLabel: COPEN_DEFAULT_LABEL,
       defaultIcon: COPEN_DEFAULT_ICON,
-      options: COPEN_OPTIONS,
+      options: [],
       onAction: handleCopenPrompt,
       storageKey: COPEN_STORAGE_KEY
     });
+    
+    // Load user's copen options
+    refreshCopenOptions();
   }
+  
+  // Listen for auth state changes to refresh copen options
+  const auth = getAuth();
+  if (auth) {
+    auth.onAuthStateChanged(() => {
+      clearCopenCache();
+      refreshCopenOptions();
+    });
+  }
+  
+  // Listen for copen changes
+  window.addEventListener('copensChanged', () => {
+    clearCopenCache();
+    refreshCopenOptions();
+  });
   
   rawBtn = document.getElementById('rawBtn');
   ghBtn = document.getElementById('ghBtn');
@@ -124,9 +144,21 @@ export function initPromptRenderer() {
   window.addEventListener('branchChanged', handleBranchChanged);
 }
 
+async function refreshCopenOptions() {
+  if (!copenContainer || !copenSplitBtn) return;
+  
+  try {
+    const options = await getCopenOptions();
+    updateSplitButtonOptions(copenContainer, options);
+  } catch (error) {
+    console.error('Error refreshing copen options:', error);
+  }
+}
+
 export function destroyPromptRenderer() {
   document.removeEventListener('click', handleDocumentClick);
   window.removeEventListener('branchChanged', handleBranchChanged);
+  window.removeEventListener('copensChanged', refreshCopenOptions);
   
   if (copenContainer) {
     destroySplitButton(copenContainer);

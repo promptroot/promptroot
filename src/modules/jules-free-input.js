@@ -2,17 +2,30 @@ import { getCurrentUser } from './auth.js';
 import { getAuth } from './firebase-service.js';
 import { RepoSelector, BranchSelector } from './repo-branch-selector.js';
 import { showToast } from './toast.js';
-import { copyAndOpen } from './copen.js';
+import { copyAndOpen, clearCopenCache } from './copen.js';
 import { toggleVisibility } from '../utils/dom-helpers.js';
 import { JULES_MESSAGES, TIMEOUTS, RETRY_CONFIG } from '../utils/constants.js';
-import { initSplitButton } from './split-button.js';
-import { COPEN_OPTIONS, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_ICON } from '../utils/copen-config.js';
+import { initSplitButton, updateSplitButtonOptions } from './split-button.js';
+import { getCopenOptions, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_ICON } from '../utils/copen-config.js';
 // Lazy loaded: jules-keys, jules-modal, jules-queue
 
 let _lastSelectedSourceId = null;
 let _lastSelectedBranch = null;
 let _branchChangeListenerAdded = false;
 let _freeInputCopenSplitBtn = null;
+let _authListenerAdded = false;
+
+async function refreshFreeInputCopenOptions() {
+  const copenContainer = document.getElementById('freeInputCopenContainer');
+  if (!copenContainer || !_freeInputCopenSplitBtn) return;
+  
+  try {
+    const options = await getCopenOptions();
+    updateSplitButtonOptions(copenContainer, options);
+  } catch (error) {
+    console.error('Error refreshing free input copen options:', error);
+  }
+}
 
 export function getLastSelectedSource() {
   return { sourceId: _lastSelectedSourceId, branch: _lastSelectedBranch };
@@ -60,7 +73,7 @@ export async function handleFreeInputAfterAuth() {
   }
 }
 
-export function showFreeInputForm() {
+export async function showFreeInputForm() {
   const freeInputSection = document.getElementById('freeInputSection');
   const empty = document.getElementById('empty');
   const title = document.getElementById('title');
@@ -122,11 +135,12 @@ export function showFreeInputForm() {
   };
 
   if (!_freeInputCopenSplitBtn && copenContainer) {
+    const options = await getCopenOptions();
     _freeInputCopenSplitBtn = initSplitButton({
       container: copenContainer,
       defaultLabel: COPEN_DEFAULT_LABEL,
       defaultIcon: COPEN_DEFAULT_ICON,
-      options: COPEN_OPTIONS,
+      options: options,
       onAction: async (target) => {
         const promptText = validatePromptText();
         if (!promptText) return;
@@ -134,6 +148,26 @@ export function showFreeInputForm() {
       },
       storageKey: COPEN_STORAGE_KEY
     });
+  }
+  
+  // Always refresh copen options when form is shown (in case user logged in or copens changed)
+  if (_freeInputCopenSplitBtn && copenContainer) {
+    const options = await getCopenOptions();
+    updateSplitButtonOptions(copenContainer, options);
+  }
+  
+  // Also refresh when user logs in (for hard refresh case)
+  if (!_authListenerAdded) {
+    const auth = getAuth();
+    if (auth) {
+      auth.onAuthStateChanged(async (user) => {
+        if (user && _freeInputCopenSplitBtn && copenContainer) {
+          const options = await getCopenOptions();
+          updateSplitButtonOptions(copenContainer, options);
+        }
+      });
+    }
+    _authListenerAdded = true;
   }
 
   const updateButtonStates = () => {
@@ -396,6 +430,40 @@ export function showFreeInputForm() {
       showToast('Failed to queue prompt: ' + err.message, 'error');
     }
   };
+
+  // Initialize split button for copen if not already initialized
+  if (!_freeInputCopenSplitBtn && copenContainer) {
+    _freeInputCopenSplitBtn = initSplitButton({
+      container: copenContainer,
+      defaultLabel: COPEN_DEFAULT_LABEL,
+      defaultIcon: COPEN_DEFAULT_ICON,
+      options: [],
+      onAction: async (target) => {
+        const promptText = validatePromptText();
+        if (!promptText) return;
+        await copyAndOpen(target, promptText);
+      },
+      storageKey: COPEN_STORAGE_KEY
+    });
+    
+    // Load user's copen options
+    refreshFreeInputCopenOptions();
+    
+    // Listen for auth changes
+    const auth = getAuth();
+    if (auth) {
+      auth.onAuthStateChanged(() => {
+        clearCopenCache();
+        refreshFreeInputCopenOptions();
+      });
+    }
+    
+    // Listen for copen changes
+    window.addEventListener('copensChanged', () => {
+      clearCopenCache();
+      refreshFreeInputCopenOptions();
+    });
+  }
 
   submitBtn.onclick = handleSubmit;
   queueBtn.onclick = handleQueue;

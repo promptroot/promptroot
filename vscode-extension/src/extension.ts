@@ -3,6 +3,7 @@ import { COMMANDS, OUTPUT_CHANNEL_NAME, VIEWS } from './constants';
 import { PromptrootTreeProvider } from './tree-provider';
 import { JulesConfig } from './jules-config';
 import { JulesClient } from './jules-client';
+import { createNewPromptAsset } from './asset-creator';
 
 let outputChannel: vscode.OutputChannel;
 let treeProvider: PromptrootTreeProvider;
@@ -65,6 +66,31 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // Create asset command
+  const createAssetCommand = vscode.commands.registerCommand(
+    COMMANDS.createAsset,
+    async () => {
+      outputChannel.appendLine('Create asset command executed');
+      
+      // Get current workspace root (in case it changed after activation)
+      const currentWorkspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      
+      outputChannel.appendLine(`Current workspace root: ${currentWorkspaceRoot}`);
+      outputChannel.appendLine(`Workspace folders: ${JSON.stringify(vscode.workspace.workspaceFolders?.map(f => f.uri.fsPath))}`);
+      
+      if (!currentWorkspaceRoot) {
+        vscode.window.showErrorMessage('No workspace folder open. Please open a workspace first.');
+        return;
+      }
+      
+      await createNewPromptAsset(
+        currentWorkspaceRoot,
+        outputChannel,
+        () => treeProvider.refresh() // Refresh tree after creation
+      );
+    }
+  );
+
   // Jules API commands
   const configureJulesApiCommand = vscode.commands.registerCommand(
     COMMANDS.configureJulesApi,
@@ -96,6 +122,7 @@ export function activate(context: vscode.ExtensionContext) {
     openDocsCommand,
     browseAssetsCommand,
     refreshAssetsCommand,
+    createAssetCommand,
     configureJulesApiCommand,
     viewJulesSourcesCommand,
     viewJulesSessionsCommand,

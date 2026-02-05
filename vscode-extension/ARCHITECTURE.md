@@ -5,7 +5,7 @@
 
 ## Overview
 
-This document describes the architecture of the Promptroot VS Code extension, designed to streamline Promptroot workflows directly inside the editor. Currently at Phase 4 with Jules API integration (read-only).
+This document describes the architecture of the Promptroot VS Code extension, designed to streamline Promptroot workflows directly inside the editor. Currently at Phase 5 with asset authoring capabilities.
 
 ## Design Principles
 
@@ -23,6 +23,8 @@ vscode-extension/
 │   ├── extension.ts        # Entry point (activate/deactivate)
 │   ├── constants.ts         # Command IDs, view IDs, config keys
 │   ├── tree-provider.ts     # Tree view provider for asset browsing
+│   ├── templates.ts         # Prompt asset templates and validation
+│   ├── asset-creator.ts     # Asset creation workflow orchestration
 │   ├── jules-config.ts      # Jules API configuration & SecretStorage
 │   ├── jules-client.ts      # Jules API HTTP client
 │   └── test/                # Test files (future)
@@ -42,14 +44,15 @@ The main entry point implements two required functions:
 - `activate(context)` - Called when extension activates. Registers commands, views, and event handlers. All disposables must be added to context.subscriptions.
 - `deactivate()` - Called when extension deactivates. Cleanup and resource disposal.
 
-**Current Implementation (Phase 4):**
+**Current Implementation (Phase 5):**
 - Creates output channel for logging
 - Initializes Jules configuration (SecretStorage)
 - Initializes Jules API client
 - Creates tree view provider for assets
-- Registers seven commands: initialize, openDocs, browseAssets, refreshAssets, configureJulesApi, viewJulesSources, viewJulesSessions
+- Registers eight commands: initialize, openDocs, browseAssets, refreshAssets, createAsset, configureJulesApi, viewJulesSources, viewJulesSessions
 - Logs activation and command execution to output channel
 - Helper functions for viewing Jules sources and sessions with progress indicators
+- Asset creation workflow with template selection and confirmation
 
 ### Constants (constants.ts)
 
@@ -83,6 +86,7 @@ Declares:
 | `promptroot.openDocs` | Promptroot: Open Documentation | Opens GitHub repo in browser |
 | `promptroot.browseAssets` | Promptroot: Browse Assets | Focuses on assets tree view |
 | `promptroot.refreshAssets` | Promptroot: Refresh Assets | Refreshes tree view from file system |
+| `promptroot.createAsset` | Promptroot: Create New Prompt Asset | Launches asset creation workflow |
 | `promptroot.configureJulesApi` | Promptroot: Configure Jules API | Prompts for API key, stores in SecretStorage |
 | `promptroot.viewJulesSources` | Promptroot: View Jules Sources | Lists sources from Jules API |
 | `promptroot.viewJulesSessions` | Promptroot: View Jules Sessions | Lists and displays session details |
@@ -137,11 +141,6 @@ Press F5 in VS Code to launch Extension Development Host with extension loaded.
 
 ## Future Phases
 
-### Phase 5: Write Operations
-- Commands to create new assets
-- Template support
-- File write confirmation
-
 ### Phase 6: Testing & Release
 - Unit tests for core logic
 - E2E tests for user flows
@@ -154,7 +153,7 @@ Press F5 in VS Code to launch Extension Development Host with extension loaded.
 - Advanced search
 - Workspace synchronization
 
-## Core Modules (Phase 4)
+## Core Modules (Phases 1-5)
 
 ### Tree Provider (tree-provider.ts)
 
@@ -228,6 +227,70 @@ HTTP client for Jules API operations.
 - Detailed error handling (network, HTTP, timeout)
 - Logging to output channel
 - Type-safe responses with TypeScript interfaces
+
+### Templates (templates.ts)
+
+Template system for generating new prompt assets.
+
+**Enums:**
+- `PromptTemplate` - Available template types (Basic, Task, Tutorial)
+
+**Interfaces:**
+- `PromptAssetMetadata` - User-provided metadata (name, description, category, author)
+
+**Functions:**
+- `getAvailableTemplates()` - Returns Quick Pick items for template selection
+- `templateFromLabel(label)` - Maps Quick Pick label to PromptTemplate enum
+- `generatePromptContent(template, metadata)` - Generates markdown content from template
+- `validateAssetName(name)` - Validates filename-safe asset names
+- `assetNameToFilename(name)` - Converts asset name to sanitized filename
+
+**Template Generators:**
+- `generateBasicTemplate()` - Simple prompt with metadata and sections
+- `generateTaskTemplate()` - Structured task with objectives, steps, verification
+- `generateTutorialTemplate()` - Educational content with learning objectives and parts
+
+**Features:**
+- 3 template types for different use cases
+- Metadata placeholders (name, description, category, author, timestamp)
+- Asset name validation (length, invalid characters, empty check)
+- Filename sanitization (lowercase, hyphenation, special character removal)
+- Consistent markdown structure across templates
+
+### Asset Creator (asset-creator.ts)
+
+Orchestrates the complete asset creation workflow.
+
+**Functions:**
+- `collectAssetMetadata()` - Multi-step input boxes for metadata collection
+- `selectTemplate()` - Quick Pick for template selection
+- `confirmFileCreation()` - Preview and confirmation dialog
+- `writeAssetFile()` - Write file to disk with overwrite protection
+- `openFile()` - Open newly created file in editor
+- `createNewPromptAsset()` - Main orchestrator function
+
+**Workflow Steps:**
+1. Template selection via Quick Pick
+2. Metadata collection (name, description, category, author)
+3. Content generation from template + metadata
+4. Filename sanitization
+5. Preview in untitled document
+6. Modal confirmation dialog
+7. Overwrite check (if file exists)
+8. Write file to prompts/ directory
+9. Open file in editor
+10. Refresh tree view
+11. Show success notification
+
+**Features:**
+- Graceful cancellation at any step (no partial files)
+- Default author from system username
+- Category selection via Quick Pick
+- Preview shows exact file content before writing
+- Overwrite protection with secondary confirmation
+- Automatic prompts/ directory creation if missing
+- Comprehensive error handling and logging
+- Callback for tree refresh after creation
 
 ## Dependencies
 

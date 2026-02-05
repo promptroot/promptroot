@@ -4,7 +4,7 @@ A VS Code extension that streamlines Promptroot workflows directly inside the ed
 
 ## Features
 
-### Current Features (Phase 4)
+### Current Features (Phase 5)
 
 #### Asset Management
 - Tree view in Explorer sidebar showing all Promptroot assets
@@ -18,6 +18,7 @@ A VS Code extension that streamlines Promptroot workflows directly inside the ed
 - `Promptroot: Open Documentation` - Open Promptroot documentation
 - `Promptroot: Browse Assets` - Browse Promptroot assets in tree view
 - `Promptroot: Refresh Assets` - Reload asset tree from file system
+- `Promptroot: Create New Prompt Asset` - Create new prompt with template and metadata
 
 #### Jules API Integration (Read-Only)
 - `Promptroot: Configure Jules API` - Set up Jules API key (stored securely in SecretStorage)
@@ -27,6 +28,16 @@ A VS Code extension that streamlines Promptroot workflows directly inside the ed
 - Error handling with user-friendly messages
 - Progress indicators during API calls
 - Quick Pick UI for browsing sources and sessions
+
+#### Authoring & Templates
+- **Create New Prompt Assets** - Guided workflow for creating new prompts
+- **3 Template Types** - Basic, Task, and Tutorial templates
+- **Metadata Collection** - Name, description, category, author
+- **Preview Before Write** - See generated content before confirmation
+- **Confirmation Required** - Modal dialog for file creation
+- **Overwrite Protection** - Warns if file already exists
+- **Auto-refresh** - Tree updates automatically after creation
+- **Auto-open** - New files open in editor immediately
 
 #### General
 - Output channel for extension logging

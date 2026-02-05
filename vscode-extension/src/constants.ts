@@ -8,6 +8,7 @@ export const COMMANDS = {
   openDocs: 'promptroot.openDocs',
   browseAssets: 'promptroot.browseAssets',
   refreshAssets: 'promptroot.refreshAssets',
+  createAsset: 'promptroot.createAsset',
   configureJulesApi: 'promptroot.configureJulesApi',
   viewJulesSources: 'promptroot.viewJulesSources',
   viewJulesSessions: 'promptroot.viewJulesSessions'

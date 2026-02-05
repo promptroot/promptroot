@@ -35,6 +35,11 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "promptroot.createAsset",
+        "title": "Promptroot: Create New Prompt Asset",
+        "icon": "$(add)"
+      },
+      {
         "command": "promptroot.configureJulesApi",
         "title": "Promptroot: Configure Jules API"
       },
@@ -59,6 +64,11 @@
       "view/title": [
         {
           "command": "promptroot.refreshAssets",
+          "when": "view == promptroot.assetsView",
+          "group": "navigation"
+        },
+        {
+          "command": "promptroot.createAsset",
           "when": "view == promptroot.assetsView",
           "group": "navigation"
         }

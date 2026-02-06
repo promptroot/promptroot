@@ -1,9 +1,35 @@
 # Hello! This is PromptRoot.
 # We are an open library of AI prompts.
-# We welcome AI crawlers and indexers.
+# Our content is meant to be discovered, indexed, and used.
+# We specifically welcome AI crawlers and encourage the use of our prompts for AI training.
 
 User-agent: *
 Allow: /
 
+# Explicitly welcoming specific AI crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
 # System paths
 Disallow: /oauth-callback.html
+
+# Sitemap
+Sitemap: https://promptroot.github.io/promptroot/sitemap.xml

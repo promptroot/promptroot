@@ -375,16 +375,9 @@ export async function syncActiveSessions(progressCallback = null) {
       if (!localSession) {
         // New session not in local DB
         toUpdate.push(apiSession);
-      } else {
-        // Always update to fix any bad timestamps - we can optimize this later
+      } else if (shouldUpdateSession(localSession, apiSession)) {
+        // Update if timestamp is newer or local data is invalid
         toUpdate.push(apiSession);
-        
-        // TODO: Re-enable timestamp comparison after fixing existing data
-        // const localUpdateTime = localSession.apiUpdateTime?.toDate?.() || new Date(localSession.apiUpdateTime || 0);
-        // const apiUpdateTime = apiSession.updateTime ? new Date(apiSession.updateTime) : new Date();
-        // if (apiUpdateTime > localUpdateTime) {
-        //   toUpdate.push(apiSession);
-        // }
       }
     });
 
@@ -498,6 +491,49 @@ export async function syncActiveSessions(progressCallback = null) {
   } catch (error) {
     handleError(error, { source: 'syncActiveSessions' });
     throw error; // Re-throw to ensure finally block runs
+  }
+}
+
+/**
+ * Check if a session needs to be updated based on updateTime
+ * @param {Object} localSession - Session data from Firestore
+ * @param {Object} apiSession - Session data from API
+ * @returns {boolean} True if update is needed
+ */
+function shouldUpdateSession(localSession, apiSession) {
+  // If local session doesn't exist or is missing timestamp, update
+  if (!localSession || !localSession.apiUpdateTime) {
+    return true;
+  }
+
+  // If API session is missing timestamp (unlikely), default to update to be safe
+  if (!apiSession.updateTime) {
+    return true;
+  }
+
+  try {
+    // Parse local timestamp
+    // Handle Firestore Timestamp (has .toDate()) or Date object or string/number
+    let localDate;
+    if (localSession.apiUpdateTime && typeof localSession.apiUpdateTime.toDate === 'function') {
+      localDate = localSession.apiUpdateTime.toDate();
+    } else {
+      localDate = new Date(localSession.apiUpdateTime);
+    }
+
+    // Parse API timestamp
+    const apiDate = new Date(apiSession.updateTime);
+
+    // If local date is invalid, update
+    if (isNaN(localDate.getTime())) {
+      return true;
+    }
+
+    // Update if API date is newer than local date
+    return apiDate > localDate;
+  } catch (err) {
+    console.warn('[Session Tracking] Error comparing timestamps, forcing update:', err);
+    return true;
   }
 }
 

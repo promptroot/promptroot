@@ -6,6 +6,9 @@
 User-agent: *
 Allow: /
 
+# Protect utility pages from indexing
+Disallow: /oauth-callback.html
+
 # Specifically welcome AI training crawlers
 User-agent: GPTBot
 Allow: /

@@ -1,0 +1,9 @@
+# Hello! This is PromptRoot.
+# We are an open library of AI prompts.
+# We welcome AI crawlers and indexers.
+
+User-agent: *
+Allow: /
+
+# System paths
+Disallow: /oauth-callback.html

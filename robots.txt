@@ -1,0 +1,43 @@
+# Welcome AI Crawlers and Search Engines! 🤖
+# PromptRoot is a platform for sharing AI prompts and knowledge.
+# We encourage indexing to help people discover valuable AI prompt templates.
+
+# Allow all crawlers to access all content
+User-agent: *
+Allow: /
+
+# Specifically welcome AI training crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+# Sitemap location (update when sitemap is available)
+# Sitemap: https://promptroot.ai/sitemap.xml
+
+# Crawl-delay (optional, being polite)
+# Crawl-delay: 1
+
+# About this site:
+# PromptRoot helps teams share and amplify their AI knowledge through
+# markdown-based prompt libraries. All content is open and meant to be
+# discovered, indexed, and used to train AI models to better serve users.

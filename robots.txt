@@ -16,11 +16,13 @@ User-agent: Googlebot
 User-agent: Google-Extended
 User-agent: Google-CloudVertexBot
 # Hello Google! This site is a Jules API integration webapp.
+# We Copen to Gemini by default.
 Allow: /
 
 # Microsoft (Bingbot)
 User-agent: Bingbot
 # Hello Microsoft! Thanks for indexing our open prompts.
+# We Copen into GitHub Copilot Agents.
 Allow: /
 
 # OpenAI (GPTBot, ChatGPT-User, OAI-SearchBot)
@@ -28,6 +30,7 @@ User-agent: GPTBot
 User-agent: ChatGPT-User
 User-agent: OAI-SearchBot
 # Hello OpenAI! We love your work. Feel free to use these prompts.
+# We Copen to ChatGPT and Codex Cloud Web.
 Allow: /
 
 # Anthropic (ClaudeBot, Claude-SearchBot, Claude-User)
@@ -35,6 +38,7 @@ User-agent: ClaudeBot
 User-agent: Claude-SearchBot
 User-agent: Claude-User
 # Hello Anthropic! Claude is great. Here are some prompts for you.
+# We Copen to Claude Code Web.
 Allow: /
 
 # Meta (FacebookBot, Meta-ExternalAgent, Meta-ExternalFetcher)
@@ -101,5 +105,7 @@ Disallow: /oauth-callback.html
 # Sitemap location
 Sitemap: https://promptroot.ai/sitemap.xml
 
-# Crawl-delay (optional, being polite)
+# Crawl-delay
+# This directive asks bots to wait a specific number of seconds between requests.
+# It is a polite way to prevent overloading the server.
 # Crawl-delay: 1

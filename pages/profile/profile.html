@@ -96,12 +96,12 @@
         </button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label" for="copenLabel">Label</label>
+        <div class="modal__form-group">
+          <label class="modal__form-label" for="copenLabel">Label</label>
           <input type="text" id="copenLabel" class="form-control" placeholder="e.g., My AI Tool" required>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="copenUrl">URL</label>
+        <div class="modal__form-group">
+          <label class="modal__form-label" for="copenUrl">URL</label>
           <input type="url" id="copenUrl" class="form-control" placeholder="https://example.com" required>
         </div>
       </div>
@@ -113,7 +113,7 @@
   </div>
 
   <!-- Jules API Key Modal -->
-  <div id="julesKeyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="julesKeyModalTitle">
+  <div id="julesKeyModal" class="modal modal--jules-key" role="dialog" aria-modal="true" aria-labelledby="julesKeyModalTitle">
     <div class="modal-content">
       <h2 id="julesKeyModalTitle">Save Jules API Key</h2>
       <p>Enter your Jules API key. This will be encrypted and stored securely.</p>

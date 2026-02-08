@@ -294,7 +294,7 @@ async function openEditQueueModal(docId) {
 
   const modal = document.createElement('div');
   modal.id = 'editQueueItemModal';
-  modal.className = 'modal-overlay';
+  modal.className = 'modal-overlay modal--edit-queue';
 
   modal.setAttribute('role', 'dialog');
   modal.setAttribute('aria-modal', 'true');
@@ -328,7 +328,7 @@ async function openEditQueueModal(docId) {
 
   // Type field
   const typeGroup = document.createElement('div');
-  typeGroup.className = 'form-group';
+  typeGroup.className = 'modal__form-group';
   const typeLabel = document.createElement('label');
   typeLabel.className = 'form-section-label';
   typeLabel.textContent = 'Type:';
@@ -339,7 +339,7 @@ async function openEditQueueModal(docId) {
 
   // Schedule info
   const scheduleGroup = document.createElement('div');
-  scheduleGroup.className = 'form-group hidden';
+  scheduleGroup.className = 'modal__form-group hidden';
   scheduleGroup.id = 'editQueueStatusGroup';
   const scheduleLabel = document.createElement('label');
   scheduleLabel.className = 'form-section-label';
@@ -359,7 +359,7 @@ async function openEditQueueModal(docId) {
 
   // Prompt field
   const promptGroup = document.createElement('div');
-  promptGroup.className = 'form-group';
+  promptGroup.className = 'modal__form-group';
   promptGroup.id = 'editPromptGroup';
   const promptHeader = document.createElement('div');
   promptHeader.className = 'form-group-header';
@@ -380,7 +380,7 @@ async function openEditQueueModal(docId) {
 
   // Subtasks field
   const subtasksGroup = document.createElement('div');
-  subtasksGroup.className = 'form-group hidden';
+  subtasksGroup.className = 'modal__form-group hidden';
   subtasksGroup.id = 'editSubtasksGroup';
   const subtasksHeader = document.createElement('div');
   subtasksHeader.className = 'form-group-header';
@@ -399,7 +399,7 @@ async function openEditQueueModal(docId) {
 
   // Repository field
   const repoGroup = document.createElement('div');
-  repoGroup.className = 'form-group';
+  repoGroup.className = 'modal__form-group';
   const repoLabel = document.createElement('label');
   repoLabel.className = 'form-section-label';
   repoLabel.textContent = 'Repository:';
@@ -427,7 +427,7 @@ async function openEditQueueModal(docId) {
 
   // Branch field
   const branchGroup = document.createElement('div');
-  branchGroup.className = 'form-group space-below';
+  branchGroup.className = 'modal__form-group space-below';
   const branchLabel = document.createElement('label');
   branchLabel.className = 'form-section-label';
   branchLabel.textContent = 'Branch:';
@@ -631,14 +631,14 @@ function renderSubtasksList(subtasks) {
   
   subtasks.forEach((subtask, index) => {
     const container = document.createElement('div');
-    container.className = 'form-group subtask-item';
+    container.className = 'modal__form-group subtask-item';
     container.dataset.index = index;
     
     const header = document.createElement('div');
     header.className = 'subtask-item-header';
     
     const label = document.createElement('label');
-    label.className = 'form-label';
+    label.className = 'modal__form-label';
     label.textContent = `Subtask ${index + 1}:`;
     
     const removeBtn = document.createElement('button');

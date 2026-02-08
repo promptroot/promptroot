@@ -169,7 +169,7 @@ describe('prompt-viewer', () => {
       
       showPromptViewer('Test prompt', 'session123');
       
-      expect(createElement).toHaveBeenCalledWith('div', 'modal');
+      expect(createElement).toHaveBeenCalledWith('div', 'modal modal--prompt-viewer');
       expect(global.document.body.appendChild).toHaveBeenCalled();
     });
 

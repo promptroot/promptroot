@@ -11,7 +11,7 @@ import { registerHandler, clearHandlers } from '../utils/handler-registry.js';
 let currentEscapeHandler = null;
 
 function createPromptViewerModal() {
-  const modal = createElement('div', 'modal');
+  const modal = createElement('div', 'modal modal--prompt-viewer');
   modal.id = 'promptViewerModal';
 
   const content = createElement('div', 'modal-content modal-xl');

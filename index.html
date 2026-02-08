@@ -145,7 +145,7 @@
   </div>
 
   <!-- Jules API Key Modal -->
-  <div id="julesKeyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="julesKeyModalTitle">
+  <div id="julesKeyModal" class="modal modal--jules-key" role="dialog" aria-modal="true" aria-labelledby="julesKeyModalTitle">
     <div class="modal-content">
       <h2 id="julesKeyModalTitle">Save Jules API Key</h2>
       <p>Enter your Jules API key. This will be encrypted and stored securely.</p>
@@ -167,7 +167,7 @@
         <div class="form-row">
           <!-- Repository Selection -->
           <div class="form-col">
-            <label class="form-label">Repository:</label>
+            <label class="modal__form-label">Repository:</label>
             <div id="julesRepoDropdown" class="custom-dropdown">
               <button id="julesRepoDropdownBtn" class="custom-dropdown-btn w-full" type="button">
                 <span id="julesRepoDropdownText">Select a repository...</span>
@@ -179,7 +179,7 @@
           
           <!-- Branch Selection -->
           <div class="form-col">
-            <label class="form-label">Branch:</label>
+            <label class="modal__form-label">Branch:</label>
             <div id="julesBranchDropdown" class="custom-dropdown">
               <button id="julesBranchDropdownBtn" class="custom-dropdown-btn w-full" type="button" disabled>
                 <span id="julesBranchDropdownText">Select branch...</span>
@@ -192,8 +192,8 @@
       </div>
       
       <div class="options-box">
-        <label class="form-label small-text"><input type="checkbox" id="julesEnvSuppressPopupsCheckbox" data-exclusive-group="jules-env" /> Suppress Popups</label>
-        <label class="form-label small-text"><input type="checkbox" id="julesEnvOpenInBackgroundCheckbox" data-exclusive-group="jules-env" /> Open in Background</label>
+        <label class="modal__form-label small-text"><input type="checkbox" id="julesEnvSuppressPopupsCheckbox" data-exclusive-group="jules-env" /> Suppress Popups</label>
+        <label class="modal__form-label small-text"><input type="checkbox" id="julesEnvOpenInBackgroundCheckbox" data-exclusive-group="jules-env" /> Open in Background</label>
       </div>
       
       <div class="modal-buttons">
@@ -235,7 +235,7 @@
   </div>
 
   <!-- Subtask Preview Modal -->
-  <div id="subtaskPreviewModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="subtaskPreviewTitle">
+  <div id="subtaskPreviewModal" class="modal modal--subtask-preview" role="dialog" aria-modal="true" aria-labelledby="subtaskPreviewTitle">
     <div class="modal-content modal-xl">
       <h2 id="subtaskPreviewTitle">Subtask Preview</h2>
       <div id="subtaskPreviewContent" class="scroll-box"></div>

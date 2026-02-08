@@ -30,6 +30,19 @@ export async function mockGitHubAPI(page) {
         ])
       });
     }
+    // Mock git tree endpoint (recursive)
+    else if (url.includes('/git/trees/')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          sha: 'mock-tree-sha',
+          url: 'https://api.github.com/repos/test/repo/git/trees/mock-tree-sha',
+          tree: getMockRepoTree(),
+          truncated: false
+        })
+      });
+    }
     // Mock file content endpoint
     else if (url.includes('raw.githubusercontent.com')) {
       await route.fulfill({

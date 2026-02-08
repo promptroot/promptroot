@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { COMMANDS, OUTPUT_CHANNEL_NAME, VIEWS } from './constants';
 import { PromptrootTreeProvider } from './tree-provider';
 import { JulesConfig } from './jules-config';
@@ -254,6 +255,54 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  const addBatchToQueueCommand = vscode.commands.registerCommand(
+    COMMANDS.addBatchToQueue,
+    async () => {
+      outputChannel.appendLine('Add batch to queue command executed');
+      await addBatchToQueue();
+    }
+  );
+
+  const runNextPendingCommand = vscode.commands.registerCommand(
+    COMMANDS.runNextPending,
+    async () => {
+      outputChannel.appendLine('Run next pending command executed');
+      await runNextPending();
+    }
+  );
+
+  const runAllPendingCommand = vscode.commands.registerCommand(
+    COMMANDS.runAllPending,
+    async () => {
+      outputChannel.appendLine('Run all pending command executed');
+      await runAllPending();
+    }
+  );
+
+  const clearCompletedCommand = vscode.commands.registerCommand(
+    COMMANDS.clearCompleted,
+    async () => {
+      outputChannel.appendLine('Clear completed command executed');
+      await clearCompleted();
+    }
+  );
+
+  const clearFailedCommand = vscode.commands.registerCommand(
+    COMMANDS.clearFailed,
+    async () => {
+      outputChannel.appendLine('Clear failed command executed');
+      await clearFailed();
+    }
+  );
+
+  const viewQueueItemDetailsCommand = vscode.commands.registerCommand(
+    COMMANDS.viewQueueItemDetails,
+    async (item) => {
+      outputChannel.appendLine('View queue item details command executed');
+      await viewQueueItemDetails(item);
+    }
+  );
+
   // Add commands to subscriptions for proper cleanup
   context.subscriptions.push(
     initializeCommand,
@@ -273,6 +322,12 @@ export function activate(context: vscode.ExtensionContext) {
     pauseQueueItemCommand,
     resumeQueueItemCommand,
     runQueueItemCommand,
+    addBatchToQueueCommand,
+    runNextPendingCommand,
+    runAllPendingCommand,
+    clearCompletedCommand,
+    clearFailedCommand,
+    viewQueueItemDetailsCommand,
     treeView,
     queueTreeView,
     outputChannel
@@ -667,6 +722,280 @@ async function runQueueItem(item: any): Promise<void> {
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to run queue item: ${error instanceof Error ? error.message : String(error)}`);
   }
+}
+
+/**
+ * Add multiple prompts to queue as batch
+ */
+async function addBatchToQueue(): Promise<void> {
+  if (!authManager?.isSignedIn()) {
+    const action = await vscode.window.showInformationMessage(
+      'You must be signed in to add items to the queue',
+      'Sign In'
+    );
+    if (action === 'Sign In') {
+      vscode.commands.executeCommand(COMMANDS.signIn);
+    }
+    return;
+  }
+
+  try {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+      vscode.window.showErrorMessage('No workspace folder open');
+      return;
+    }
+
+    // Find all markdown files in workspace
+    const files = await vscode.workspace.findFiles('**/*.md', '**/node_modules/**', 100);
+    
+    if (files.length === 0) {
+      vscode.window.showInformationMessage('No markdown files found in workspace');
+      return;
+    }
+
+    // Create quick pick items
+    const items = files.map(file => {
+      const relativePath = file.fsPath.replace(workspaceFolder.uri.fsPath, '').replace(/^[\\/]/, '');
+      return {
+        label: path.basename(file.fsPath),
+        description: relativePath,
+        picked: false,
+        file: relativePath
+      };
+    });
+
+    // Show multi-select quick pick
+    const selected = await vscode.window.showQuickPick(items, {
+      canPickMany: true,
+      placeHolder: 'Select prompts to add to queue (multiple selection)',
+      title: 'Add Batch to Jules Queue'
+    });
+
+    if (!selected || selected.length === 0) {
+      return;
+    }
+
+    // Get branch name
+    const branch = await vscode.window.showInputBox({
+      prompt: 'Enter branch name for batch queue items',
+      value: queueManager?.getSuggestedBranch(),
+      placeHolder: 'jules-2024-01-01-12-00-00'
+    });
+
+    if (!branch) {
+      return;
+    }
+
+    // Add batch to queue
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Adding ${selected.length} prompts to queue...`,
+      cancellable: false
+    }, async () => {
+      const promptPaths = selected.map(item => item.file);
+      const id = await queueManager?.addBatchToQueue(promptPaths, branch);
+      vscode.window.showInformationMessage(`Added batch to queue: ${selected.length} prompts (${id})`);
+    });
+
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to add batch to queue: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Run next pending queue item
+ */
+async function runNextPending(): Promise<void> {
+  if (!authManager?.isSignedIn()) {
+    vscode.window.showInformationMessage('You must be signed in to run queue items');
+    return;
+  }
+
+  try {
+    const queueItems = queueTreeProvider?.getQueueItems() || [];
+    await queueManager?.runNextPending(queueItems);
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to run next pending: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Run all pending queue items
+ */
+async function runAllPending(): Promise<void> {
+  if (!authManager?.isSignedIn()) {
+    vscode.window.showInformationMessage('You must be signed in to run queue items');
+    return;
+  }
+
+  try {
+    const queueItems = queueTreeProvider?.getQueueItems() || [];
+    await queueManager?.runAllPending(queueItems);
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to run all pending: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Clear completed queue items
+ */
+async function clearCompleted(): Promise<void> {
+  if (!authManager?.isSignedIn()) {
+    vscode.window.showInformationMessage('You must be signed in to clear queue items');
+    return;
+  }
+
+  try {
+    const queueItems = queueTreeProvider?.getQueueItems() || [];
+    await queueManager?.clearCompleted(queueItems);
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to clear completed items: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Clear failed queue items
+ */
+async function clearFailed(): Promise<void> {
+  if (!authManager?.isSignedIn()) {
+    vscode.window.showInformationMessage('You must be signed in to clear queue items');
+    return;
+  }
+
+  try {
+    const queueItems = queueTreeProvider?.getQueueItems() || [];
+    await queueManager?.clearFailed(queueItems);
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to clear failed items: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * View queue item details in QuickPick
+ */
+async function viewQueueItemDetails(item: any): Promise<void> {
+  if (!item?.queueItem) {
+    return;
+  }
+
+  const queueItem = item.queueItem;
+  const items: vscode.QuickPickItem[] = [
+    {
+      label: '$(info) Queue Item Details',
+      kind: vscode.QuickPickItemKind.Separator
+    },
+    {
+      label: 'ID',
+      description: queueItem.id
+    },
+    {
+      label: 'Type',
+      description: queueItem.type
+    },
+    {
+      label: 'Status',
+      description: queueItem.status
+    },
+    {
+      label: 'Branch',
+      description: queueItem.branch
+    },
+    {
+      label: 'Source ID',
+      description: queueItem.sourceId
+    },
+    {
+      label: 'Created',
+      description: queueItem.createdAt.toDate().toLocaleString()
+    },
+    {
+      label: 'Updated',
+      description: queueItem.updatedAt.toDate().toLocaleString()
+    }
+  ];
+
+  if (queueItem.type === 'single') {
+    items.push(
+      {
+        label: '$(file) Prompt Details',
+        kind: vscode.QuickPickItemKind.Separator
+      },
+      {
+        label: 'Prompt Path',
+        description: queueItem.promptPath
+      }
+    );
+
+    if (queueItem.sessionId) {
+      items.push({
+        label: 'Session ID',
+        description: queueItem.sessionId
+      });
+    }
+
+    if (queueItem.scheduledAt) {
+      items.push({
+        label: 'Scheduled At',
+        description: queueItem.scheduledAt.toDate().toLocaleString()
+      });
+    }
+
+    if (queueItem.scheduledTimeZone) {
+      items.push({
+        label: 'Timezone',
+        description: queueItem.scheduledTimeZone
+      });
+    }
+  } else {
+    items.push(
+      {
+        label: '$(list-tree) Batch Details',
+        kind: vscode.QuickPickItemKind.Separator
+      },
+      {
+        label: 'Total Subtasks',
+        description: queueItem.subtasks.length.toString()
+      },
+      {
+        label: 'Completed',
+        description: (queueItem.completedCount || 0).toString()
+      },
+      {
+        label: 'Failed',
+        description: (queueItem.failedCount || 0).toString()
+      }
+    );
+  }
+
+  if (queueItem.lastError) {
+    items.push(
+      {
+        label: '$(error) Error Information',
+        kind: vscode.QuickPickItemKind.Separator
+      },
+      {
+        label: 'Error Message',
+        description: queueItem.lastError.message
+      },
+      {
+        label: 'Error Time',
+        description: queueItem.lastError.timestamp.toDate().toLocaleString()
+      }
+    );
+
+    if (queueItem.lastError.itemIndex !== undefined) {
+      items.push({
+        label: 'Failed Subtask Index',
+        description: queueItem.lastError.itemIndex.toString()
+      });
+    }
+  }
+
+  await vscode.window.showQuickPick(items, {
+    title: `Queue Item: ${queueItem.type === 'single' ? queueItem.promptPath : 'Batch'}`,
+    placeHolder: 'Queue item details'
+  });
 }
 
 /**

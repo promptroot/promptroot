@@ -239,6 +239,169 @@ export class QueueManager {
 	}
 
 	/**
+	 * Run next pending queue item
+	 */
+	async runNextPending(queueItems: JulesQueueItem[]): Promise<void> {
+		const user = this.authManager.getCurrentUser();
+		if (!user) {
+			throw new Error('User not signed in');
+		}
+
+		// Find first pending item
+		const pendingItem = queueItems.find(item => item.status === 'pending');
+		
+		if (!pendingItem) {
+			vscode.window.showInformationMessage('No pending items in queue');
+			return;
+		}
+
+		this.outputChannel.appendLine(`Running next pending item: ${pendingItem.id}`);
+		await this.runQueueItem(pendingItem.id);
+	}
+
+	/**
+	 * Run all pending queue items
+	 */
+	async runAllPending(queueItems: JulesQueueItem[]): Promise<void> {
+		const user = this.authManager.getCurrentUser();
+		if (!user) {
+			throw new Error('User not signed in');
+		}
+
+		// Get all pending items
+		const pendingItems = queueItems.filter(item => item.status === 'pending');
+		
+		if (pendingItems.length === 0) {
+			vscode.window.showInformationMessage('No pending items in queue');
+			return;
+		}
+
+		const confirm = await vscode.window.showWarningMessage(
+			`Run ${pendingItems.length} pending queue item(s)?`,
+			{ modal: true },
+			'Run All'
+		);
+
+		if (confirm !== 'Run All') {
+			return;
+		}
+
+		this.outputChannel.appendLine(`Running ${pendingItems.length} pending items`);
+
+		// Run items sequentially with progress
+		let completed = 0;
+		let failed = 0;
+
+		await vscode.window.withProgress({
+			location: vscode.ProgressLocation.Notification,
+			title: 'Running queue items...',
+			cancellable: false
+		}, async (progress) => {
+			for (let i = 0; i < pendingItems.length; i++) {
+				const item = pendingItems[i];
+				progress.report({
+					message: `Item ${i + 1}/${pendingItems.length}: ${item.type === 'single' ? (item as SingleQueueItem).promptPath : 'Batch'}`,
+					increment: (100 / pendingItems.length)
+				});
+
+				try {
+					await this.runQueueItem(item.id);
+					completed++;
+				} catch (error) {
+					this.outputChannel.appendLine(`Failed to run item ${item.id}: ${error}`);
+					failed++;
+				}
+			}
+		});
+
+		vscode.window.showInformationMessage(
+			`Queue execution complete: ${completed} succeeded, ${failed} failed`
+		);
+	}
+
+	/**
+	 * Clear completed queue items
+	 */
+	async clearCompleted(queueItems: JulesQueueItem[]): Promise<void> {
+		const user = this.authManager.getCurrentUser();
+		if (!user) {
+			throw new Error('User not signed in');
+		}
+
+		// Get all completed items
+		const completedItems = queueItems.filter(item => item.status === 'completed');
+		
+		if (completedItems.length === 0) {
+			vscode.window.showInformationMessage('No completed items in queue');
+			return;
+		}
+
+		const confirm = await vscode.window.showWarningMessage(
+			`Delete ${completedItems.length} completed queue item(s)?`,
+			{ modal: true },
+			'Delete All'
+		);
+
+		if (confirm !== 'Delete All') {
+			return;
+		}
+
+		this.outputChannel.appendLine(`Clearing ${completedItems.length} completed items`);
+
+		// Delete all completed items
+		for (const item of completedItems) {
+			try {
+				await this.firestoreService.deleteQueueItem(user.uid, item.id);
+			} catch (error) {
+				this.outputChannel.appendLine(`Failed to delete item ${item.id}: ${error}`);
+			}
+		}
+
+		vscode.window.showInformationMessage(`Cleared ${completedItems.length} completed item(s)`);
+	}
+
+	/**
+	 * Clear failed queue items
+	 */
+	async clearFailed(queueItems: JulesQueueItem[]): Promise<void> {
+		const user = this.authManager.getCurrentUser();
+		if (!user) {
+			throw new Error('User not signed in');
+		}
+
+		// Get all failed items
+		const failedItems = queueItems.filter(item => item.status === 'failed');
+		
+		if (failedItems.length === 0) {
+			vscode.window.showInformationMessage('No failed items in queue');
+			return;
+		}
+
+		const confirm = await vscode.window.showWarningMessage(
+			`Delete ${failedItems.length} failed queue item(s)?`,
+			{ modal: true },
+			'Delete All'
+		);
+
+		if (confirm !== 'Delete All') {
+			return;
+		}
+
+		this.outputChannel.appendLine(`Clearing ${failedItems.length} failed items`);
+
+		// Delete all failed items
+		for (const item of failedItems) {
+			try {
+				await this.firestoreService.deleteQueueItem(user.uid, item.id);
+			} catch (error) {
+				this.outputChannel.appendLine(`Failed to delete item ${item.id}: ${error}`);
+			}
+		}
+
+		vscode.window.showInformationMessage(`Cleared ${failedItems.length} failed item(s)`);
+	}
+
+	/**
 	 * Get suggested branch name
 	 */
 	getSuggestedBranch(): string {

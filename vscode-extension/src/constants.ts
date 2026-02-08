@@ -20,7 +20,13 @@ export const COMMANDS = {
   deleteQueueItem: 'promptroot.deleteQueueItem',
   pauseQueueItem: 'promptroot.pauseQueueItem',
   resumeQueueItem: 'promptroot.resumeQueueItem',
-  runQueueItem: 'promptroot.runQueueItem'
+  runQueueItem: 'promptroot.runQueueItem',
+  addBatchToQueue: 'promptroot.addBatchToQueue',
+  runNextPending: 'promptroot.runNextPending',
+  runAllPending: 'promptroot.runAllPending',
+  clearCompleted: 'promptroot.clearCompleted',
+  clearFailed: 'promptroot.clearFailed',
+  viewQueueItemDetails: 'promptroot.viewQueueItemDetails'
 } as const;
 
 export const VIEWS = {

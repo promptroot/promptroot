@@ -91,6 +91,36 @@
         "command": "promptroot.runQueueItem",
         "title": "Promptroot: Run Queue Item",
         "icon": "$(run)"
+      },
+      {
+        "command": "promptroot.addBatchToQueue",
+        "title": "Promptroot: Add Multiple Prompts to Queue",
+        "icon": "$(files)"
+      },
+      {
+        "command": "promptroot.runNextPending",
+        "title": "Promptroot: Run Next Pending Queue Item",
+        "icon": "$(play)"
+      },
+      {
+        "command": "promptroot.runAllPending",
+        "title": "Promptroot: Run All Pending Queue Items",
+        "icon": "$(run-all)"
+      },
+      {
+        "command": "promptroot.clearCompleted",
+        "title": "Promptroot: Clear Completed Queue Items",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "promptroot.clearFailed",
+        "title": "Promptroot: Clear Failed Queue Items",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "promptroot.viewQueueItemDetails",
+        "title": "Promptroot: View Queue Item Details",
+        "icon": "$(info)"
       }
     ],
     "views": {
@@ -118,6 +148,36 @@
           "command": "promptroot.createAsset",
           "when": "view == promptroot.assetsView",
           "group": "navigation"
+        },
+        {
+          "command": "promptroot.refreshQueue",
+          "when": "view == promptroot.queueView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "promptroot.addBatchToQueue",
+          "when": "view == promptroot.queueView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "promptroot.runNextPending",
+          "when": "view == promptroot.queueView",
+          "group": "1_run@1"
+        },
+        {
+          "command": "promptroot.runAllPending",
+          "when": "view == promptroot.queueView",
+          "group": "1_run@2"
+        },
+        {
+          "command": "promptroot.clearCompleted",
+          "when": "view == promptroot.queueView",
+          "group": "2_clear@1"
+        },
+        {
+          "command": "promptroot.clearFailed",
+          "when": "view == promptroot.queueView",
+          "group": "2_clear@2"
         }
       ],
       "view/item/context": [
@@ -140,6 +200,11 @@
           "command": "promptroot.deleteQueueItem",
           "when": "view == promptroot.queueView && viewItem != info",
           "group": "queue@3"
+        },
+        {
+          "command": "promptroot.viewQueueItemDetails",
+          "when": "view == promptroot.queueView && viewItem != info",
+          "group": "queue@4"
         }
       ]
     },

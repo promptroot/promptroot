@@ -14,6 +14,7 @@ import { attachPromptViewerHandlers } from './prompt-viewer.js';
 import { TIMEOUTS, JULES_UI_TEXT, CSS_CLASSES } from '../utils/constants.js';
 import { renderStatus, STATUS_TYPES } from './status-renderer.js';
 import { toggleVisibility } from '../utils/dom-helpers.js';
+import { getHandler } from '../utils/handler-registry.js';
 
 let allSessionsCache = [];
 let sessionNextPageToken = null;
@@ -450,8 +451,9 @@ async function loadAndDisplayJulesProfile(uid) {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const cleanId = btn.dataset.cleanId;
-          if (window[`viewPrompt_${cleanId}`]) {
-            window[`viewPrompt_${cleanId}`]();
+          const handler = getHandler('promptViewer', cleanId);
+          if (handler) {
+            handler();
           }
         });
       });

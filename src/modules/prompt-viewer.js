@@ -6,9 +6,9 @@
 import { createElement } from '../utils/dom-helpers.js';
 import { showToast } from './toast.js';
 import { TIMEOUTS } from '../utils/constants.js';
+import { registerHandler, clearHandlers } from '../utils/handler-registry.js';
 
 let currentEscapeHandler = null;
-let promptViewerHandlers = new Map();
 
 function createPromptViewerModal() {
   const modal = createElement('div', 'modal');
@@ -139,18 +139,13 @@ export function showPromptViewer(prompt, sessionId) {
  */
 export function attachPromptViewerHandlers(sessions) {
   // Clean up old handlers to prevent memory leaks
-  promptViewerHandlers.forEach((handler, key) => {
-    delete window[key];
-  });
-  promptViewerHandlers.clear();
+  clearHandlers('promptViewer');
   
   // Attach new handlers
   sessions.forEach(session => {
     const sessionId = session.name?.split('sessions/')[1] || session.id?.split('sessions/')[1] || session.id;
     const cleanId = sessionId.replace(/[^a-zA-Z0-9]/g, '_');
-    const handlerKey = `viewPrompt_${cleanId}`;
     const handler = () => showPromptViewer(session.prompt || 'No prompt text available', sessionId);
-    window[handlerKey] = handler;
-    promptViewerHandlers.set(handlerKey, handler);
+    registerHandler('promptViewer', cleanId, handler);
   });
 }

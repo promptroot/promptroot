@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-// Mock Web Crypto API with functional implementations
+// Mock Web Crypto API (minimal needed for non-key-related logic, if any)
 const mockCrypto = {
   subtle: {
     importKey: vi.fn().mockResolvedValue('mock-key'),
-    decrypt: vi.fn().mockResolvedValue(new TextEncoder().encode('decrypted-api-key'))
   }
 };
 
@@ -13,26 +12,27 @@ const mockAuth = {
   currentUser: null
 };
 
-const mockDocGet = vi.fn();
-let mockDb = {
-  collection: vi.fn(() => ({
-    doc: vi.fn(() => ({
-      get: mockDocGet
-    }))
-  }))
-};
-
-// Mock firebase-service BEFORE importing jules-api
-// Use function declarations so they evaluate at call-time, not definition-time
+// Mock firebase-service
 vi.mock('../../modules/firebase-service.js', () => ({
   getAuth: vi.fn(function() { return global.window?.auth !== undefined ? global.window.auth : mockAuth; }),
-  getDb: vi.fn(function() { return global.window?.db !== undefined ? global.window.db : mockDb; }),
-  getFunctions: vi.fn(() => null)
+}));
+
+// Mock jules-keys.js
+const { mockGetDecryptedJulesKey, mockClearJulesKeyCache, mockCheckJulesKey } = vi.hoisted(() => {
+  return {
+    mockGetDecryptedJulesKey: vi.fn(),
+    mockClearJulesKeyCache: vi.fn(),
+    mockCheckJulesKey: vi.fn()
+  }
+});
+
+vi.mock('../../modules/jules-keys.js', () => ({
+  getDecryptedJulesKey: mockGetDecryptedJulesKey,
+  clearJulesKeyCache: mockClearJulesKeyCache,
+  checkJulesKey: mockCheckJulesKey
 }));
 
 import {
-  clearJulesKeyCache,
-  getDecryptedJulesKey,
   listJulesSources,
   loadJulesProfileInfo,
   callRunJulesFunction,
@@ -45,28 +45,8 @@ global.fetch = mockFetch;
 
 global.window = {
   crypto: mockCrypto,
-  auth: mockAuth,
-  db: mockDb
+  auth: mockAuth
 };
-
-// Mock TextEncoder/TextDecoder with functional implementations
-class MockTextEncoder {
-  encode(str) {
-    return new Uint8Array(str.split('').map(c => c.charCodeAt(0)));
-  }
-}
-
-class MockTextDecoder {
-  decode(buffer) {
-    return 'decrypted-api-key';
-  }
-}
-
-global.TextEncoder = MockTextEncoder;
-global.TextDecoder = MockTextDecoder;
-
-// Mock atob with functional implementation
-global.atob = vi.fn().mockReturnValue('mock-encrypted-data');
 
 // Mock DOM elements for UI interactions
 global.document = {
@@ -95,14 +75,17 @@ vi.mock('../../utils/constants.js', () => ({
   },
   TIMEOUTS: {
     uiDelay: 100
-  }
+  },
+  CACHE_KEYS: {
+    JULES_ACCOUNT: 'jules_account'
+  },
+  CACHE_POLICIES: {} // Add minimal mock to satisfy imports
 }));
 
 describe('jules-api', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuth.currentUser = null;
-    clearJulesKeyCache(); // Clear cache between tests
     
     // Mock Date.now for consistent testing
     vi.useFakeTimers();
@@ -111,153 +94,6 @@ describe('jules-api', () => {
 
   afterEach(() => {
     vi.useRealTimers();
-  });
-
-  describe('clearJulesKeyCache', () => {
-    it('should clear specific user cache', async () => {
-      const uid = 'test-user-123';
-      const mockDoc = {
-        exists: true,
-        data: () => ({ key: 'encrypted-key' })
-      };
-      mockDocGet.mockResolvedValue(mockDoc);
-
-      // Get key to cache it
-      await getDecryptedJulesKey(uid);
-      
-      // Clear specific user cache
-      clearJulesKeyCache(uid);
-      
-      // Subsequent call should hit the database again
-      await getDecryptedJulesKey(uid);
-      
-      expect(mockDb.collection).toHaveBeenCalledTimes(2);
-    });
-
-    it('should clear all cache when no uid provided', async () => {
-      clearJulesKeyCache();
-      
-      // Should not throw
-      expect(() => clearJulesKeyCache()).not.toThrow();
-    });
-  });
-
-  describe('getDecryptedJulesKey', () => {
-    const uid = 'test-user-123';
-
-    it('should return cached key when valid', async () => {
-      // First call to cache the key
-      const mockDoc = {
-        exists: true,
-        data: () => ({ key: 'encrypted-key' })
-      };
-      mockDocGet.mockResolvedValue(mockDoc);
-
-      const result1 = await getDecryptedJulesKey(uid);
-      
-      // Second call should use cache (no additional DB calls)
-      const result2 = await getDecryptedJulesKey(uid);
-      
-      expect(result1).toBe('decrypted-api-key');
-      expect(result2).toBe('decrypted-api-key');
-      expect(mockDb.collection).toHaveBeenCalledTimes(1);
-    });
-
-    // Skipped: Requires proper Web Crypto API ArrayBuffer handling in mocks
-    // The cache logic works, but testing it requires the crypto decrypt to succeed
-    it.skip('should refresh expired cache', async () => {
-      const mockDoc = {
-        exists: true,
-        data: () => ({ key: 'encrypted-key' })
-      };
-      mockDocGet.mockResolvedValue(mockDoc);
-
-      // First call
-      await getDecryptedJulesKey(uid);
-      
-      // Advance time past cache TTL (5 minutes)
-      vi.advanceTimersByTime(5 * 60 * 1000 + 1000);
-      
-      // Second call should refresh cache
-      await getDecryptedJulesKey(uid);
-      
-      // Should have called the database twice
-      expect(mockDocGet).toHaveBeenCalledTimes(2);
-    });
-
-    it('should return null when no db available', async () => {
-      global.window.db = null;
-      
-      const result = await getDecryptedJulesKey(uid);
-      
-      expect(result).toBeNull();
-    });
-
-    it('should return null when document does not exist', async () => {
-      const mockDoc = { exists: false };
-      mockDocGet.mockResolvedValue(mockDoc);
-      
-      const result = await getDecryptedJulesKey(uid);
-      
-      expect(result).toBeNull();
-    });
-
-    it('should return null when no key in document', async () => {
-      const mockDoc = {
-        exists: true,
-        data: () => ({}) // No key property
-      };
-      mockDocGet.mockResolvedValue(mockDoc);
-      
-      const result = await getDecryptedJulesKey(uid);
-      
-      expect(result).toBeNull();
-    });
-
-    it('should return null on decryption error', async () => {
-      const mockDoc = {
-        exists: true,
-        data: () => ({ key: 'encrypted-key' })
-      };
-      mockDocGet.mockResolvedValue(mockDoc);
-      
-      // Make crypto.subtle.decrypt throw an error
-      mockCrypto.subtle.decrypt.mockRejectedValue(new Error('Decryption failed'));
-      
-      const result = await getDecryptedJulesKey(uid);
-      
-      expect(result).toBeNull();
-    });
-
-    // Skipped: Web Crypto API mocking requires complex ArrayBuffer/TypedArray handling
-    // The decrypt() mock needs to return an ArrayBuffer that TextDecoder can decode properly
-    // This would require creating a real Uint8Array from the string, which defeats the purpose
-    it.skip('should handle proper encryption/decryption flow', async () => {
-      const mockDoc = {
-        exists: true,
-        data: () => ({ key: 'encrypted-key' })
-      };
-      mockDocGet.mockResolvedValue(mockDoc);
-      
-      const result = await getDecryptedJulesKey(uid);
-      
-      // Should successfully decrypt and return the key
-      expect(result).toBe('decrypted-api-key');
-      
-      // Verify crypto methods were called
-      expect(mockCrypto.subtle.importKey).toHaveBeenCalledWith(
-        'raw',
-        expect.any(Uint8Array),
-        { name: 'AES-GCM' },
-        false,
-        ['decrypt']
-      );
-      expect(mockCrypto.subtle.decrypt).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'AES-GCM' }),
-        'mock-key',
-        expect.any(Uint8Array)
-      );
-    });
   });
 
   describe('listJulesSources', () => {
@@ -318,23 +154,15 @@ describe('jules-api', () => {
   describe('loadJulesProfileInfo', () => {
     it('should throw error when no API key available', async () => {
       const uid = 'test-user';
-      
-      // Mock getDecryptedJulesKey to return null (no key available)
-      global.window.db = null;
+      mockGetDecryptedJulesKey.mockResolvedValue(null);
       
       await expect(loadJulesProfileInfo(uid)).rejects.toThrow('Jules API key is required');
     });
 
-    // Skipped: Depends on getDecryptedJulesKey working, which requires Web Crypto mocking
-    it.skip('should load profile info with sources and sessions', async () => {
+    it('should load profile info with sources and sessions', async () => {
       const uid = 'test-user-123';
       
-      // Mock the key retrieval
-      const mockDoc = {
-        exists: true,
-        data: () => ({ key: 'encrypted-key' })
-      };
-      mockDocGet.mockResolvedValue(mockDoc);
+      mockGetDecryptedJulesKey.mockResolvedValue('decrypted-key');
       
       // Mock API responses
       const sourcesResponse = { sources: [{ id: 'source1' }] };
@@ -381,8 +209,7 @@ describe('jules-api', () => {
       await expect(callRunJulesFunction('test prompt', null)).rejects.toThrow('No repository selected');
     });
 
-    // Skipped: Depends on getDecryptedJulesKey working, which requires Web Crypto mocking
-    it.skip('should handle button state changes', async () => {
+    it('should handle button state changes', async () => {
       mockAuth.currentUser = { 
         uid: 'test-user',
         getIdToken: vi.fn().mockResolvedValue('firebase-token')
@@ -394,13 +221,6 @@ describe('jules-api', () => {
         textContent: 'Original Text'
       };
       global.document.getElementById = vi.fn().mockReturnValue(mockButton);
-      
-      // Mock successful API call
-      const mockDoc = {
-        exists: true,
-        data: () => ({ key: 'encrypted-key' })
-      };
-      mockDocGet.mockResolvedValue(mockDoc);
       
       mockFetch.mockResolvedValue({
         ok: true,
@@ -419,10 +239,7 @@ describe('jules-api', () => {
     it('should handle authenticated user', async () => {
       mockAuth.currentUser = { uid: 'test-user' };
       
-      // Mock the dynamic imports that handleTryInJules uses
-      vi.doMock('../../modules/jules-keys.js', () => ({
-        checkJulesKey: vi.fn().mockResolvedValue(true)
-      }));
+      mockCheckJulesKey.mockResolvedValue(true);
       
       vi.doMock('../../modules/jules-modal.js', () => ({
         showJulesKeyModal: vi.fn(),
@@ -456,10 +273,7 @@ describe('jules-api', () => {
     it('should show key modal when no key available', async () => {
       mockAuth.currentUser = { uid: 'test-user' };
       
-      // Mock imports
-      vi.doMock('../../modules/jules-keys.js', () => ({
-        checkJulesKey: vi.fn().mockResolvedValue(false)
-      }));
+      mockCheckJulesKey.mockResolvedValue(false);
       
       const mockShowKeyModal = vi.fn();
       vi.doMock('../../modules/jules-modal.js', () => ({

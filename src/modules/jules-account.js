@@ -42,27 +42,38 @@ export function showUserProfileModal() {
     profileUserName.textContent = user.displayName || user.email || 'Unknown User';
   }
 
-  checkJulesKey(user.uid).then(async (hasKey) => {
-    if (julesKeyStatus) {
-      renderStatus(
-        julesKeyStatus,
-        hasKey ? STATUS_TYPES.SAVED : STATUS_TYPES.NOT_SAVED,
-        hasKey ? 'Saved' : 'Not saved'
-      );
-    }
-    
-    if (hasKey) {
-      if (addBtn) toggleVisibility(addBtn, false);
-      if (dangerZoneSection) toggleVisibility(dangerZoneSection, true);
-      if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, true);
+  (async () => {
+    try {
+      const hasKey = await checkJulesKey(user.uid);
+      if (julesKeyStatus) {
+        renderStatus(
+          julesKeyStatus,
+          hasKey ? STATUS_TYPES.SAVED : STATUS_TYPES.NOT_SAVED,
+          hasKey ? 'Saved' : 'Not saved'
+        );
+      }
       
-      await loadAndDisplayJulesProfile(user.uid);
-    } else {
+      if (hasKey) {
+        if (addBtn) toggleVisibility(addBtn, false);
+        if (dangerZoneSection) toggleVisibility(dangerZoneSection, true);
+        if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, true);
+
+        await loadAndDisplayJulesProfile(user.uid);
+      } else {
+        if (addBtn) toggleVisibility(addBtn, true);
+        if (dangerZoneSection) toggleVisibility(dangerZoneSection, false);
+        if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, false);
+      }
+    } catch (error) {
+      handleError(error, { source: 'showUserProfileModal.checkKey' }, { category: ErrorCategory.NETWORK });
+      if (julesKeyStatus) {
+        renderStatus(julesKeyStatus, STATUS_TYPES.NOT_SAVED, 'Unable to check');
+      }
       if (addBtn) toggleVisibility(addBtn, true);
       if (dangerZoneSection) toggleVisibility(dangerZoneSection, false);
       if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, false);
     }
-  });
+  })();
 
   if (addBtn) {
     addBtn.onclick = () => {
@@ -719,23 +730,33 @@ export async function loadProfileDirectly(user) {
     profileUserName.textContent = user.displayName || user.email || 'Unknown User';
   }
 
-  const hasKey = await checkJulesKey(user.uid);
-  
-  if (julesKeyStatus) {
-    renderStatus(
-      julesKeyStatus,
-      hasKey ? STATUS_TYPES.SAVED : STATUS_TYPES.NOT_SAVED,
-      hasKey ? 'Saved' : 'Not saved'
-    );
-  }
-  
-  if (hasKey) {
-    if (addBtn) toggleVisibility(addBtn, false);
-    if (dangerZoneSection) toggleVisibility(dangerZoneSection, true);
-    if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, true);
+  try {
+    const hasKey = await checkJulesKey(user.uid);
+
+    if (julesKeyStatus) {
+      renderStatus(
+        julesKeyStatus,
+        hasKey ? STATUS_TYPES.SAVED : STATUS_TYPES.NOT_SAVED,
+        hasKey ? 'Saved' : 'Not saved'
+      );
+    }
     
-    await loadAndDisplayJulesProfile(user.uid);
-  } else {
+    if (hasKey) {
+      if (addBtn) toggleVisibility(addBtn, false);
+      if (dangerZoneSection) toggleVisibility(dangerZoneSection, true);
+      if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, true);
+
+      await loadAndDisplayJulesProfile(user.uid);
+    } else {
+      if (addBtn) toggleVisibility(addBtn, true);
+      if (dangerZoneSection) toggleVisibility(dangerZoneSection, false);
+      if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, false);
+    }
+  } catch (error) {
+    handleError(error, { source: 'loadProfileDirectly.checkKey' }, { category: ErrorCategory.NETWORK });
+    if (julesKeyStatus) {
+      renderStatus(julesKeyStatus, STATUS_TYPES.NOT_SAVED, 'Unable to check');
+    }
     if (addBtn) toggleVisibility(addBtn, true);
     if (dangerZoneSection) toggleVisibility(dangerZoneSection, false);
     if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, false);

@@ -271,7 +271,25 @@ async function runJulesAPI(promptText, sourceId, branch, title, user) {
   const token = await user.getIdToken(true);
   const functionUrl = 'https://runjuleshttp-fjbc67s6eq-uc.a.run.app';
 
-  const payload = { promptText: promptText || '', sourceId: sourceId, branch: branch, title: title };
+  // Normalize sourceId format - handle both "owner/repo" and "sources/github/owner/repo" formats
+  let normalizedSourceId = sourceId;
+  if (sourceId && typeof sourceId === 'string') {
+    if (!sourceId.startsWith('sources/github/')) {
+      // If it's just "owner/repo" format, convert to full format
+      const parts = sourceId.split('/');
+      if (parts.length === 2 && parts[0] && parts[1]) {
+        normalizedSourceId = `sources/github/${sourceId}`;
+        console.log(`Converted sourceId from "${sourceId}" to "${normalizedSourceId}"`);
+      } else {
+        console.error('Invalid sourceId format:', sourceId);
+        throw new Error(`Invalid repository format: "${sourceId}". Expected either "owner/repo" or "sources/github/owner/repo".`);
+      }
+    }
+  } else {
+    throw new Error('Repository sourceId is required');
+  }
+
+  const payload = { promptText: promptText || '', sourceId: normalizedSourceId, branch: branch, title: title };
   
   const response = await fetch(functionUrl, {
     method: 'POST',
@@ -284,6 +302,8 @@ async function runJulesAPI(promptText, sourceId, branch, title, user) {
 
   const result = await response.json();
   if (!response.ok) {
+    console.error('Jules API error:', response.status, result);
+    console.error('Payload sent:', { promptText: `${promptText.slice(0, 100)}...`, sourceId, branch, title });
     throw new Error(result.error || `HTTP ${response.status}`);
   }
 

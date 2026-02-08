@@ -124,6 +124,4 @@ Disallow: /oauth-callback.html
 Sitemap: https://promptroot.ai/sitemap.xml
 
 # Crawl-delay
-# This directive asks bots to wait a specific number of seconds between requests.
-# It is a polite way to prevent overloading the server.
 # Crawl-delay: 1

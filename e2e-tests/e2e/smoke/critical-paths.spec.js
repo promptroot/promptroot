@@ -110,7 +110,7 @@ test.describe('Smoke Tests - Critical Paths', () => {
     }
     
     // Navigate to a prompt
-    await page.goto('/#p=test-prompt');
+    await page.goto('/#p=prompts%2Ftest-prompt');
     await page.waitForSelector('#content', { timeout: 10000 });
     
     // Find copy button

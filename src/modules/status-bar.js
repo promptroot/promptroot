@@ -24,6 +24,7 @@ class StatusBar {
     
     // Ensure status bar is hidden initially
     this.element.classList.remove('status-visible');
+    this.element.classList.add('hidden');
     
     // Add close button handler
     if (this.closeElement) {

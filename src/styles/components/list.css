@@ -3,6 +3,12 @@
 .item:hover { border-color: var(--border); background: linear-gradient(135deg, rgba(77,217,255,0.12), rgba(77,217,255,0.06)); text-decoration: none; }
 .item-meta { color: var(--muted); font-size: 12px; }
 .item.active { border-color: var(--accent); background: linear-gradient(135deg, rgba(77,217,255,0.2), rgba(77,217,255,0.08)); box-shadow: 0 0 12px rgba(77, 217, 255, 0.2); }
+
+.list-empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 24px;
+}
 .item-title { font-size: 14px; font-weight: 600; transition: text-decoration 0.15s; cursor: pointer; }
 .item-title:hover { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .pr-title { font-size: 14px; font-weight: 600; }

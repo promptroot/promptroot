@@ -57,7 +57,7 @@ async function loadSessionsPage() {
       }
     } else if (allSessionsCache.length === 0) {
       allSessionsList.replaceChildren();
-      const noSessionsDiv = createElement('div', { className: 'muted text-center pad-lg' });
+      const noSessionsDiv = createElement('div', { className: 'list-empty' });
       noSessionsDiv.textContent = 'No sessions found';
       allSessionsList.appendChild(noSessionsDiv);
     }
@@ -65,8 +65,7 @@ async function loadSessionsPage() {
     if (allSessionsCache.length === 0) {
       allSessionsList.replaceChildren();
       const errorDiv = createElement('div', { 
-        className: 'text-center pad-lg',
-        style: 'color:#e74c3c;'
+        className: 'list-empty color-error'
       });
       errorDiv.textContent = `Failed to load sessions: ${error.message}`;
       allSessionsList.appendChild(errorDiv);
@@ -108,7 +107,7 @@ export async function renderAllSessions(sessions) {
   if (filteredSessions.length === 0 && searchTerm) {
     allSessionsList.replaceChildren();
     const noResultsDiv = createElement('div', {
-      style: 'color:var(--muted); text-align:center; padding:24px;'
+      className: 'list-empty'
     });
     noResultsDiv.textContent = 'No sessions match your search';
     allSessionsList.appendChild(noResultsDiv);

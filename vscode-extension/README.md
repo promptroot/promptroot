@@ -200,6 +200,65 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design documentation.
 
 Follow the phased roadmap in docs/prompt.md. Each phase has specific acceptance criteria and completion conditions.
 
+## Development Roadmap
+
+### Part 1: Foundation ✅ COMPLETE (Phases 1-6)
+- ✅ Phase 1: Foundation & Scaffolding
+- ✅ Phase 2: Core UI Surface
+- ✅ Phase 3: Promptroot Integration (Read-Only)
+- ✅ Phase 4: Jules API Integration (Read-Only)
+- ✅ Phase 5: Authoring & Actions (Write Operations)
+- ✅ Phase 6: Quality & Release Readiness
+
+**Status:** Production ready for local prompt management and read-only Jules API integration
+
+### Part 2: Full Feature Parity 📋 PLANNED (Phases 7-12)
+
+Bring the extension to complete feature parity with the main Promptroot web application.
+
+- **Phase 7:** Firebase Integration & Authentication
+  - GitHub OAuth authentication
+  - Firestore database connection
+  - User profile management
+  - Secure credential storage
+
+- **Phase 8:** Jules Queue Management
+  - Add prompts to Jules queue (single and batch)
+  - Queue item CRUD operations
+  - Real-time queue synchronization
+  - Execute queue items via Jules API
+
+- **Phase 9:** Queue Scheduling & Automation
+  - Schedule queue items for future execution
+  - Timezone management
+  - Cloud Functions integration for auto-activation
+  - Schedule visualization
+
+- **Phase 10:** Session Tracking & Analytics
+  - Track Jules session execution
+  - Analytics dashboard with charts
+  - Session history and filtering
+  - PR link tracking
+
+- **Phase 11:** Advanced GitHub Integration
+  - Repository and branch management
+  - PR tracking and notifications
+  - Gist integration
+  - Default repo/branch preferences
+
+- **Phase 12:** Production Readiness & Distribution
+  - Comprehensive testing (90%+ coverage)
+  - Performance optimization
+  - Complete documentation
+  - VS Code Marketplace publishing
+
+**Documentation:**
+- [📋 ROADMAP_PART_2.md](./ROADMAP_PART_2.md) - Detailed phase breakdown with tasks and acceptance criteria
+- [📊 ROADMAP_PART_2_SUMMARY.md](./ROADMAP_PART_2_SUMMARY.md) - Quick reference and architecture overview
+- [✅ PROGRESS_TRACKER.md](./PROGRESS_TRACKER.md) - Task-by-task progress checklist
+
+**Estimated Timeline:** 8-14 weeks for full feature parity
+
 ## License
 
 AGPL-3.0-only

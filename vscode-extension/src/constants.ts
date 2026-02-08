@@ -11,7 +11,10 @@ export const COMMANDS = {
   createAsset: 'promptroot.createAsset',
   configureJulesApi: 'promptroot.configureJulesApi',
   viewJulesSources: 'promptroot.viewJulesSources',
-  viewJulesSessions: 'promptroot.viewJulesSessions'
+  viewJulesSessions: 'promptroot.viewJulesSessions',
+  signIn: 'promptroot.signIn',
+  signOut: 'promptroot.signOut',
+  viewProfile: 'promptroot.viewProfile'
 } as const;
 
 export const VIEWS = {

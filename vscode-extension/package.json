@@ -11,7 +11,6 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:promptroot.initialize",
     "workspaceContains:**/prompts/**"
   ],
   "main": "./out/extension.js",
@@ -50,13 +49,26 @@
       {
         "command": "promptroot.viewJulesSessions",
         "title": "Promptroot: View Jules Sessions"
+      },
+      {
+        "command": "promptroot.signIn",
+        "title": "Promptroot: Sign In"
+      },
+      {
+        "command": "promptroot.signOut",
+        "title": "Promptroot: Sign Out"
+      },
+      {
+        "command": "promptroot.viewProfile",
+        "title": "Promptroot: View Profile"
       }
     ],
     "views": {
       "explorer": [
         {
           "id": "promptroot.assetsView",
-          "name": "Promptroot Assets"
+          "name": "Promptroot Assets",
+          "icon": "$(file-directory)"
         }
       ]
     },
@@ -86,6 +98,31 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically detect Promptroot workspaces"
+        },
+        "promptroot.firebase.projectId": {
+          "type": "string",
+          "default": "promptroot-b02a2",
+          "description": "Firebase project ID"
+        },
+        "promptroot.firebase.useEmulator": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use Firebase emulators for development"
+        },
+        "promptroot.firebase.emulatorHost": {
+          "type": "string",
+          "default": "localhost",
+          "description": "Firebase emulator host"
+        },
+        "promptroot.firebase.emulatorAuthPort": {
+          "type": "number",
+          "default": 9099,
+          "description": "Firebase Auth emulator port"
+        },
+        "promptroot.firebase.emulatorFirestorePort": {
+          "type": "number",
+          "default": 8080,
+          "description": "Firebase Firestore emulator port"
         }
       }
     }
@@ -114,5 +151,9 @@
     "eslint": "^8.x",
     "typescript": "^5.3.0",
     "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "firebase": "^10.13.0",
+    "firebase-admin": "^12.0.0"
   }
 }

@@ -27,13 +27,9 @@ export const COMMANDS = {
   clearCompleted: 'promptroot.clearCompleted',
   clearFailed: 'promptroot.clearFailed',
   viewQueueItemDetails: 'promptroot.viewQueueItemDetails',
-  scheduleQueueItem: 'promptroot.scheduleQueueItem',
-  unscheduleQueueItem: 'promptroot.unscheduleQueueItem',
-  setTimezone: 'promptroot.setTimezone',
   refreshSessions: 'promptroot.refreshSessions',
   viewSessionDetails: 'promptroot.viewSessionDetails',
-  openPRInBrowser: 'promptroot.openPRInBrowser',
-  viewAnalytics: 'promptroot.viewAnalytics'
+  openPRInBrowser: 'promptroot.openPRInBrowser'
 } as const;
 
 export const VIEWS = {

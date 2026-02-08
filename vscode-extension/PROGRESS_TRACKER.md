@@ -142,86 +142,58 @@ Track your progress through all phases of the Promptroot VS Code Extension devel
 
 ---
 
-### Phase 9: Queue Scheduling & Automation 📅 74% COMPLETE
+### Phase 9: Queue Scheduling & Automation ❌ REMOVED
 
-#### 9.1 Scheduling UI
-- [x] Add "Schedule Queue Items" command
-- [x] Create WebView for schedule picker
-- [x] Implement timezone selection UI
-- [x] Load user's saved timezone
-- [ ] Support multi-select scheduling (deferred)
-- [x] Add "Unschedule" command
-- [x] Show schedule info in queue tree
+**Note:** Queue scheduling has been moved to web application only. VS Code extension will focus on queue management and session tracking.
 
-#### 9.2 Scheduled Item Visualization
-- [x] Add clock icon to scheduled items
-- [x] Show formatted schedule time
-- [x] Add color coding (blue icon)
-- [ ] Sort scheduled items by time (deferred)
-- [ ] Add "View Schedule" command (deferred)
-
-#### 9.3 Cloud Functions Integration
-- [ ] Document Cloud Functions setup (Phase 12)
-- [ ] Test with Firebase emulators (Phase 12)
-- [ ] Add settings for function URLs (Phase 12)
-- [ ] Handle activation webhooks (Phase 12)
-- [ ] Add "Test Activation" command (Phase 12)
-
-#### 9.4 Timezone Management
-- [x] Store timezone preference in Firestore
-- [x] Add "Set Timezone" command
-- [x] Display all times in user's timezone
-- [x] Handle daylight saving time
-- [ ] Add timezone indicator in status bar (deferred)
-
-**Progress:** 14/19 tasks complete (74%)
-**Status:** Core Features Complete (5 tasks deferred)
-**Estimated Duration:** 1-2 weeks
+**Progress:** N/A - Feature removed from extension scope  
+**Status:** Not applicable for VS Code extension
+**Estimated Duration:** N/A
 
 ---
 
-### Phase 10: Session Tracking & Analytics ⏸️ BLOCKED (Requires Phase 7)
+### Phase 9: Session Tracking & Analytics ⏳ IN PROGRESS
 
-#### 10.1 Session Tracking Integration
-- [ ] Listen to juleSessions collection
-- [ ] Create "JULES SESSIONS" tree view
-- [ ] Display recent sessions with icons
-- [ ] Show PR links for successful sessions
-- [ ] Add "View Session Details" command
-- [ ] Add "Open PR in Browser" command
+#### 9.1 Session Tracking Integration
+- [x] Listen to juleSessions collection
+- [x] Create "JULES SESSIONS" tree view
+- [x] Display recent sessions with icons
+- [x] Show PR links for successful sessions
+- [x] Add "View Session Details" command
+- [x] Add "Open PR in Browser" command
 - [ ] Sync session status from Jules API
 
-#### 10.2 Session Details View
-- [ ] Create WebView for session details
-- [ ] Display prompt, repo, branch
-- [ ] Show plan steps and execution log
-- [ ] Display PR info
-- [ ] Show failure reason if failed
+#### 9.2 Session Details View
+- [x] Create WebView for session details
+- [x] Display prompt, repo, branch
+- [x] Show plan steps and execution log
+- [x] Display PR info
+- [x] Show failure reason if failed
 - [ ] Add "Retry Session" command
 - [ ] Add "Copy Session URL" command
 
-#### 10.3 Analytics Dashboard
-- [ ] Create WebView for analytics
-- [ ] Implement metrics calculations
-- [ ] Add time period selector
-- [ ] Create charts (Chart.js)
-- [ ] Add "Export Analytics" command
+#### 9.3 Analytics Dashboard
+- [ ] ~~Create WebView for analytics~~ (REMOVED - Web app only)
+- [ ] ~~Implement metrics calculations~~ (REMOVED)
+- [ ] ~~Add time period selector~~ (REMOVED)
+- [ ] ~~Create charts (Chart.js)~~ (REMOVED)
+- [ ] ~~Add "Export Analytics" command~~ (REMOVED)
 
-#### 10.4 Session History
+#### 9.4 Session History
 - [ ] Add "View Session History" command
 - [ ] Implement pagination
 - [ ] Add search/filter capabilities
 - [ ] Add "Clear Old Sessions" command
 
-**Progress:** 0/23 tasks complete
-**Status:** Blocked by Phase 7 (Can start in parallel with Phase 9)
+**Progress:** 7/18 tasks complete (39%) *[5 analytics tasks removed]*
+**Status:** Session tree and details complete, history features remain
 **Estimated Duration:** 1-2 weeks
 
 ---
 
-### Phase 11: Advanced GitHub Integration ⏸️ BLOCKED (Requires Phase 7)
+### Phase 10: Advanced GitHub Integration ⏸️ BLOCKED (Requires Phase 7)
 
-#### 11.1 Repository Management
+#### 10.1 Repository Management
 - [ ] Add "Configure GitHub Repositories" command
 - [ ] List all accessible repos
 - [ ] Show Jules GitHub App repos
@@ -230,7 +202,7 @@ Track your progress through all phases of the Promptroot VS Code Extension devel
 - [ ] Add "Refresh Repositories" command
 - [ ] Show repo metadata
 
-#### 11.2 Branch Selection & Management
+#### 10.2 Branch Selection & Management
 - [ ] Improve branch selection UI
 - [ ] Show recent branches at top
 - [ ] Display branch protection status
@@ -261,7 +233,7 @@ Track your progress through all phases of the Promptroot VS Code Extension devel
 
 ---
 
-### Phase 12: Production Readiness & Distribution ⏸️ BLOCKED (Requires Phases 7-11)
+### Phase 11: Production Readiness & Distribution ⏸️ BLOCKED (Requires Phases 7-11)
 
 #### 12.1 Error Handling & Recovery
 - [ ] Comprehensive error categorization
@@ -337,42 +309,40 @@ Track your progress through all phases of the Promptroot VS Code Extension devel
 - **Status:** ✅ SHIPPED
 
 ### Part 2 (Full Feature Parity)
-- **Phases Complete:** 1/6 (17%)
-- **Tasks Complete:** 57/159 (36%)
-- **Current Phase:** Phase 9 (Core Complete - 14/19 tasks)
+- **Phases Complete:** 1/5 (20%)  
+- **Tasks Complete:** 50/140 (36%) *[Excluding removed Phase 9]*
+- **Current Phase:** Phase 10 (Session Tracking - 7/23 tasks)
 - **Status:** 🚀 IN PROGRESS
 
 ### Combined Progress
-- **Total Phases:** 12
-- **Completed Phases:** 7 (58%)
+- **Total Phases:** 11 *[Phase 9 removed from extension scope]*
+- **Completed Phases:** 7 (64%)
 - **Phase 8 Progress:** 26/30 tasks (87%)
-- **Phase 9 Progress:** 14/19 tasks (74%)
-- **Estimated Remaining Time:** 3-8 weeks
+- **Phase 10 Progress:** 7/23 tasks (30%)
+- **Estimated Remaining Time:** 4-7 weeks
 
 ---
 
 ## Next Steps
 
-1. **Test Phase 9 Scheduling Features**
+1. **Complete Phase 9: Session Tracking** (IN PROGRESS - 7/18 tasks done)
    - Press F5 in vscode-extension folder
-   - Right-click queue item → "Schedule Queue Item"
-   - Test WebView schedule picker (date/time/timezone)
-   - Verify scheduled items show clock icon and time
-   - Test "Unschedule Queue Item" command
-   - Test "Set Timezone" command
-   - Check overdue item warnings (⚠️)
+   - View "Jules Sessions" tree in Explorer panel
+   - Test session details WebView
+   - Verify PR links work correctly
+   - Complete session history with search/filter
 
-2. **Complete Remaining Phase 9 Tasks** (Optional - 5 deferred tasks)
-   - Multi-select scheduling in tree view
-   - Cloud Functions documentation (deferred to Phase 12)
-   - Calendar view WebView
-   - Sort scheduled items by time
+2. **Move to Phase 10: Advanced GitHub Integration** (26 tasks)
+   - Configure/browse GitHub repositories via API
+   - Enhanced branch selection with search
+   - Pull requests tree view for Jules-created PRs
+   - Gist integration for prompt references
 
-3. **Move to Phase 10: Session Tracking** (UNBLOCKED - Phase 7 complete)
-   - Create "JULES SESSIONS" tree view
-   - Session details WebView
-   - Analytics dashboard with charts
-   - PR tracking integration
+3. **Phase 11: Production Readiness** (44 tasks)
+   - Error handling and recovery
+   - Performance optimization and caching
+   - Comprehensive testing (unit, integration, E2E)
+   - Documentation and marketplace preparation
 
 4. **Set Up Development Environment** (if not already done)
    - Configure Firebase emulators

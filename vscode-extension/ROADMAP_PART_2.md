@@ -171,74 +171,25 @@ Part 2 will add:
 
 ---
 
-## Phase 9 — Queue Scheduling & Automation
+## Phase 9 — Queue Scheduling & Automation (REMOVED)
 
-**Goal:** Enable scheduled execution of queue items with timezone support
+**Note:** Queue scheduling functionality has been moved to the web application only. The VS Code extension will focus on queue management and session tracking, while complex scheduling features remain in the main web app where they can leverage Cloud Functions and advanced UI components.
 
-### Tasks
-
-#### 9.1 Scheduling UI
-- [ ] Add "Schedule Queue Items" command
-- [ ] Create WebView for schedule picker (date/time/timezone)
-- [ ] Implement timezone selection UI (QuickPick with common zones)
-- [ ] Load user's saved timezone from Firestore
-- [ ] Support multi-select scheduling
-- [ ] Add "Unschedule" command
-- [ ] Show schedule info in queue tree view (date/time badge)
-
-#### 9.2 Scheduled Item Visualization
-- [ ] Add clock icon (⏰) to scheduled items
-- [ ] Show formatted schedule time in tree item description
-- [ ] Add color coding for scheduled items (blue border)
-- [ ] Sort scheduled items by schedule time
-- [ ] Add "View Schedule" command (calendar view in WebView)
-
-#### 9.3 Cloud Functions Integration
-- [ ] Document Cloud Functions setup for schedule activation
-- [ ] Test with Firebase emulators
-- [ ] Add settings for function URLs (dev vs production)
-- [ ] Handle activation webhooks/notifications
-- [ ] Add "Test Activation" command for debugging
-
-#### 9.4 Timezone Management
-- [ ] Store user's timezone preference in Firestore
-- [ ] Add "Set Timezone" command
-- [ ] Display all times in user's timezone
-- [ ] Handle daylight saving time transitions
-- [ ] Add timezone indicator in status bar
-
-### Acceptance Criteria
-- [ ] Can schedule single or multiple queue items
-- [ ] Schedule picker shows times in user's timezone
-- [ ] Scheduled items display schedule info clearly
-- [ ] Items automatically activate at scheduled time (via Cloud Functions)
-- [ ] Can unschedule items
-- [ ] Timezone preference persists
-- [ ] Clear indicators for overdue scheduled items
-
-### Completion Conditions
-- [ ] Schedule an item for future execution
-- [ ] Verify Cloud Function activates item at scheduled time
-- [ ] Change timezone and verify display updates
-- [ ] Unschedule item successfully
-- [ ] Test with multiple scheduled items
-
-### Implementation Notes
-- Use `luxon` or `date-fns-tz` for timezone handling
-- Store all timestamps in UTC in Firestore
-- Display times in user's local timezone
-- Implement WebView for advanced scheduling UI
-- Add calendar/timeline visualization for scheduled items
+**Rationale:** 
+- Scheduling is better suited for the web app's rich UI capabilities
+- Cloud Functions integration is more natural in the web environment
+- Reduces complexity in the VS Code extension
+- Maintains clear separation of concerns between platforms
 
 ---
 
-## Phase 10 — Session Tracking & Analytics
+## Phase 9 — Session Tracking & Analytics
 
 **Goal:** Track Jules sessions and provide analytics dashboard
 
 ### Tasks
 
-#### 10.1 Session Tracking Integration
+#### 9.1 Session Tracking Integration
 - [ ] Listen to `juleSessions/{userId}/sessions` collection
 - [ ] Create "JULES SESSIONS" tree view
 - [ ] Display recent sessions with status icons
@@ -247,7 +198,7 @@ Part 2 will add:
 - [ ] Add "Open PR in Browser" command
 - [ ] Sync session status from Jules API periodically
 
-#### 10.2 Session Details View
+#### 9.2 Session Details View
 - [ ] Create WebView for session details
 - [ ] Display prompt used, repo/branch
 - [ ] Show plan steps and execution log
@@ -256,7 +207,7 @@ Part 2 will add:
 - [ ] Add "Retry Session" command (creates new queue item)
 - [ ] Add "Copy Session URL" command
 
-#### 10.3 Analytics Dashboard
+#### 9.3 Analytics Dashboard
 - [ ] Create WebView for analytics dashboard
 - [ ] Implement metrics calculations:
   - Total sessions
@@ -271,7 +222,7 @@ Part 2 will add:
   - Success rate by prompt (bar chart)
 - [ ] Add "Export Analytics" command (CSV/JSON)
 
-#### 10.4 Session History
+#### 9.4 Session History
 - [ ] Add "View Session History" command
 - [ ] Implement pagination for large session lists
 - [ ] Add search/filter capabilities:
@@ -306,13 +257,13 @@ Part 2 will add:
 
 ---
 
-## Phase 11 — Advanced GitHub Integration
+## Phase 10 — Advanced GitHub Integration
 
 **Goal:** Full GitHub repository and branch management
 
 ### Tasks
 
-#### 11.1 Repository Management
+#### 10.1 Repository Management
 - [ ] Add "Configure GitHub Repositories" command
 - [ ] List all accessible repos (via GitHub API)
 - [ ] Show repos connected via Jules GitHub App
@@ -321,7 +272,7 @@ Part 2 will add:
 - [ ] Add "Refresh Repositories" command
 - [ ] Show repo metadata (visibility, description, default branch)
 
-#### 11.2 Branch Selection & Management
+#### 10.2 Branch Selection & Management
 - [ ] Improve branch selection UI (QuickPick with search)
 - [ ] Show recent branches at top
 - [ ] Display branch protection status
@@ -330,7 +281,7 @@ Part 2 will add:
 - [ ] Add "Create New Branch" command
 - [ ] Show current branch in status bar (for queued items)
 
-#### 11.3 PR Tracking & Management
+#### 10.3 PR Tracking & Management
 - [ ] Add "PULL REQUESTS" tree view
 - [ ] List PRs created by Jules sessions
 - [ ] Show PR status (open, merged, closed)
@@ -339,7 +290,7 @@ Part 2 will add:
 - [ ] Show code review status (approved, changes requested)
 - [ ] Add notifications for PR updates
 
-#### 11.4 Gist Integration
+#### 10.4 Gist Integration
 - [ ] Support gist pointer patterns in prompts
 - [ ] Add "Create Gist from Prompt" command
 - [ ] Add "Update Gist" command
@@ -371,13 +322,13 @@ Part 2 will add:
 
 ---
 
-## Phase 12 — Production Readiness & Distribution
+## Phase 11 — Production Readiness & Distribution
 
 **Goal:** Polish, optimize, and prepare for public distribution
 
 ### Tasks
 
-#### 12.1 Error Handling & Recovery
+#### 11.1 Error Handling & Recovery
 - [ ] Implement comprehensive error categorization
 - [ ] Add error recovery suggestions for common issues
 - [ ] Create error reporting command (sends to logging service)
@@ -386,7 +337,7 @@ Part 2 will add:
 - [ ] Add connection status indicator
 - [ ] Create troubleshooting guide in docs
 
-#### 12.2 Performance Optimization
+#### 11.2 Performance Optimization
 - [ ] Implement intelligent caching strategy
 - [ ] Add request deduplication
 - [ ] Optimize Firestore queries (indexes, batching)
@@ -395,7 +346,7 @@ Part 2 will add:
 - [ ] Profile memory usage and fix leaks
 - [ ] Optimize WebView loading times
 
-#### 12.3 Settings & Configuration
+#### 11.3 Settings & Configuration
 - [ ] Add comprehensive extension settings:
   - Firebase project ID
   - Emulator configuration
@@ -408,7 +359,7 @@ Part 2 will add:
 - [ ] Add "Reset to Defaults" command
 - [ ] Document all settings in README
 
-#### 12.4 Testing & Quality
+#### 11.4 Testing & Quality
 - [ ] Increase unit test coverage to 90%+
 - [ ] Add integration tests for Firebase operations
 - [ ] Add E2E tests for critical flows:
@@ -421,7 +372,7 @@ Part 2 will add:
 - [ ] Test with multiple Firebase projects
 - [ ] Load testing for concurrent operations
 
-#### 12.5 Documentation
+#### 11.5 Documentation
 - [ ] Update README with complete feature list
 - [ ] Create user guide with screenshots
 - [ ] Create video walkthrough
@@ -431,7 +382,7 @@ Part 2 will add:
 - [ ] Add inline documentation for all commands
 - [ ] Create migration guide from web app
 
-#### 12.6 Marketplace Preparation
+#### 11.6 Marketplace Preparation
 - [ ] Create marketplace listing content
 - [ ] Design extension icon and banner
 - [ ] Create animated GIF demos
@@ -441,7 +392,7 @@ Part 2 will add:
 - [ ] Create privacy policy
 - [ ] Create terms of service
 
-#### 12.7 Telemetry & Analytics (Optional)
+#### 11.7 Telemetry & Analytics (Optional)
 - [ ] Add opt-in telemetry
 - [ ] Track feature usage (anonymized)
 - [ ] Track error rates

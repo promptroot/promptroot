@@ -141,29 +141,7 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 			// Single item
 			const promptName = queueItem.promptPath.split('/').pop() || 'Untitled';
 			label = `${icon} ${promptName}`;
-			
-			// Show schedule time in description if scheduled
-			if (queueItem.status === 'scheduled' && queueItem.scheduledAt) {
-				const scheduleDate = queueItem.scheduledAt.toDate();
-				const now = new Date();
-				const isOverdue = scheduleDate < now;
-				
-				// Format date/time
-				const dateStr = scheduleDate.toLocaleDateString(undefined, { 
-					month: 'short', 
-					day: 'numeric' 
-				});
-				const timeStr = scheduleDate.toLocaleTimeString(undefined, { 
-					hour: '2-digit', 
-					minute: '2-digit' 
-				});
-				
-				description = isOverdue 
-					? `⚠️ Overdue: ${dateStr} ${timeStr}`
-					: `⏰ ${dateStr} ${timeStr}`;
-			} else {
-				description = queueItem.status;
-			}
+			description = queueItem.status;
 		} else {
 			// Batch item
 			label = `${icon} Batch (${queueItem.subtasks.length} items)`;
@@ -189,12 +167,6 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 
 		if (isSingleQueueItem(queueItem)) {
 			tooltip += `\nPrompt: ${queueItem.promptPath}`;
-			if (queueItem.scheduledAt) {
-				tooltip += `\nScheduled: ${queueItem.scheduledAt.toDate().toLocaleString()}`;
-				if (queueItem.scheduledTimeZone) {
-					tooltip += ` (${queueItem.scheduledTimeZone})`;
-				}
-			}
 		}
 
 		if (queueItem.lastError) {
@@ -227,8 +199,7 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 			'running': '▶️',
 			'completed': '✅',
 			'failed': '❌',
-			'paused': '⏸️',
-			'scheduled': '📅'
+			'paused': '⏸️'
 		};
 		return icons[status] || '❓';
 	}

@@ -123,20 +123,6 @@
         "icon": "$(info)"
       },
       {
-        "command": "promptroot.scheduleQueueItem",
-        "title": "Promptroot: Schedule Queue Item",
-        "icon": "$(watch)"
-      },
-      {
-        "command": "promptroot.unscheduleQueueItem",
-        "title": "Promptroot: Unschedule Queue Item",
-        "icon": "$(close)"
-      },
-      {
-        "command": "promptroot.setTimezone",
-        "title": "Promptroot: Set Timezone"  
-      },
-      {
         "command": "promptroot.refreshSessions",
         "title": "Promptroot: Refresh Sessions",
         "icon": "$(refresh)"
@@ -150,11 +136,6 @@
         "command": "promptroot.openPRInBrowser",
         "title": "Promptroot: Open PR in Browser",
         "icon": "$(link-external)"
-      },
-      {
-        "command": "promptroot.viewAnalytics",
-        "title": "Promptroot: View Analytics Dashboard",
-        "icon": "$(graph)"
       }
     ],
     "views": {
@@ -222,11 +203,6 @@
           "command": "promptroot.refreshSessions",
           "when": "view == promptroot.sessionsView",
           "group": "navigation@1"
-        },
-        {
-          "command": "promptroot.viewAnalytics",
-          "when": "view == promptroot.sessionsView",
-          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -254,16 +230,6 @@
           "command": "promptroot.viewQueueItemDetails",
           "when": "view == promptroot.queueView && viewItem != info",
           "group": "queue@4"
-        },
-        {
-          "command": "promptroot.scheduleQueueItem",
-          "when": "view == promptroot.queueView && viewItem != info",
-          "group": "schedule@1"
-        },
-        {
-          "command": "promptroot.unscheduleQueueItem",
-          "when": "view == promptroot.queueView && viewItem != info",
-          "group": "schedule@2"
         },
         {
           "command": "promptroot.viewSessionDetails",

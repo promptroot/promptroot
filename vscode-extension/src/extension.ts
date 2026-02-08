@@ -10,7 +10,6 @@ import { AuthManager } from './auth-manager';
 import { FirestoreService } from './firestore-service';
 import { QueueTreeProvider } from './queue-tree-provider';
 import { QueueManager } from './queue-manager';
-import { SchedulePickerView } from './schedule-picker-view';
 import { SessionTreeProvider } from './session-tree-provider';
 import { SessionDetailsView } from './session-details-view';
 
@@ -23,7 +22,6 @@ let julesClient: JulesClient;
 let authManager: AuthManager | null = null;
 let firestoreService: FirestoreService | null = null;
 let queueManager: QueueManager | null = null;
-let schedulePickerView: SchedulePickerView | null = null;
 let sessionDetailsView: SessionDetailsView | null = null;
 let statusBarItem: vscode.StatusBarItem;
 
@@ -51,9 +49,6 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Initialize queue manager
   queueManager = new QueueManager(firestoreService, authManager, outputChannel);
-
-  // Initialize schedule picker view
-  schedulePickerView = new SchedulePickerView(context);
 
   // Initialize session details view  
   sessionDetailsView = new SessionDetailsView(context);
@@ -325,30 +320,6 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  const scheduleQueueItemCommand = vscode.commands.registerCommand(
-    COMMANDS.scheduleQueueItem,
-    async (item) => {
-      outputChannel.appendLine('Schedule queue item command executed');
-      await scheduleQueueItem(item);
-    }
-  );
-
-  const unscheduleQueueItemCommand = vscode.commands.registerCommand(
-    COMMANDS.unscheduleQueueItem,
-    async (item) => {
-      outputChannel.appendLine('Unschedule queue item command executed');
-      await unscheduleQueueItem(item);
-    }
-  );
-
-  const setTimezoneCommand = vscode.commands.registerCommand(
-    COMMANDS.setTimezone,
-    async () => {
-      outputChannel.appendLine('Set timezone command executed');
-      await setTimezone();
-    }
-  );
-
   const refreshSessionsCommand = vscode.commands.registerCommand(
     COMMANDS.refreshSessions,
     () => {
@@ -379,14 +350,6 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  const viewAnalyticsCommand = vscode.commands.registerCommand(
-    COMMANDS.viewAnalytics,
-    async () => {
-      outputChannel.appendLine('View analytics command executed');
-      vscode.window.showInformationMessage('Analytics dashboard coming soon!');
-    }
-  );
-
   // Add commands to subscriptions for proper cleanup
   context.subscriptions.push(
     initializeCommand,
@@ -412,13 +375,9 @@ export function activate(context: vscode.ExtensionContext) {
     clearCompletedCommand,
     clearFailedCommand,
     viewQueueItemDetailsCommand,
-    scheduleQueueItemCommand,
-    unscheduleQueueItemCommand,
-    setTimezoneCommand,
     refreshSessionsCommand,
     viewSessionDetailsCommand,
     openPRInBrowserCommand,
-    viewAnalyticsCommand,
     treeView,
     queueTreeView,
     sessionTreeView,
@@ -1091,149 +1050,6 @@ async function viewQueueItemDetails(item: any): Promise<void> {
     title: `Queue Item: ${queueItem.type === 'single' ? queueItem.promptPath : 'Batch'}`,
     placeHolder: 'Queue item details'
   });
-}
-
-/**
- * Schedule queue item for future execution
- */
-async function scheduleQueueItem(item: any): Promise<void> {
-  if (!item?.queueItem) {
-    return;
-  }
-
-  if (!authManager?.isSignedIn()) {
-    vscode.window.showInformationMessage('You must be signed in to schedule queue items');
-    return;
-  }
-
-  try {
-    // Get user's timezone preference
-    const profile = await firestoreService?.getUserProfile(authManager.getCurrentUser()!.uid);
-    const userTimezone = profile?.timezone || 'America/Los_Angeles';
-
-    //Show schedule picker
-    const result = await schedulePickerView?.show(userTimezone);
-    
-    if (!result) {
-      return; // User cancelled
-    }
-
-    // Update queue item with schedule
-    await queueManager?.scheduleQueueItem(item.queueItem.id, result.scheduledAt);
-
-    // Update user timezone if changed
-    if (result.timezone !== userTimezone) {
-      await firestoreService?.saveUserProfile({
-        uid: authManager.getCurrentUser()!.uid,
-        timezone: result.timezone
-      });
-      outputChannel.appendLine(`Updated user timezone to: ${result.timezone}`);
-    }
-
-  } catch (error) {
-    vscode.window.showErrorMessage(`Failed to schedule queue item: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
-/**
- * Unschedule queue item (change status back to pending)
- */
-async function unscheduleQueueItem(item: any): Promise<void> {
-  if (!item?.queueItem) {
-    return;
-  }
-
-  if (!authManager?.isSignedIn()) {
-    vscode.window.showInformationMessage('You must be signed in to unschedule queue items');
-    return;
-  }
-
-  try {
-    const user = authManager.getCurrentUser();
-    if (!user) {
-      return;
-    }
-
-    // Update queue item - remove schedule and set back to pending
-    await firestoreService?.updateQueueItem(user.uid, item.queueItem.id, {
-      status: 'pending',
-      scheduledAt: null,
-      scheduledTimeZone: null
-    } as any);
-
-    vscode.window.showInformationMessage('Queue item unscheduled');
-    outputChannel.appendLine(`Unscheduled queue item: ${item.queueItem.id}`);
-
-  } catch (error) {
-    vscode.window.showErrorMessage(`Failed to unschedule queue item: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
-/**
- * Set user timezone preference
- */
-async function setTimezone(): Promise<void> {
-  if (!authManager?.isSignedIn()) {
-    const action = await vscode.window.showInformationMessage(
-      'You must be signed in to set timezone',
-      'Sign In'
-    );
-    if (action === 'Sign In') {
-      vscode.commands.executeCommand(COMMANDS.signIn);
-    }
-    return;
-  }
-
-  const commonTimezones = [
-    { label: 'Pacific Time', value: 'America/Los_Angeles' },
-    { label: 'Mountain Time', value: 'America/Denver' },
-    { label: 'Central Time', value: 'America/Chicago' },
-    { label: 'Eastern Time', value: 'America/New_York' },
-    { label: 'UTC', value: 'UTC' },
-    { label: 'London', value: 'Europe/London' },
-    { label: 'Paris', value: 'Europe/Paris' },
-    { label: 'Berlin', value: 'Europe/Berlin' },
-    { label: 'Tokyo', value: 'Asia/Tokyo' },
-    { label: 'Shanghai', value: 'Asia/Shanghai' },
-    { label: 'Dubai', value: 'Asia/Dubai' },
-    { label: 'Sydney', value: 'Australia/Sydney' },
-    { label: 'Auckland', value: 'Pacific/Auckland' }
-  ];
-
-  try {
-    // Get current timezone
-    const profile = await firestoreService?.getUserProfile(authManager.getCurrentUser()!.uid);
-    const currentTimezone = profile?.timezone || 'America/Los_Angeles';
-
-    // Show quick pick
-    const selected = await vscode.window.showQuickPick(
-      commonTimezones.map(tz => ({
-        label: tz.label,
-        description: tz.value,
-        picked: tz.value === currentTimezone
-      })),
-      {
-        placeHolder: 'Select your timezone',
-        title: `Current: ${currentTimezone}`
-      }
-    );
-
-    if (!selected) {
-      return;
-    }
-
-    // Update user profile
-    await firestoreService?.saveUserProfile({
-      uid: authManager.getCurrentUser()!.uid,
-      timezone: selected.description!
-    });
-
-    vscode.window.showInformationMessage(`Timezone set to ${selected.label}`);
-    outputChannel.appendLine(`Updated user timezone to: ${selected.description}`);
-
-  } catch (error) {
-    vscode.window.showErrorMessage(`Failed to set timezone: ${error instanceof Error ? error.message : String(error)}`);
-  }
 }
 
 /**

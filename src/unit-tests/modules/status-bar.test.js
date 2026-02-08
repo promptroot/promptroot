@@ -64,6 +64,9 @@ describe('status-bar', () => {
       expect(statusBar.progressElement).toBe(mockProgressElement);
       expect(statusBar.actionElement).toBe(mockActionElement);
       expect(statusBar.closeElement).toBe(mockCloseElement);
+
+      expect(statusBar.element.getAttribute('role')).toBe('status');
+      expect(statusBar.element.getAttribute('aria-live')).toBe('polite');
     });
 
     it('should hide status bar initially', () => {
@@ -121,6 +124,7 @@ describe('status-bar', () => {
       expect(mockMsgElement.textContent).toBe(message);
       expect(mockStatusBarElement.classList.contains('status-visible')).toBe(true);
       expect(mockStatusBarElement.classList.contains('hidden')).toBe(false);
+      expect(mockStatusBarElement.getAttribute('aria-atomic')).toBe('true');
     });
 
     it('should auto-hide message after default timeout', () => {

@@ -121,6 +121,20 @@
         "command": "promptroot.viewQueueItemDetails",
         "title": "Promptroot: View Queue Item Details",
         "icon": "$(info)"
+      },
+      {
+        "command": "promptroot.scheduleQueueItem",
+        "title": "Promptroot: Schedule Queue Item",
+        "icon": "$(watch)"
+      },
+      {
+        "command": "promptroot.unscheduleQueueItem",
+        "title": "Promptroot: Unschedule Queue Item",
+        "icon": "$(close)"
+      },
+      {
+        "command": "promptroot.setTimezone",
+        "title": "Promptroot: Set Timezone"  
       }
     ],
     "views": {
@@ -205,6 +219,16 @@
           "command": "promptroot.viewQueueItemDetails",
           "when": "view == promptroot.queueView && viewItem != info",
           "group": "queue@4"
+        },
+        {
+          "command": "promptroot.scheduleQueueItem",
+          "when": "view == promptroot.queueView && viewItem != info",
+          "group": "schedule@1"
+        },
+        {
+          "command": "promptroot.unscheduleQueueItem",
+          "when": "view == promptroot.queueView && viewItem != info",
+          "group": "schedule@2"
         }
       ]
     },

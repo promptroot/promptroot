@@ -26,7 +26,10 @@ export const COMMANDS = {
   runAllPending: 'promptroot.runAllPending',
   clearCompleted: 'promptroot.clearCompleted',
   clearFailed: 'promptroot.clearFailed',
-  viewQueueItemDetails: 'promptroot.viewQueueItemDetails'
+  viewQueueItemDetails: 'promptroot.viewQueueItemDetails',
+  scheduleQueueItem: 'promptroot.scheduleQueueItem',
+  unscheduleQueueItem: 'promptroot.unscheduleQueueItem',
+  setTimezone: 'promptroot.setTimezone'
 } as const;
 
 export const VIEWS = {

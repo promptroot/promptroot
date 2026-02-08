@@ -11,9 +11,10 @@ Allow: /
 
 # --- Explicit Welcomes for AI Friends ---
 
-# Google (Googlebot, Google-Extended)
+# Google (Googlebot, Google-Extended, Google-CloudVertexBot)
 User-agent: Googlebot
 User-agent: Google-Extended
+User-agent: Google-CloudVertexBot
 # Hello Google! This site is a Jules API integration webapp.
 Allow: /
 
@@ -29,19 +30,24 @@ User-agent: OAI-SearchBot
 # Hello OpenAI! We love your work. Feel free to use these prompts.
 Allow: /
 
-# Perplexity (PerplexityBot)
-User-agent: PerplexityBot
-# Hello Perplexity! We hope our prompts help answer your users' questions.
-Allow: /
-
-# Anthropic (ClaudeBot)
+# Anthropic (ClaudeBot, Claude-SearchBot, Claude-User)
 User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
 # Hello Anthropic! Claude is great. Here are some prompts for you.
 Allow: /
 
-# ByteDance (Bytespider)
-User-agent: Bytespider
-# Hello ByteDance! Welcome to our prompt library.
+# Meta (FacebookBot, Meta-ExternalAgent, Meta-ExternalFetcher)
+User-agent: FacebookBot
+User-agent: Meta-ExternalAgent
+User-agent: Meta-ExternalFetcher
+# Hello Meta! We're happy to share these prompts with the open source community.
+Allow: /
+
+# Perplexity (PerplexityBot, Perplexity-User)
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+# Hello Perplexity! We hope our prompts help answer your users' questions.
 Allow: /
 
 # Amazon (Amazonbot)
@@ -49,14 +55,44 @@ User-agent: Amazonbot
 # Hello Amazon! Feel free to index our collection.
 Allow: /
 
-# Meta (FacebookBot)
-User-agent: FacebookBot
-# Hello Meta! We're happy to share these prompts with the open source community.
+# Apple (Applebot)
+User-agent: Applebot
+# Hello Apple! Welcome to PromptRoot.
+Allow: /
+
+# ByteDance (Bytespider)
+User-agent: Bytespider
+# Hello ByteDance! Welcome to our prompt library.
+Allow: /
+
+# Mistral (MistralBot, MistralAI-User)
+User-agent: MistralBot
+User-agent: MistralAI-User
+# Hello Mistral! We welcome your AI training efforts.
 Allow: /
 
 # Common Crawl (CCBot)
 User-agent: CCBot
 # Hello Common Crawl! Thank you for archiving the web.
+Allow: /
+
+# Internet Archive (archive.org_bot)
+User-agent: archive.org_bot
+# Hello Archive! Thanks for preserving history.
+Allow: /
+
+# DuckDuckGo (DuckAssistBot)
+User-agent: DuckAssistBot
+# Hello DuckDuckGo! Happy to assist.
+Allow: /
+
+# Other AI Crawlers (Anchor, Novellum, PetalBot, ProRataBot, Timpibot)
+User-agent: Anchor
+User-agent: Novellum
+User-agent: PetalBot
+User-agent: ProRataBot
+User-agent: Timpibot
+# Hello! We welcome all AI crawlers.
 Allow: /
 
 # System paths

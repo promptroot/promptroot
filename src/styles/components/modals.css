@@ -1,9 +1,9 @@
 /* Modals & Jules Key Modal */
-#julesKeyModal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 1000; display: none !important; align-items: center; justify-content: center; }
-#julesKeyModal.show { display: flex !important; }
-#julesKeyModal > div { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; max-width: 400px; width: 90%; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
-#julesKeyModal h2 { margin: 0 0 12px; font-size: 18px; }
-#julesKeyModal p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+.modal--jules-key { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 1000; display: none !important; align-items: center; justify-content: center; }
+.modal--jules-key.show { display: flex !important; }
+.modal--jules-key > div { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; max-width: 400px; width: 90%; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
+.modal--jules-key h2 { margin: 0 0 12px; font-size: 18px; }
+.modal--jules-key p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
 #julesKeyInput { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: #12162a; color: var(--text); outline: none; margin-bottom: 16px; box-sizing: border-box; font-size: 14px; }
 #julesKeyInput::placeholder { color: var(--muted); }
 .modal-buttons { display: flex; gap: 8px; justify-content: flex-end; }
@@ -12,15 +12,15 @@
 .modal.show { display: flex !important; }
 
 /* User Profile Modal specific */
-#userProfileModal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 1001; display: none; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto; padding: 20px; }
-#userProfileModal.show { display: flex !important; }
+.modal--user-profile { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 1001; display: none; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto; padding: 20px; }
+.modal--user-profile.show { display: flex !important; }
 
 /* All Sessions Modal specific */
-#allSessionsModal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 1002; display: none; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto; padding: 20px; }
-#allSessionsModal.show { display: flex !important; }
+.modal--all-sessions { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 1002; display: none; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto; padding: 20px; }
+.modal--all-sessions.show { display: flex !important; }
 
 /* Edit Queue Modal specific */
-#editQueueItemModal { z-index: 1003; }
+.modal--edit-queue { z-index: 1003; }
 
 .modal-content { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; max-width: 400px; width: 90%; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
 .modal-content.modal-lg { max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; overflow-y: auto; }
@@ -41,10 +41,10 @@
 .modal-buttons .btn.primary { border-color: var(--accent); color: var(--accent); }
 
 /* Specific modal layering */
-#subtaskPreviewModal { z-index: 1002; }
+.modal--subtask-preview { z-index: 1002; }
 
 /* Prompt viewer modal styles */
-#promptViewerModal { z-index: 10000; }
+.modal--prompt-viewer { z-index: 10000; }
 
 .prompt-viewer-text {
   white-space: pre-wrap;
@@ -75,11 +75,11 @@
 .modal-body .custom-dropdown-menu { position: fixed; }
 
 /* Form elements in modals */
-.form-group { margin-bottom: 16px; }
-.form-group.space-below { margin-bottom: 24px; }
+.modal__form-group { margin-bottom: 16px; }
+.modal__form-group.space-below { margin-bottom: 24px; }
 .form-section-label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px; }
-.form-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--text); }
-.subtask-item-header .form-label { font-size: 12px; font-weight: 400; color: var(--muted); }
+.modal__form-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--text); }
+.subtask-item-header .modal__form-label { font-size: 12px; font-weight: 400; color: var(--muted); }
 .form-control { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: #12162a; color: var(--text); outline: none; box-sizing: border-box; font-size: 14px; font-family: inherit; }
 .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(77, 217, 255, 0.1); }
 .form-control:read-only { background: #0a0d1a; color: var(--muted); cursor: not-allowed; }
@@ -92,14 +92,14 @@
 .close-modal:hover { opacity: 1; }
 
 /* Confirm modal specific styles */
-#confirmModal { z-index: 10000; }
-#confirmModal .modal-content { max-width: 480px; }
+.modal--confirm { z-index: 10000; }
+.modal--confirm .modal-content { max-width: 480px; }
 #confirmModalMessage { line-height: 1.6; white-space: pre-wrap; }
 
 /* Subtask editing */
 .subtask-item { margin-bottom: 16px; position: relative; }
 .subtask-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.subtask-item-header .form-label { margin-bottom: 0; }
+.subtask-item-header .modal__form-label { margin-bottom: 0; }
 .remove-subtask-btn { background: none; border: none; cursor: pointer; color: var(--warn); font-size: 18px; padding: 4px 8px; transition: color 0.2s; }
 .remove-subtask-btn:hover { color: var(--error); }
 .edit-subtask-content { font-family: monospace; font-size: 12px; }

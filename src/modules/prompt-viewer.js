@@ -11,7 +11,7 @@ let currentEscapeHandler = null;
 let promptViewerHandlers = new Map();
 
 function createPromptViewerModal() {
-  const modal = createElement('div', 'modal');
+  const modal = createElement('div', 'modal modal--prompt-viewer');
   modal.id = 'promptViewerModal';
 
   const content = createElement('div', 'modal-content modal-xl');

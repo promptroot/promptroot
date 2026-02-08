@@ -33,8 +33,7 @@
     {
       "matches": [
         "https://promptroot.ai/*",
-        "https://promptroot-b02a2.firebaseapp.com/*",
-        "http://localhost:*/*"
+        "https://promptroot-b02a2.firebaseapp.com/*"
       ],
       "js": ["content.js"],
       "run_at": "document_start"

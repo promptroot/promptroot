@@ -40,8 +40,37 @@ How the issue was resolved (if applicable).
 
 ## Open Issues
 
-None yet.
+None.
 
 ## Resolved Issues
 
-None yet.
+### Issue #1: Preview Document Close Error
+**Status:** Resolved  
+**Severity:** High  
+**Phase:** Phase 5  
+**Date Reported:** 2026-02-08  
+**Date Resolved:** 2026-02-08
+
+**Description:**
+When creating a new prompt asset, the preview document close operation attempted to save the untitled document to disk, resulting in a permissions error.
+
+**Steps to Reproduce:**
+1. Run "Promptroot: Create New Prompt Asset"
+2. Complete metadata entry
+3. Click "Create" in confirmation dialog
+4. Extension crashes with: `Unable to write file '\test.md' (NoPermissions)`
+
+**Expected Behavior:**
+Preview closes without attempting to save, file created in prompts directory.
+
+**Actual Behavior:**
+VS Code attempted to save the modified untitled document to C:\test.md, causing permission error.
+
+**Environment:**
+- VS Code Version: 1.108.2
+- Extension Version: 0.1.0
+- OS: Windows
+- Node Version: 20.17.0
+
+**Resolution:**
+Changed `workbench.action.closeActiveEditor` to `workbench.action.revertAndCloseActiveEditor` in `asset-creator.ts` confirmFileCreation function. This reverts the document (discarding changes) before closing, preventing VS Code from attempting to save.

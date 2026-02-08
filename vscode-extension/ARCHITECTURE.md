@@ -1,11 +1,12 @@
 # Promptroot VS Code Extension Architecture
 
 **Version:** 1.0  
-**Last Updated:** February 5, 2026
+**Last Updated:** February 8, 2026  
+**Status:** ✅ All 6 Phases Complete - Production Ready
 
 ## Overview
 
-This document describes the architecture of the Promptroot VS Code extension, designed to streamline Promptroot workflows directly inside the editor. All 6 phases complete - extension is production-ready.
+This document describes the architecture of the Promptroot VS Code extension, designed to streamline Promptroot workflows directly inside the editor. The extension has completed all 6 development phases and includes comprehensive unit testing, documentation, and packaging support.
 
 ## Design Principles
 
@@ -20,19 +21,22 @@ This document describes the architecture of the Promptroot VS Code extension, de
 ```
 vscode-extension/
 ├── src/
-│   ├── extension.ts        # Entry point (activate/deactivate)
+│   ├── extension.ts         # Entry point (activate/deactivate)
 │   ├── constants.ts         # Command IDs, view IDs, config keys
 │   ├── tree-provider.ts     # Tree view provider for asset browsing
 │   ├── templates.ts         # Prompt asset templates and validation
+│   ├── templates.test.ts    # Unit tests for templates module
 │   ├── asset-creator.ts     # Asset creation workflow orchestration
 │   ├── jules-config.ts      # Jules API configuration & SecretStorage
-│   ├── jules-client.ts      # Jules API HTTP client
-│   └── test/                # Test files (future)
+│   └── jules-client.ts      # Jules API HTTP client
 ├── out/                     # Compiled JavaScript (generated)
 ├── package.json             # Extension manifest
 ├── tsconfig.json            # TypeScript configuration
+├── vitest.config.ts         # Vitest test configuration
 ├── .eslintrc.js             # ESLint configuration
-└── README.md                # User-facing documentation
+├── README.md                # User-facing documentation
+├── ARCHITECTURE.md          # This file - technical architecture
+└── PHASE_*_VERIFICATION.md  # Testing verification guides
 ```
 
 ## Core Components
@@ -139,19 +143,23 @@ Press F5 in VS Code to launch Extension Development Host with extension loaded.
 4. **Logging** - All actions logged to output channel
 5. **Deactivation** - Cleanup in deactivate()
 
-## Future Phases
+## Development Phases
 
-### Phase 6: Testing & Release
-- Unit tests for core logic
-- E2E tests for user flows
-- Package extension (.vsix)
-- Publish to marketplace
+### ✅ Completed Phases (1-6)
+1. **Foundation & Scaffolding** - Basic extension structure and commands
+2. **Core UI Surface** - Tree view with sample data
+3. **Promptroot Integration** - Real file system integration
+4. **Jules API Integration (Read-Only)** - API key management, sources, sessions
+5. **Authoring & Actions** - Asset creation with templates and metadata
+6. **Quality & Release Readiness** - Unit tests, documentation, packaging
 
-### Phase 7+: Advanced Features
-- Jules API write operations
-- Batch operations
-- Advanced search
-- Workspace synchronization
+### Future Enhancements
+- **Jules API write operations** - Create sessions directly from extension
+- **Batch operations** - Bulk asset creation or updates
+- **Advanced search** - Full-text search across prompts
+- **Workspace synchronization** - Sync with remote repositories
+- **Custom templates** - User-defined prompt templates
+- **Asset metadata editor** - Edit existing asset frontmatter
 
 ## Core Modules (Phases 1-5)
 
@@ -324,13 +332,6 @@ Orchestrates the complete asset creation workflow.
 
 ## Testing Strategy (Phase 6)
 
-- **Unit tests** - Test pure functions and logic
-- **Integration tests** - Test command handlers and VS Code API integration
-- **E2E tests** - Test complete user workflows
-- **Manual testing** - Verify in Extension Development Host
-
-## Testing Strategy (Phase 6)
-
 ### Unit Tests (Vitest)
 - **Framework:** Vitest (aligns with main project)
 - **Location:** `src/**/*.test.ts`
@@ -374,6 +375,40 @@ Requires Node.js 20.18.1+ for @vscode/vsce compatibility.
 
 ### Development Mode
 Press F5 in VS Code (with vscode-extension folder open) to launch Extension Development Host.
+
+## Quick Testing Reference
+
+### First-Time Setup
+```bash
+cd vscode-extension
+npm install
+npm run compile
+```
+
+### Run Extension
+1. Open `vscode-extension` folder in VS Code
+2. Press F5 (or Run and Debug panel → click play button)
+3. Extension Development Host window opens
+4. Open a folder with `prompts/` directory
+
+### Run Tests
+```bash
+npm test                 # Run all unit tests
+npm run test:watch       # Watch mode
+npm run test:coverage    # With coverage report
+npm run lint             # Run linter
+```
+
+### Debug Extension
+- Set breakpoints in .ts source files
+- Check **Debug Console** in main VS Code window
+- Check **Output → Promptroot** in Extension Development Host
+
+### Verify Features
+- Look for **"PROMPTROOT ASSETS"** in Explorer sidebar
+- Press **Ctrl+Shift+P** → try Promptroot commands
+- Click **"+"** button in tree view to create assets
+- Check logs in **View → Output → Promptroot**
 
 ## References
 

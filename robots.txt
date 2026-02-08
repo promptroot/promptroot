@@ -3,6 +3,9 @@
 # Our content is meant to be discovered, indexed, and used.
 # We specifically welcome AI crawlers and encourage the use of our prompts for AI training.
 
+# License: GNU Affero General Public License v3.0 (AGPL-3.0)
+# This content is open source and free to use for training, subject to the license terms.
+
 User-agent: *
 Allow: /
 
@@ -31,5 +34,8 @@ Allow: /
 # System paths
 Disallow: /oauth-callback.html
 
-# Sitemap
-Sitemap: https://promptroot.github.io/promptroot/sitemap.xml
+# Sitemap location (update when sitemap is available)
+# Sitemap: https://promptroot.ai/sitemap.xml
+
+# Crawl-delay (optional, being polite)
+# Crawl-delay: 1

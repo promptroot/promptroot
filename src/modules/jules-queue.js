@@ -1372,7 +1372,7 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
   const user = getAuth()?.currentUser;
   if (!user) return;
 
-  const item = findQueueItem(docId);
+  const item = getQueueCache().find(i => i.id === docId);
   if (!item || !Array.isArray(item.remaining)) return;
 
   const sortedIndices = indices.sort((a, b) => a - b);
@@ -1380,6 +1380,9 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
 
   const successfulIndices = [];
   const skippedIndices = [];
+  
+  // Track the current state of remaining array locally to handle immediate deletions
+  let currentRemaining = item.remaining.slice();
 
   for (let i = 0; i < toRun.length; i++) {
     const subtask = toRun[i];
@@ -1398,6 +1401,18 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
           }
         }
         successfulIndices.push(originalIndex);
+        
+        // Delete each subtask immediately after successful submission to handle navigation interruptions
+        // Need to adjust index based on how many lower-indexed items we've already deleted
+        const adjustment = successfulIndices.filter(idx => idx < originalIndex).length;
+        const adjustedIndex = originalIndex - adjustment;
+        
+        // Delete from Firestore using current state of remaining array
+        await serviceDeleteSubtasks(user.uid, docId, [adjustedIndex], currentRemaining);
+        
+        // Update local remaining array to reflect the deletion
+        currentRemaining = currentRemaining.filter((_, idx) => idx !== adjustedIndex);
+        
         await new Promise(r => setTimeout(r, TIMEOUTS.queueDelay));
         retry = false;
       } catch (err) {
@@ -1427,14 +1442,10 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
             skippedIndices.push(originalIndex);
             retry = false;
           } else if (result.action === 'queue') {
-            if (successfulIndices.length > 0) {
-              await deleteSelectedSubtasks(docId, successfulIndices);
-            }
+            // Subtasks already deleted immediately after processing
             return { successful: successfulIndices.length, skipped: skippedIndices.length };
           } else {
-            if (successfulIndices.length > 0) {
-              await deleteSelectedSubtasks(docId, successfulIndices);
-            }
+            // Subtasks already deleted immediately after processing
             const err = new Error('User cancelled');
             err.successfulCount = successfulIndices.length;
             throw err;
@@ -1449,10 +1460,7 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
     }
   }
 
-  if (successfulIndices.length > 0) {
-    await deleteSelectedSubtasks(docId, successfulIndices);
-  }
-  
+  // All successful subtasks were deleted immediately after processing
   return { successful: successfulIndices.length, skipped: skippedIndices.length };
 }
 

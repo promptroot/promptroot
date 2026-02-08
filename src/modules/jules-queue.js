@@ -111,6 +111,14 @@ export async function checkAndNotifyRecentErrors() {
       const errorTime = item.lastError.timestamp.seconds ? item.lastError.timestamp.seconds * 1000 : item.lastError.timestamp;
       const ageMinutes = (Date.now() - errorTime) / 60000;
       return ageMinutes < JULES_MESSAGES.ERROR_VISIBILITY_WINDOW_MINUTES;
+    });
+    
+    // TODO: Implement notification logic for recent errors
+    if (recentErrors.length > 0) {
+      console.log(`Found ${recentErrors.length} recent errors`);
+    }
+  } catch (error) {
+    console.error('Error checking for recent errors:', error);
   }
 }
 

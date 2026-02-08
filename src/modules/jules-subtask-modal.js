@@ -24,22 +24,17 @@ let currentSubtasks = [];
  * @param {string} promptText - The full prompt text to analyze and split
  */
 export function showSubtaskSplitModal(promptText) {
-  console.log('showSubtaskSplitModal called with promptText:', promptText);
   currentFullPrompt = promptText;
   
   const modal = document.getElementById('subtaskSplitModal');
-  console.log('Modal element:', modal);
   const confirmBtn = document.getElementById('splitConfirmBtn');
   const queueBtn = document.getElementById('splitQueueBtn');
   const cancelBtn = document.getElementById('splitCancelBtn');
 
   const analysis = analyzePromptStructure(promptText);
-  console.log('Analysis result:', analysis);
   currentSubtasks = analysis.subtasks;
   
-  console.log('Setting modal display to flex');
   modal.classList.add('show');
-  console.log('Modal should now be visible');
 
   renderSplitEdit(currentSubtasks, promptText);
 

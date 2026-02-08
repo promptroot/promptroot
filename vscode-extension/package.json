@@ -135,6 +135,26 @@
       {
         "command": "promptroot.setTimezone",
         "title": "Promptroot: Set Timezone"  
+      },
+      {
+        "command": "promptroot.refreshSessions",
+        "title": "Promptroot: Refresh Sessions",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "promptroot.viewSessionDetails",
+        "title": "Promptroot: View Session Details",
+        "icon": "$(info)"
+      },
+      {
+        "command": "promptroot.openPRInBrowser",
+        "title": "Promptroot: Open PR in Browser",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "promptroot.viewAnalytics",
+        "title": "Promptroot: View Analytics Dashboard",
+        "icon": "$(graph)"
       }
     ],
     "views": {
@@ -148,6 +168,11 @@
           "id": "promptroot.queueView",
           "name": "Jules Queue",
           "icon": "$(list-ordered)"
+        },
+        {
+          "id": "promptroot.sessionsView",
+          "name": "Jules Sessions",
+          "icon": "$(history)"
         }
       ]
     },
@@ -192,6 +217,16 @@
           "command": "promptroot.clearFailed",
           "when": "view == promptroot.queueView",
           "group": "2_clear@2"
+        },
+        {
+          "command": "promptroot.refreshSessions",
+          "when": "view == promptroot.sessionsView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "promptroot.viewAnalytics",
+          "when": "view == promptroot.sessionsView",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -229,6 +264,16 @@
           "command": "promptroot.unscheduleQueueItem",
           "when": "view == promptroot.queueView && viewItem != info",
           "group": "schedule@2"
+        },
+        {
+          "command": "promptroot.viewSessionDetails",
+          "when": "view == promptroot.sessionsView && viewItem == session",
+          "group": "session@1"
+        },
+        {
+          "command": "promptroot.openPRInBrowser",
+          "when": "view == promptroot.sessionsView && viewItem == session",
+          "group": "session@2"
         }
       ]
     },

@@ -29,12 +29,17 @@ export const COMMANDS = {
   viewQueueItemDetails: 'promptroot.viewQueueItemDetails',
   scheduleQueueItem: 'promptroot.scheduleQueueItem',
   unscheduleQueueItem: 'promptroot.unscheduleQueueItem',
-  setTimezone: 'promptroot.setTimezone'
+  setTimezone: 'promptroot.setTimezone',
+  refreshSessions: 'promptroot.refreshSessions',
+  viewSessionDetails: 'promptroot.viewSessionDetails',
+  openPRInBrowser: 'promptroot.openPRInBrowser',
+  viewAnalytics: 'promptroot.viewAnalytics'
 } as const;
 
 export const VIEWS = {
   assets: 'promptroot.assetsView',
-  queue: 'promptroot.queueView'
+  queue: 'promptroot.queueView',
+  sessions: 'promptroot.sessionsView'
 } as const;
 
 export const CONFIG_KEYS = {

@@ -11,16 +11,20 @@ import { FirestoreService } from './firestore-service';
 import { QueueTreeProvider } from './queue-tree-provider';
 import { QueueManager } from './queue-manager';
 import { SchedulePickerView } from './schedule-picker-view';
+import { SessionTreeProvider } from './session-tree-provider';
+import { SessionDetailsView } from './session-details-view';
 
 let outputChannel: vscode.OutputChannel;
 let treeProvider: PromptrootTreeProvider;
 let queueTreeProvider: QueueTreeProvider | null = null;
+let sessionTreeProvider: SessionTreeProvider | null = null;
 let julesConfig: JulesConfig;
 let julesClient: JulesClient;
 let authManager: AuthManager | null = null;
 let firestoreService: FirestoreService | null = null;
 let queueManager: QueueManager | null = null;
 let schedulePickerView: SchedulePickerView | null = null;
+let sessionDetailsView: SessionDetailsView | null = null;
 let statusBarItem: vscode.StatusBarItem;
 
 /**
@@ -50,6 +54,12 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Initialize schedule picker view
   schedulePickerView = new SchedulePickerView(context);
+
+  // Initialize session details view  
+  sessionDetailsView = new SessionDetailsView(context);
+
+  // Initialize session details view
+  sessionDetailsView = new SessionDetailsView(context);
 
   // Create status bar item for user display
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
@@ -83,6 +93,13 @@ export function activate(context: vscode.ExtensionContext) {
   queueTreeProvider = new QueueTreeProvider(firestoreService, authManager, outputChannel);
   const queueTreeView = vscode.window.createTreeView(VIEWS.queue, {
     treeDataProvider: queueTreeProvider,
+    showCollapseAll: true
+  });
+
+  // Initialize session tree view provider
+  sessionTreeProvider = new SessionTreeProvider(firestoreService, authManager, outputChannel);
+  const sessionTreeView = vscode.window.createTreeView(VIEWS.sessions, {
+    treeDataProvider: sessionTreeProvider,
     showCollapseAll: true
   });
 
@@ -332,6 +349,44 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  const refreshSessionsCommand = vscode.commands.registerCommand(
+    COMMANDS.refreshSessions,
+    () => {
+      outputChannel.appendLine('Refresh sessions command executed');
+      sessionTreeProvider?.refresh();
+    }
+  );
+
+  const viewSessionDetailsCommand = vscode.commands.registerCommand(
+    COMMANDS.viewSessionDetails,
+    async (item) => {
+      outputChannel.appendLine('View session details command executed');
+      await viewSessionDetails(item);
+    }
+  );
+
+  const openPRInBrowserCommand = vscode.commands.registerCommand(
+    COMMANDS.openPRInBrowser,
+    async (prUrl) => {
+      outputChannel.appendLine('Open PR in browser command executed');
+      if (typeof prUrl === 'string') {
+        await vscode.env.openExternal(vscode.Uri.parse(prUrl));
+      } else if (prUrl?.session?.pr?.url) {
+        await vscode.env.openExternal(vscode.Uri.parse(prUrl.session.pr.url));
+      } else {
+        vscode.window.showErrorMessage('No PR URL available');
+      }
+    }
+  );
+
+  const viewAnalyticsCommand = vscode.commands.registerCommand(
+    COMMANDS.viewAnalytics,
+    async () => {
+      outputChannel.appendLine('View analytics command executed');
+      vscode.window.showInformationMessage('Analytics dashboard coming soon!');
+    }
+  );
+
   // Add commands to subscriptions for proper cleanup
   context.subscriptions.push(
     initializeCommand,
@@ -360,8 +415,13 @@ export function activate(context: vscode.ExtensionContext) {
     scheduleQueueItemCommand,
     unscheduleQueueItemCommand,
     setTimezoneCommand,
+    refreshSessionsCommand,
+    viewSessionDetailsCommand,
+    openPRInBrowserCommand,
+    viewAnalyticsCommand,
     treeView,
     queueTreeView,
+    sessionTreeView,
     outputChannel
   );
 
@@ -374,6 +434,9 @@ export function activate(context: vscode.ExtensionContext) {
   }
   if (queueTreeProvider) {
     context.subscriptions.push(queueTreeProvider);
+  }
+  if (sessionTreeProvider) {
+    context.subscriptions.push(sessionTreeProvider);
   }
 
   outputChannel.appendLine('All commands registered successfully');
@@ -1170,6 +1233,28 @@ async function setTimezone(): Promise<void> {
 
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to set timezone: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * View session details
+ */
+async function viewSessionDetails(item: any): Promise<void> {
+  if (!sessionDetailsView) {
+    vscode.window.showErrorMessage('Session details view not available');
+    return;
+  }
+
+  if (!item?.session) {
+    vscode.window.showErrorMessage('Invalid session item');
+    return;
+  }
+
+  try {
+    sessionDetailsView.show(item.session);
+    outputChannel.appendLine(`Showing details for session: ${item.session.sessionId}`);
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to show session details: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

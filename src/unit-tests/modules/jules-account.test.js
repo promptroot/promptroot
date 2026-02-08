@@ -129,8 +129,8 @@ describe('jules-account.js', () => {
   });
 
   describe('showUserProfileModal', () => {
-    it('should handle checkJulesKey error gracefully', async () => {
-      const error = new Error('Network error');
+    it('should handle checkJulesKey network error gracefully', async () => {
+      const error = new Error('network timeout');
       vi.spyOn(julesKeys, 'checkJulesKey').mockRejectedValue(error);
 
       showUserProfileModal();
@@ -140,7 +140,10 @@ describe('jules-account.js', () => {
 
       expect(errorHandler.handleError).toHaveBeenCalledWith(
         error,
-        expect.objectContaining({ source: 'showUserProfileModal.checkKey' }),
+        expect.objectContaining({ 
+          source: 'showUserProfileModal.checkKey',
+          errorType: 'NETWORK_ERROR'
+        }),
         expect.objectContaining({ category: 'NETWORK' })
       );
 
@@ -151,22 +154,62 @@ describe('jules-account.js', () => {
       );
 
       // Ensure fallback UI state
-      expect(domHelpers.toggleVisibility).toHaveBeenCalledWith(addBtn, true); // Assuming fallback shows add button
-      // We can't easily check for 'false' calls without checking order or filtering,
-      // but showing addBtn implies we're in a "not logged in / error" state visually.
+      expect(domHelpers.toggleVisibility).toHaveBeenCalledWith(addBtn, true);
+    });
+
+    it('should handle checkJulesKey auth error with specific categorization', async () => {
+      const error = new Error('auth failed');
+      error.code = 'permission-denied';
+      vi.spyOn(julesKeys, 'checkJulesKey').mockRejectedValue(error);
+
+      showUserProfileModal();
+
+      // Wait for async operations  
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(errorHandler.handleError).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({
+          source: 'showUserProfileModal.checkKey',
+          errorType: 'AUTH_ERROR'
+        }),
+        expect.objectContaining({ category: 'AUTH' })
+      );
+    });
+
+    it('should handle generic checkJulesKey errors', async () => {
+      const error = new Error('Generic error');
+      vi.spyOn(julesKeys, 'checkJulesKey').mockRejectedValue(error);
+
+      showUserProfileModal();
+
+      // Wait for async operations
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(errorHandler.handleError).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({
+          source: 'showUserProfileModal.checkKey', 
+          errorType: 'KEY_CHECK_FAILED'
+        }),
+        expect.objectContaining({ category: 'NETWORK' })
+      );
     });
   });
 
   describe('loadProfileDirectly', () => {
-    it('should handle checkJulesKey error gracefully', async () => {
-      const error = new Error('Network error');
+    it('should handle checkJulesKey network error gracefully', async () => {
+      const error = new Error('network error');
       vi.spyOn(julesKeys, 'checkJulesKey').mockRejectedValue(error);
 
       await loadProfileDirectly({ uid: '123', displayName: 'Test User' });
 
       expect(errorHandler.handleError).toHaveBeenCalledWith(
         error,
-        expect.objectContaining({ source: 'loadProfileDirectly.checkKey' }),
+        expect.objectContaining({
+          source: 'loadProfileDirectly.checkKey',
+          errorType: 'NETWORK_ERROR'
+        }),
         expect.objectContaining({ category: 'NETWORK' })
       );
 
@@ -174,6 +217,23 @@ describe('jules-account.js', () => {
         julesKeyStatus,
         statusRenderer.STATUS_TYPES.NOT_SAVED,
         'Unable to check'
+      );
+    });
+
+    it('should handle checkJulesKey auth error with proper categorization', async () => {
+      const error = new Error('permission denied');
+      error.code = 'permission-denied';
+      vi.spyOn(julesKeys, 'checkJulesKey').mockRejectedValue(error);
+
+      await loadProfileDirectly({ uid: '123', displayName: 'Test User' });
+
+      expect(errorHandler.handleError).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({  
+          source: 'loadProfileDirectly.checkKey',
+          errorType: 'AUTH_ERROR'
+        }),
+        expect.objectContaining({ category: 'AUTH' })
       );
     });
   });

@@ -61,6 +61,36 @@
       {
         "command": "promptroot.viewProfile",
         "title": "Promptroot: View Profile"
+      },
+      {
+        "command": "promptroot.refreshQueue",
+        "title": "Promptroot: Refresh Queue",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "promptroot.addToQueue",
+        "title": "Promptroot: Add to Jules Queue",
+        "icon": "$(add)"
+      },
+      {
+        "command": "promptroot.deleteQueueItem",
+        "title": "Promptroot: Delete Queue Item",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "promptroot.pauseQueueItem",
+        "title": "Promptroot: Pause Queue Item",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "promptroot.resumeQueueItem",
+        "title": "Promptroot: Resume Queue Item",
+        "icon": "$(debug-continue)"
+      },
+      {
+        "command": "promptroot.runQueueItem",
+        "title": "Promptroot: Run Queue Item",
+        "icon": "$(run)"
       }
     ],
     "views": {
@@ -69,6 +99,11 @@
           "id": "promptroot.assetsView",
           "name": "Promptroot Assets",
           "icon": "$(file-directory)"
+        },
+        {
+          "id": "promptroot.queueView",
+          "name": "Jules Queue",
+          "icon": "$(list-ordered)"
         }
       ]
     },
@@ -83,6 +118,28 @@
           "command": "promptroot.createAsset",
           "when": "view == promptroot.assetsView",
           "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "promptroot.runQueueItem",
+          "when": "view == promptroot.queueView && viewItem == single",
+          "group": "inline"
+        },
+        {
+          "command": "promptroot.pauseQueueItem",
+          "when": "view == promptroot.queueView && viewItem != info",
+          "group": "queue@1"
+        },
+        {
+          "command": "promptroot.resumeQueueItem",
+          "when": "view == promptroot.queueView && viewItem != info",
+          "group": "queue@2"
+        },
+        {
+          "command": "promptroot.deleteQueueItem",
+          "when": "view == promptroot.queueView && viewItem != info",
+          "group": "queue@3"
         }
       ]
     },

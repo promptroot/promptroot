@@ -7,13 +7,17 @@ import { createNewPromptAsset } from './asset-creator';
 import { initializeFirebase, disposeFirebase } from './firebase-config';
 import { AuthManager } from './auth-manager';
 import { FirestoreService } from './firestore-service';
+import { QueueTreeProvider } from './queue-tree-provider';
+import { QueueManager } from './queue-manager';
 
 let outputChannel: vscode.OutputChannel;
 let treeProvider: PromptrootTreeProvider;
+let queueTreeProvider: QueueTreeProvider | null = null;
 let julesConfig: JulesConfig;
 let julesClient: JulesClient;
 let authManager: AuthManager | null = null;
 let firestoreService: FirestoreService | null = null;
+let queueManager: QueueManager | null = null;
 let statusBarItem: vscode.StatusBarItem;
 
 /**
@@ -37,6 +41,9 @@ export function activate(context: vscode.ExtensionContext) {
   // Initialize authentication manager
   authManager = new AuthManager(context, outputChannel);
   firestoreService = new FirestoreService(outputChannel);
+
+  // Initialize queue manager
+  queueManager = new QueueManager(firestoreService, authManager, outputChannel);
 
   // Create status bar item for user display
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
@@ -64,6 +71,13 @@ export function activate(context: vscode.ExtensionContext) {
   treeProvider = new PromptrootTreeProvider(workspaceRoot);
   const treeView = vscode.window.createTreeView(VIEWS.assets, {
     treeDataProvider: treeProvider
+  });
+
+  // Initialize queue tree view provider
+  queueTreeProvider = new QueueTreeProvider(firestoreService, authManager, outputChannel);
+  const queueTreeView = vscode.window.createTreeView(VIEWS.queue, {
+    treeDataProvider: queueTreeProvider,
+    showCollapseAll: true
   });
 
   // Register commands
@@ -191,6 +205,55 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // Queue commands
+  const refreshQueueCommand = vscode.commands.registerCommand(
+    COMMANDS.refreshQueue,
+    () => {
+      outputChannel.appendLine('Refresh queue command executed');
+      queueTreeProvider?.refresh();
+    }
+  );
+
+  const addToQueueCommand = vscode.commands.registerCommand(
+    COMMANDS.addToQueue,
+    async (uri?: vscode.Uri) => {
+      outputChannel.appendLine('Add to queue command executed');
+      await addToQueue(uri);
+    }
+  );
+
+  const deleteQueueItemCommand = vscode.commands.registerCommand(
+    COMMANDS.deleteQueueItem,
+    async (item) => {
+      outputChannel.appendLine('Delete queue item command executed');
+      await deleteQueueItem(item);
+    }
+  );
+
+  const pauseQueueItemCommand = vscode.commands.registerCommand(
+    COMMANDS.pauseQueueItem,
+    async (item) => {
+      outputChannel.appendLine('Pause queue item command executed');
+      await pauseQueueItem(item);
+    }
+  );
+
+  const resumeQueueItemCommand = vscode.commands.registerCommand(
+    COMMANDS.resumeQueueItem,
+    async (item) => {
+      outputChannel.appendLine('Resume queue item command executed');
+      await resumeQueueItem(item);
+    }
+  );
+
+  const runQueueItemCommand = vscode.commands.registerCommand(
+    COMMANDS.runQueueItem,
+    async (item) => {
+      outputChannel.appendLine('Run queue item command executed');
+      await runQueueItem(item);
+    }
+  );
+
   // Add commands to subscriptions for proper cleanup
   context.subscriptions.push(
     initializeCommand,
@@ -204,7 +267,14 @@ export function activate(context: vscode.ExtensionContext) {
     signInCommand,
     signOutCommand,
     viewProfileCommand,
+    refreshQueueCommand,
+    addToQueueCommand,
+    deleteQueueItemCommand,
+    pauseQueueItemCommand,
+    resumeQueueItemCommand,
+    runQueueItemCommand,
     treeView,
+    queueTreeView,
     outputChannel
   );
 
@@ -214,6 +284,9 @@ export function activate(context: vscode.ExtensionContext) {
   }
   if (firestoreService) {
     context.subscriptions.push(firestoreService);
+  }
+  if (queueTreeProvider) {
+    context.subscriptions.push(queueTreeProvider);
   }
 
   outputChannel.appendLine('All commands registered successfully');
@@ -440,6 +513,159 @@ async function showUserProfile(): Promise<void> {
     }
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to load profile: ${error}`);
+  }
+}
+
+/**
+ * Add prompt(s) to Jules queue
+ */
+async function addToQueue(uri?: vscode.Uri): Promise<void> {
+  if (!authManager?.isSignedIn()) {
+    const action = await vscode.window.showInformationMessage(
+      'You must be signed in to add items to the queue',
+      'Sign In'
+    );
+    if (action === 'Sign In') {
+      vscode.commands.executeCommand(COMMANDS.signIn);
+    }
+    return;
+  }
+
+  try {
+    // Get the file to add
+    let filePath: string;
+    
+    if (uri) {
+      // Called from context menu
+      filePath = uri.fsPath;
+    } else {
+      // Called from command palette - get active editor
+      const activeEditor = vscode.window.activeTextEditor;
+      if (!activeEditor) {
+        vscode.window.showErrorMessage('No file selected. Open a file or right-click a prompt in the explorer.');
+        return;
+      }
+      filePath = activeEditor.document.uri.fsPath;
+    }
+
+    // Verify it's a prompt file
+    if (!filePath.endsWith('.md')) {
+      vscode.window.showWarningMessage('Only markdown (.md) files can be added to the queue');
+      return;
+    }
+
+    // Get workspace-relative path
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+      vscode.window.showErrorMessage('No workspace folder open');
+      return;
+    }
+
+    const relativePath = filePath.replace(workspaceFolder.uri.fsPath, '').replace(/^[\\/]/, '');
+
+    // Get branch name
+    const branch = await vscode.window.showInputBox({
+      prompt: 'Enter branch name for this queue item',
+      value: queueManager?.getSuggestedBranch(),
+      placeHolder: 'jules-2024-01-01-12-00-00'
+    });
+
+    if (!branch) {
+      return; // User cancelled
+    }
+
+    // Add to queue
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: 'Adding to queue...',
+      cancellable: false
+    }, async () => {
+      const id = await queueManager?.addToQueue(relativePath, branch);
+      vscode.window.showInformationMessage(`Added to queue: ${relativePath} (${id})`);
+    });
+
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to add to queue: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Delete queue item
+ */
+async function deleteQueueItem(item: any): Promise<void> {
+  if (!item?.queueItem) {
+    return;
+  }
+
+  const confirm = await vscode.window.showWarningMessage(
+    `Delete queue item?`,
+    { modal: true },
+    'Delete'
+  );
+
+  if (confirm !== 'Delete') {
+    return;
+  }
+
+  try {
+    await queueManager?.deleteQueueItem(item.queueItem.id);
+    vscode.window.showInformationMessage('Queue item deleted');
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to delete queue item: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Pause queue item
+ */
+async function pauseQueueItem(item: any): Promise<void> {
+  if (!item?.queueItem) {
+    return;
+  }
+
+  try {
+    await queueManager?.pauseQueueItem(item.queueItem.id);
+    vscode.window.showInformationMessage('Queue item paused');
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to pause queue item: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Resume queue item
+ */
+async function resumeQueueItem(item: any): Promise<void> {
+  if (!item?.queueItem) {
+    return;
+  }
+
+  try {
+    await queueManager?.resumeQueueItem(item.queueItem.id);
+    vscode.window.showInformationMessage('Queue item resumed');
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to resume queue item: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Run queue item
+ */
+async function runQueueItem(item: any): Promise<void> {
+  if (!item?.queueItem) {
+    return;
+  }
+
+  try {
+    // Run in background with progress notification
+    vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Running queue item...`,
+      cancellable: false
+    }, async () => {
+      await queueManager?.runQueueItem(item.queueItem.id);
+    });
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to run queue item: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

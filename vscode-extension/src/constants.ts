@@ -14,11 +14,18 @@ export const COMMANDS = {
   viewJulesSessions: 'promptroot.viewJulesSessions',
   signIn: 'promptroot.signIn',
   signOut: 'promptroot.signOut',
-  viewProfile: 'promptroot.viewProfile'
+  viewProfile: 'promptroot.viewProfile',
+  refreshQueue: 'promptroot.refreshQueue',
+  addToQueue: 'promptroot.addToQueue',
+  deleteQueueItem: 'promptroot.deleteQueueItem',
+  pauseQueueItem: 'promptroot.pauseQueueItem',
+  resumeQueueItem: 'promptroot.resumeQueueItem',
+  runQueueItem: 'promptroot.runQueueItem'
 } as const;
 
 export const VIEWS = {
-  assets: 'promptroot.assetsView'
+  assets: 'promptroot.assetsView',
+  queue: 'promptroot.queueView'
 } as const;
 
 export const CONFIG_KEYS = {

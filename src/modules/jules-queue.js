@@ -56,6 +56,7 @@ import {
   validateSchedule,
   cleanIdForDOM
 } from '../utils/jules-queue-helpers.js';
+import { getHandler } from '../utils/handler-registry.js';
 
 function getSelectedQueueIds() {
   const queueSelections = [];
@@ -1555,8 +1556,9 @@ function setupQueueDelegation() {
         event.stopPropagation();
         const cleanId = cleanIdForDOM(docId);
         const handlerKey = `viewQueuePrompt_${cleanId}`;
-        if (window[handlerKey]) {
-          window[handlerKey]();
+        const handler = getHandler('queueViewer', handlerKey);
+        if (handler) {
+          handler();
         }
         return;
       }

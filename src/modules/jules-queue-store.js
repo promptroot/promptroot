@@ -1,5 +1,6 @@
+import { registerHandler, clearHandlers } from '../utils/handler-registry.js';
+
 let queueCache = [];
-let queuePromptViewerHandlers = new Map();
 let editModalState = {
   originalData: null,
   hasUnsavedChanges: false,
@@ -26,20 +27,12 @@ export function findQueueItem(docId) {
   return queueCache.find(i => i.id === docId);
 }
 
-export function getPromptViewerHandlers() {
-  return queuePromptViewerHandlers;
-}
-
 export function clearPromptViewerHandlers() {
-  queuePromptViewerHandlers.forEach((handler, key) => {
-    delete window[key];
-  });
-  queuePromptViewerHandlers.clear();
+  clearHandlers('queueViewer');
 }
 
 export function registerPromptViewerHandler(key, handler) {
-  window[key] = handler;
-  queuePromptViewerHandlers.set(key, handler);
+  registerHandler('queueViewer', key, handler);
 }
 
 export function getEditModalState() {

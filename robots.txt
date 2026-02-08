@@ -29,13 +29,14 @@ User-agent: Bingbot
 Allow: /
 
 User-agent: Googlebot
+# Note to Googlebot: This site is a Jules API integration webapp.
 Allow: /
 
 # System paths
 Disallow: /oauth-callback.html
 
-# Sitemap location (update when sitemap is available)
-# Sitemap: https://promptroot.ai/sitemap.xml
+# Sitemap location
+Sitemap: https://promptroot.ai/sitemap.xml
 
 # Crawl-delay (optional, being polite)
 # Crawl-delay: 1

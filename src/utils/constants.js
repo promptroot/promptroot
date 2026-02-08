@@ -47,6 +47,13 @@ export const TAG_DEFINITIONS = {
   }
 };
 
+// Session tracking
+export const SESSION_TRACKING = {
+  SYNC_INTERVAL: 5 * 60 * 1000, // 5 minutes
+  TERMINAL_STATES: ['COMPLETED', 'FAILED'],
+  ACTIVE_STATES: ['IN_PROGRESS', 'PLANNING', 'AWAITING_PLAN_APPROVAL', 'AWAITING_USER_FEEDBACK', 'PAUSED', 'QUEUED']
+};
+
 // Branch classification
 export const FEATURE_PATTERNS = ["codex/", "feature/", "fix/", "bugfix/", "hotfix/"];
 
@@ -213,6 +220,43 @@ export const UI_TEXT = {
   SAVE_KEY: "Save & Continue"
 };
 
+// Jules Modal Text
+export const JULES_MODAL_TEXT = {
+  ENTER_KEY_WARNING: 'Please enter your Jules API key.',
+  NOT_LOGGED_IN: 'Not logged in.',
+  SAVING: 'Saving...',
+  SAVE_BUTTON: 'Save & Continue',
+  KEY_SAVED_SUCCESS: 'Jules API key saved successfully',
+  KEY_SAVE_ERROR_PREFIX: 'Failed to save API key: ',
+  NOTE_QUEUED_TRY: 'Queued from Try in Jules modal',
+  NOTE_QUEUED_PARTIAL_RETRY: 'Queued from Try in Jules flow (partial retries)',
+  NOTE_QUEUED_FINAL_FAILURE: 'Queued from Try in Jules flow (final failure)',
+  SUBTASK_PROGRESS: (current, total) => `Task ${current} of ${total}`,
+  CANCEL_BUTTON: 'Cancel',
+  QUEUE_BUTTON: 'Queue',
+  SUBMIT_BUTTON: 'Submit'
+};
+
+// Folder Submenu Text
+export const FOLDER_SUBMENU_TEXT = {
+  NEW_PROMPT: 'Prompt (blank)',
+  NEW_CONVERSATION: 'Conversation (template)',
+  CONVERSATION_TEMPLATE: `**Conversation Link (Codex, Jules, etc):** [https://chatgpt.com/s/...]
+
+### Prompt
+[paste your full prompt here]
+
+### Output
+[response(s), context, notes, or follow-up thoughts]
+`,
+  NEW_PROMPT_FILENAME_PREFIX: 'prompt-',
+  NEW_CONVERSATION_FILENAME: 'new-conversation.md',
+  ACTIONS: {
+    CREATE_PROMPT: 'create-prompt',
+    CREATE_CONVERSATION: 'create-conversation'
+  }
+};
+
 // CSS class names for state management
 export const CSS_CLASSES = {
   HIDDEN: 'hidden',
@@ -352,7 +396,9 @@ export const CACHE_KEYS = {
   CURRENT_BRANCH: 'current_branch',
   CURRENT_REPO: 'current_repo',
   USER_PROFILE: 'user_profile',
-  USER_AVATAR: 'user_avatar'
+  USER_AVATAR: 'user_avatar',
+  TRACKED_SESSIONS: 'tracked_sessions',
+  ANALYTICS_DATA: 'analytics_data'
 };
 
 /**

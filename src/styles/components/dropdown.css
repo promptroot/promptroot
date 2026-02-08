@@ -192,3 +192,82 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* Dropdown Search */
+.dropdown-search-wrapper {
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+
+.dropdown-search {
+  width: 100%;
+  padding: 8px 32px 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(20,24,41,0.5), rgba(20,24,41,0.3));
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.dropdown-search:focus {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(20,24,41,0.8), rgba(77,217,255,0.05));
+  box-shadow: 0 0 8px rgba(77, 217, 255, 0.1);
+}
+
+.dropdown-search::placeholder {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.dropdown-search-clear {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+}
+
+.dropdown-search-clear:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-search-clear.hidden {
+  display: none;
+}
+
+
+/* Base styles for refactored dropdowns */
+.dropdown-menu {
+  display: none;
+}
+
+/* Open state */
+.dropdown-menu--open,
+.custom-dropdown-menu.dropdown-menu--open {
+  display: block;
+}
+
+/* Positioned state for dynamic fixed positioning */
+.dropdown-menu--positioned {
+  position: fixed !important;
+  top: var(--dropdown-top);
+  left: var(--dropdown-left);
+  width: var(--dropdown-width);
+  margin-top: 0;
+  z-index: 1100;
+}

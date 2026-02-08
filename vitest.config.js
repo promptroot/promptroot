@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'jsdom',
-    include: ['src/tests/**/*.{test,spec}.js'],
+    include: ['src/unit-tests/**/*.{test,spec}.js'],
     
     // Fail tests if they take too long
     testTimeout: 5000,
@@ -26,7 +26,7 @@ export default defineConfig({
       
       // Don't measure test files or config
       exclude: [
-        'src/tests/**',
+        'src/unit-tests/**',
         'vitest.config.js',
         'src/firebase-init.js',
         'src/font-init.js',
@@ -42,6 +42,6 @@ export default defineConfig({
     },
     
     // Setup file to run before all tests
-    setupFiles: ['./src/tests/setup.js'],
+    setupFiles: ['./src/unit-tests/setup.js'],
   },
 });

@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Profile - PromptRoot</title>
   <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -29,24 +30,99 @@
         <div class="info-label">Signed in as</div>
         <div id="profileUserName" class="info-value">Loading...</div>
       </div>
-      
+
+      <!-- Copen Management Section -->
+      <div id="copenManagementSection" class="mt-lg">
+        <h3 class="section-title-md mb-md"><span class="icon icon-inline" aria-hidden="true">open_in_new</span> Copen Links</h3>
+        <p class="muted-text mb-md">Manage the "Copy and Open" destinations available when working with prompts.</p>
+        
+        <div class="toolbar">
+          <div class="toolbar-actions">
+            <label class="form-label small-text"><input id="copenSelectAll" type="checkbox" /> Select All</label>
+          </div>
+          <div class="toolbar-actions">
+            <button id="addCopenBtn" class="btn"><span class="icon icon-inline" aria-hidden="true">add</span> Add Copen Link</button>
+            <button id="copenDeleteBtn" class="btn danger"><span class="icon icon-inline" aria-hidden="true">delete</span> Delete Selected</button>
+            <button id="copenResetBtn" class="btn warn"><span class="icon icon-inline" aria-hidden="true">restart_alt</span> Reset to Defaults</button>
+          </div>
+        </div>
+
+        <div id="copenList" class="copen-list">
+          <!-- Copens will be populated here -->
+        </div>
+      </div>
+
       <!-- Jules API Key Section -->
-      <div id="julesKeyStatusDiv" class="info-card">
-        <div class="info-label">Jules API Key</div>
-        <div id="julesKeyStatus" class="info-value muted-text">Loading...</div>
-      </div>
-      
-      <div class="btn-container">
-        <button id="addJulesKeyBtn" class="btn w-full hidden"><span class="icon icon-inline" aria-hidden="true">add</span> Add Jules API Key</button>
-      </div>
-      
-      <!-- Danger Zone -->
-      <div id="dangerZoneSection" class="danger-panel mt-lg hidden">
-        <div class="danger-title"><span class="icon icon-inline" aria-hidden="true">warning</span> Danger Zone</div>
-        <div class="danger-desc">This action will delete your stored Jules API key. You'll need to enter a new one next time.</div>
-        <button id="resetJulesKeyBtn" class="btn danger w-full fw-600"><span class="icon icon-inline" aria-hidden="true">delete</span> Delete Jules API Key</button>
+      <div id="julesKeySection" class="mt-lg">
+        <h3 class="section-title-md mb-md"><span class="icon icon-inline" aria-hidden="true">smart_toy</span> Jules API Key</h3>
+        <p class="muted-text mb-md">Connect your Jules API key to use AI-powered coding features.</p>
+        
+        <div id="julesKeyStatusDiv" class="panel mb-md">
+          <div class="small-text muted-text mb-sm">API Key Status</div>
+          <div id="julesKeyStatus" class="muted-text fw-600 font-16">Loading...</div>
+        </div>
+        
+        <!-- No Jules Key Message -->
+        <div id="noJulesKeySection" class="panel pad-xl text-center mb-md hidden">
+          <div class="font-48 mb-sm"><span class="icon icon-xl" aria-hidden="true">key</span></div>
+          <h4 class="small-text fw-600 mb-sm font-18">Jules API Key Required</h4>
+          <p class="muted-text small-text centered-content">
+            To use Jules AI coding agent, you need to add your Jules API key. Get your API key from the 
+            <a href="https://jules.google.com/settings/api" target="_blank" rel="noopener">Jules API settings</a> 
+            and add it below to get started.
+          </p>
+          <button id="addJulesKeyBtn" class="btn primary xl fw-600">
+            <span class="icon icon-inline" aria-hidden="true">add</span> Add Jules API Key
+          </button>
+        </div>
+        
+        <!-- Danger Zone (shown when key exists) -->
+        <div id="julesKeyDangerZone" class="danger-panel mt-md hidden">
+          <div class="small-text fw-600 danger-text mb-sm"><span class="icon icon-inline" aria-hidden="true">warning</span> Danger Zone</div>
+          <div class="small-text muted-text mb-sm">This action will delete your stored Jules API key. You'll need to enter a new one next time.</div>
+          <button id="resetJulesKeyBtn" class="btn danger w-full fw-600"><span class="icon icon-inline" aria-hidden="true">delete</span> Delete Jules API Key</button>
+        </div>
       </div>
     </main>
+  </div>
+
+  <!-- Copen Editor Modal -->
+  <div id="copenEditorModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="copenEditorTitle">
+    <div class="modal-dialog modal-dialog-sm">
+      <div class="modal-header">
+        <h2 class="modal-title" id="copenEditorTitle">Add Custom Copen</h2>
+        <button class="btn-icon close-modal" id="copenEditorClose" title="Close" aria-label="Close">
+          <span class="icon" aria-hidden="true">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="copenLabel">Label</label>
+          <input type="text" id="copenLabel" class="form-control" placeholder="e.g., My AI Tool" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="copenUrl">URL</label>
+          <input type="url" id="copenUrl" class="form-control" placeholder="https://example.com" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="copenEditorCancel" class="btn">Cancel</button>
+        <button id="copenEditorSave" class="btn primary"><span class="icon icon-inline" aria-hidden="true">save</span> Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jules API Key Modal -->
+  <div id="julesKeyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="julesKeyModalTitle">
+    <div class="modal-content">
+      <h2 id="julesKeyModalTitle">Save Jules API Key</h2>
+      <p>Enter your Jules API key. This will be encrypted and stored securely.</p>
+      <input id="julesKeyInput" type="password" placeholder="Paste your Jules API key..." />
+      <div class="modal-buttons">
+        <button id="julesCancelBtn" class="btn">Cancel</button>
+        <button id="julesSaveBtn" class="btn primary">Save & Continue</button>
+      </div>
+    </div>
   </div>
 
   <footer>

@@ -77,7 +77,7 @@ function getSelectedQueueIds() {
   return { queueSelections, subtaskSelections };
 }
 
-export async function handleQueueAction(queueItemData) {
+export async function handleQueueAction(queueItemData, silent = false) {
   const user = getAuth()?.currentUser;
   if (!user) {
     handleError(JULES_MESSAGES.SIGN_IN_REQUIRED, { source: 'handleQueueAction' }, { category: ErrorCategory.AUTH, toastType: 'warn' });
@@ -85,7 +85,9 @@ export async function handleQueueAction(queueItemData) {
   }
   try {
     await addToJulesQueue(user.uid, queueItemData);
-    showToast(JULES_MESSAGES.QUEUED, 'success');
+    if (!silent) {
+      showToast(JULES_MESSAGES.QUEUED, 'success');
+    }
     return true;
   } catch (err) {
     handleError(err, { source: 'handleQueueAction' });
@@ -124,11 +126,14 @@ export function showJulesQueueModal() {
   modal.classList.add('show');
   modal.removeAttribute('style');
   
-  modal.onclick = (e) => {
-    if (e.target === modal) {
-      hideJulesQueueModal();
-    }
-  };
+  if (!modal.dataset.listenerAttached) {
+    modal.dataset.listenerAttached = 'true';
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        hideJulesQueueModal();
+      }
+    });
+  }
 
   const existingHandler = getQueueModalEscapeHandler();
   if (existingHandler) document.removeEventListener('keydown', existingHandler);
@@ -164,7 +169,7 @@ export function renderQueueListDirectly(items) {
 }
 
 export function attachQueueHandlers() {
-  attachQueueModalHandlers();
+  setupQueueHandlers();
 }
 
 async function initializeEditRepoAndBranch(sourceId, branch, repoDropdownBtn, repoDropdownText, repoDropdownMenu, branchDropdownBtn, branchDropdownText, branchDropdownMenu) {
@@ -243,9 +248,12 @@ function displayScheduleStatus(item) {
     statusGroup.classList.remove('hidden');
     
     if (unscheduleBtn) {
-      unscheduleBtn.onclick = () => {
-        unscheduleQueueItem();
-      };
+      const activeModal = getActiveEditModal();
+      if (activeModal) {
+        activeModal.addListener(unscheduleBtn, 'click', unscheduleQueueItem);
+      } else {
+        unscheduleBtn.addEventListener('click', unscheduleQueueItem);
+      }
     }
   } else {
     statusGroup.classList.add('hidden');
@@ -803,7 +811,7 @@ async function loadQueuePage() {
     
     setQueueCache(items);
     renderQueueList(items);
-    attachQueueModalHandlers();
+    setupQueueHandlers();
   } catch (err) {
     const errorInfo = handleError(err, { source: 'loadQueuePage' }, { showDisplay: false });
     const msg = errorInfo.suggestion ? `${errorInfo.message} ${errorInfo.suggestion}` : errorInfo.message;
@@ -886,6 +894,61 @@ async function showScheduleModal() {
   populateTimeZoneDropdown(userTimeZone);
   initializeScheduleModalInputs();
   attachScheduleModalHandlers();
+  
+  newModal.show();
+}
+
+export async function showScheduleModalForPrompt(promptTitle) {
+  const user = getAuth()?.currentUser;
+  if (!user) {
+    handleError(JULES_MESSAGES.SIGN_IN_REQUIRED, { source: 'showScheduleModalForPrompt' }, { category: ErrorCategory.AUTH, toastType: 'warn' });
+    return;
+  }
+  
+  // Find the most recently added queue item with matching title
+  const items = await listJulesQueue(user.uid);
+  const matchingItem = items
+    .filter(item => item.title === promptTitle)
+    .sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toMillis?.() || 0;
+      return bTime - aTime; // Most recent first
+    })[0];
+  
+  if (!matchingItem) {
+    handleError('Could not find queue item to schedule', { source: 'showScheduleModalForPrompt' }, { category: ErrorCategory.VALIDATION, toastType: 'error' });
+    return;
+  }
+  
+  const userTimeZone = await serviceGetUserTimeZone(user.uid);
+  
+  const existingModal = getActiveScheduleModal();
+  if (existingModal) {
+    existingModal.destroy();
+    setActiveScheduleModal(null);
+  }
+
+  await loadScheduleModal();
+
+  const modalElement = document.getElementById('scheduleQueueModal');
+  if (!modalElement) {
+    console.error('Failed to load schedule modal');
+    return;
+  }
+  
+  const newModal = createModal({
+    element: modalElement,
+    closeOnBackdropClick: false,
+    onDestroy: () => { 
+      setActiveScheduleModal(null);
+    }
+  });
+  
+  setActiveScheduleModal(newModal);
+
+  populateTimeZoneDropdown(userTimeZone);
+  initializeScheduleModalInputs();
+  attachScheduleModalHandlersForPrompt(matchingItem.id);
   
   newModal.show();
 }
@@ -1000,6 +1063,24 @@ function attachScheduleModalHandlers() {
   });
 }
 
+function attachScheduleModalHandlersForPrompt(itemId) {
+  const activeModal = getActiveScheduleModal();
+  if (!activeModal) return;
+  
+  const modal = activeModal.element;
+  const closeBtn = document.getElementById('closeScheduleModal');
+  const cancelBtn = document.getElementById('cancelSchedule');
+  const confirmBtn = document.getElementById('confirmSchedule');
+  
+  if (closeBtn) activeModal.addListener(closeBtn, 'click', hideScheduleModal);
+  if (cancelBtn) activeModal.addListener(cancelBtn, 'click', hideScheduleModal);
+  if (confirmBtn) activeModal.addListener(confirmBtn, 'click', () => confirmScheduleItemById(itemId));
+  
+  activeModal.addListener(modal, 'click', (e) => {
+    if (e.target === modal) hideScheduleModal();
+  });
+}
+
 function hideScheduleModal() {
   const activeModal = getActiveScheduleModal();
   if (activeModal) {
@@ -1082,6 +1163,73 @@ async function confirmScheduleItems() {
   }
 }
 
+async function confirmScheduleItemById(itemId) {
+  const user = getAuth()?.currentUser;
+  if (!user) return;
+  
+  const dateInput = document.getElementById('scheduleDate');
+  const timeInput = document.getElementById('scheduleTime');
+  const timeZoneSelect = document.getElementById('scheduleTimeZone');
+  const retryCheckbox = document.getElementById('scheduleRetryOnFailure');
+  const errorDiv = document.getElementById('scheduleError');
+  
+  errorDiv.classList.add('hidden');
+  errorDiv.textContent = '';
+  
+  if (!dateInput.value || !timeInput.value) {
+    errorDiv.textContent = 'Date and time are required';
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  const selectedDate = dateInput.value;
+  const selectedTime = timeInput.value;
+  const selectedTimeZone = timeZoneSelect.value;
+  
+  const dateTimeStr = `${selectedDate}T${selectedTime}:00`;
+  const scheduledDate = parseDateInTimeZone(dateTimeStr, selectedTimeZone);
+  
+  const validation = validateSchedule(scheduledDate);
+  if (!validation.valid) {
+    errorDiv.textContent = validation.error;
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  await serviceSaveUserTimeZone(user.uid, selectedTimeZone);
+  
+  try {
+    const scheduledAt = firebase.firestore.Timestamp.fromDate(scheduledDate);
+    const retryOnFailure = retryCheckbox ? retryCheckbox.checked : false;
+    
+    await updateJulesQueueItem(user.uid, itemId, {
+      status: 'scheduled',
+      scheduledAt: scheduledAt,
+      scheduledTimeZone: selectedTimeZone,
+      retryOnFailure: retryOnFailure,
+      retryCount: 0,
+      updatedAt: getServerTimestamp()
+    });
+    
+    const formattedScheduledAt = new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: selectedTimeZone,
+      timeZoneName: 'short'
+    }).format(scheduledDate);
+    
+    showToast(`Scheduled prompt for ${formattedScheduledAt}`, 'success');
+    hideScheduleModal();
+  } catch (err) {
+    const errorInfo = handleError(err, { source: 'confirmScheduleItemById' }, { showDisplay: false });
+    errorDiv.textContent = `Failed to schedule prompt: ${errorInfo.message}`;
+    errorDiv.classList.remove('hidden');
+  }
+}
+
 function renderQueueList(items) {
   const listDiv = document.getElementById('allQueueList');
   if (!listDiv) return;
@@ -1128,6 +1276,7 @@ function createCardHeader(item, status) {
   const editBtn = document.createElement('button');
   editBtn.className = 'btn-icon edit-queue-item';
   editBtn.dataset.docid = item.id;
+  editBtn.dataset.action = 'edit';
   editBtn.setAttribute('aria-label', 'Edit queue item');
   editBtn.title = 'Edit queue item';
   const editIcon = document.createElement('span');
@@ -1291,6 +1440,7 @@ function createQueueCard(item) {
       const viewBtn = document.createElement('button');
       viewBtn.className = 'btn-icon queue-view-btn';
       viewBtn.dataset.docid = item.id;
+      viewBtn.dataset.action = 'view';
       viewBtn.setAttribute('aria-label', 'View full prompt');
       viewBtn.title = 'View full prompt';
       const viewIcon = document.createElement('span');
@@ -1382,59 +1532,77 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
   return { successful: successfulIndices.length, skipped: skippedIndices.length };
 }
 
-function attachQueueModalHandlers() {
+function setupQueueDelegation() {
+  const queueList = document.getElementById('allQueueList');
+  if (!queueList) return;
+
+  if (queueList.dataset.delegationAttached === 'true') return;
+  queueList.dataset.delegationAttached = 'true';
+
+  queueList.addEventListener('click', (event) => {
+    const actionBtn = event.target.closest('[data-action]');
+    if (actionBtn) {
+      const action = actionBtn.dataset.action;
+      const docId = actionBtn.dataset.docid;
+
+      if (action === 'edit' && docId) {
+        event.stopPropagation();
+        openEditQueueModal(docId);
+        return;
+      }
+
+      if (action === 'view' && docId) {
+        event.stopPropagation();
+        const cleanId = cleanIdForDOM(docId);
+        const handlerKey = `viewQueuePrompt_${cleanId}`;
+        if (window[handlerKey]) {
+          window[handlerKey]();
+        }
+        return;
+      }
+    }
+  });
+
+  queueList.addEventListener('change', (event) => {
+    const target = event.target;
+
+    if (target.classList.contains('queue-checkbox')) {
+      const docId = target.dataset.docid;
+      const checked = target.checked;
+
+      document.querySelectorAll(`.subtask-checkbox[data-docid="${docId}"]`).forEach(subtaskCb => {
+        subtaskCb.checked = checked;
+      });
+
+      updateScheduleButton();
+      return;
+    }
+
+    if (target.classList.contains('subtask-checkbox')) {
+      updateScheduleButton();
+      return;
+    }
+  });
+}
+
+function setupQueueHandlers() {
+  setupQueueDelegation();
+
   const selectAll = document.getElementById('queueSelectAll');
   const runBtn = document.getElementById('queueRunBtn');
   const deleteBtn = document.getElementById('queueDeleteBtn');
   const scheduleBtn = document.getElementById('queueScheduleBtn');
   const closeBtn = document.getElementById('closeQueueBtn');
 
-  if (selectAll) {
-    selectAll.onclick = () => {
+  if (selectAll && !selectAll.dataset.listenerAttached) {
+    selectAll.dataset.listenerAttached = 'true';
+    selectAll.addEventListener('change', () => {
       const checked = selectAll.checked;
       document.querySelectorAll('.queue-checkbox').forEach(cb => cb.checked = checked);
       document.querySelectorAll('.subtask-checkbox').forEach(cb => cb.checked = checked);
       updateScheduleButton();
-    };
+    });
   }
-
-  document.querySelectorAll('.queue-checkbox').forEach(queueCb => {
-    queueCb.onclick = (e) => {
-      e.stopPropagation();
-      const docId = queueCb.dataset.docid;
-      const checked = queueCb.checked;
-      document.querySelectorAll(`.subtask-checkbox[data-docid="${docId}"]`).forEach(subtaskCb => {
-        subtaskCb.checked = checked;
-      });
-      updateScheduleButton();
-    };
-  });
-  
-  document.querySelectorAll('.subtask-checkbox').forEach(subtaskCb => {
-    subtaskCb.onclick = () => {
-      updateScheduleButton();
-    };
-  });
-
-  document.querySelectorAll('.edit-queue-item').forEach(editBtn => {
-    editBtn.onclick = (e) => {
-      e.stopPropagation();
-      const docId = editBtn.dataset.docid;
-      openEditQueueModal(docId);
-    };
-  });
-
-  document.querySelectorAll('.queue-view-btn').forEach(viewBtn => {
-    viewBtn.onclick = (e) => {
-      e.stopPropagation();
-      const docId = viewBtn.dataset.docid;
-      const cleanId = cleanIdForDOM(docId);
-      const handlerKey = `viewQueuePrompt_${cleanId}`;
-      if (window[handlerKey]) {
-        window[handlerKey]();
-      }
-    };
-  });
 
   const runHandler = async () => { await runSelectedQueueItems(); };
   const deleteHandler = async () => { await deleteSelectedQueueItems(); };
@@ -1446,10 +1614,25 @@ function attachQueueModalHandlers() {
     }
   };
 
-  if (runBtn) runBtn.onclick = runHandler;
-  if (deleteBtn) deleteBtn.onclick = deleteHandler;
-  if (scheduleBtn) scheduleBtn.onclick = scheduleHandler;
-  if (closeBtn) closeBtn.onclick = hideJulesQueueModal;
+  if (runBtn && !runBtn.dataset.listenerAttached) {
+    runBtn.dataset.listenerAttached = 'true';
+    runBtn.addEventListener('click', runHandler);
+  }
+
+  if (deleteBtn && !deleteBtn.dataset.listenerAttached) {
+    deleteBtn.dataset.listenerAttached = 'true';
+    deleteBtn.addEventListener('click', deleteHandler);
+  }
+
+  if (scheduleBtn && !scheduleBtn.dataset.listenerAttached) {
+    scheduleBtn.dataset.listenerAttached = 'true';
+    scheduleBtn.addEventListener('click', scheduleHandler);
+  }
+
+  if (closeBtn && !closeBtn.dataset.listenerAttached) {
+    closeBtn.dataset.listenerAttached = 'true';
+    closeBtn.addEventListener('click', hideJulesQueueModal);
+  }
   
   updateScheduleButton();
 }

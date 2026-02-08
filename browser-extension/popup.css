@@ -184,6 +184,25 @@ select:focus {
   line-height: 1.5;
   color: #b0b0b0;
   margin-bottom: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: #2c3e50 transparent;
+}
+
+.preview::-webkit-scrollbar {
+  width: 8px;
+}
+
+.preview::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.preview::-webkit-scrollbar-thumb {
+  background: #2c3e50;
+  border-radius: 4px;
+}
+
+.preview::-webkit-scrollbar-thumb:hover {
+  background: #34495e;
 }
 
 .config-section {
@@ -207,6 +226,10 @@ select:focus {
 
 .link:hover {
   text-decoration: underline;
+}
+
+.link.block {
+  display: block;
 }
 
 .header-icon {
@@ -260,4 +283,8 @@ select:focus {
 
 .hidden {
   display: none;
+}
+
+.mt-8 {
+  margin-top: 8px;
 }

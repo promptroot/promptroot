@@ -1,8 +1,6 @@
 /* List Items */
 .item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 10px; border: 1px solid transparent; background: linear-gradient(135deg, rgba(20,24,41,0.4), rgba(20,24,41,0.2)); cursor: pointer; transition: border-color 0.2s, background 0.2s; text-decoration: none; min-width: 0; overflow: hidden; }
 .item:hover { border-color: var(--border); background: linear-gradient(135deg, rgba(77,217,255,0.12), rgba(77,217,255,0.06)); text-decoration: none; }
-.item-title { font-size: 14px; font-weight: 600; transition: text-decoration 0.15s; cursor: pointer; }
-.item-title:hover { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .item-meta { color: var(--muted); font-size: 12px; }
 .item.active { border-color: var(--accent); background: linear-gradient(135deg, rgba(77,217,255,0.2), rgba(77,217,255,0.08)); box-shadow: 0 0 12px rgba(77, 217, 255, 0.2); }
 
@@ -11,3 +9,6 @@
   text-align: center;
   padding: 24px;
 }
+.item-title { font-size: 14px; font-weight: 600; transition: text-decoration 0.15s; cursor: pointer; }
+.item-title:hover { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.pr-title { font-size: 14px; font-weight: 600; }

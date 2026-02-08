@@ -5,15 +5,16 @@ import { toggleVisibility } from '../utils/dom-helpers.js';
 import { loadMarked } from '../utils/lazy-loaders.js';
 import { ensureAncestorsExpanded, loadExpandedState, persistExpandedState, renderList, updateActiveItem, setCurrentSlug, getCurrentSlug, getFiles } from './prompt-list.js';
 import { showToast } from './toast.js';
-import { copyAndOpen } from './copen.js';
+import { copyAndOpen, clearCopenCache } from './copen.js';
 import { copyText } from '../utils/clipboard.js';
 import statusBar from './status-bar.js';
-import { initSplitButton, destroySplitButton } from './split-button.js';
-import { COPEN_OPTIONS, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_ICON } from '../utils/copen-config.js';
+import { initSplitButton, destroySplitButton, updateSplitButtonOptions } from './split-button.js';
+import { getCopenOptions, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_ICON } from '../utils/copen-config.js';
+import { getAuth } from './firebase-service.js';
 
 let domPurifyHooksInitialized = false;
 
-function sanitizeHtml(html) {
+export function sanitizeHtml(html) {
   if (typeof window.DOMPurify === 'undefined') {
     console.error('DOMPurify not loaded - stripping all HTML tags as safety fallback');
     const div = document.createElement('div');
@@ -49,7 +50,8 @@ function sanitizeHtml(html) {
       'href', 'title', 'alt', 'src', 'class', 'id', 'target', 'rel',
       'colspan', 'rowspan', 'align'
     ],
-    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    // Only allow data:image/ URIs to prevent XSS via data:text/html or other executable types
+    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|data:image\/|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
     ADD_ATTR: ['target'],
     FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'base', 'link', 'meta'],
     FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur']
@@ -86,6 +88,7 @@ let shareBtn = null;
 let julesBtn = null;
 let freeInputBtn = null;
 let queueBtn = null;
+let scheduleBtn = null;
 let moreBtn = null;
 
 export function initPromptRenderer() {
@@ -98,15 +101,34 @@ export function initPromptRenderer() {
   
   copenContainer = document.getElementById('copenContainer');
   if (copenContainer) {
+    // Initialize with static options, will be updated when user auth changes
     copenSplitBtn = initSplitButton({
       container: copenContainer,
       defaultLabel: COPEN_DEFAULT_LABEL,
       defaultIcon: COPEN_DEFAULT_ICON,
-      options: COPEN_OPTIONS,
+      options: [],
       onAction: handleCopenPrompt,
       storageKey: COPEN_STORAGE_KEY
     });
+    
+    // Load user's copen options
+    refreshCopenOptions();
   }
+  
+  // Listen for auth state changes to refresh copen options
+  const auth = getAuth();
+  if (auth) {
+    auth.onAuthStateChanged(() => {
+      clearCopenCache();
+      refreshCopenOptions();
+    });
+  }
+  
+  // Listen for copen changes
+  window.addEventListener('copensChanged', () => {
+    clearCopenCache();
+    refreshCopenOptions();
+  });
   
   rawBtn = document.getElementById('rawBtn');
   ghBtn = document.getElementById('ghBtn');
@@ -115,15 +137,28 @@ export function initPromptRenderer() {
   julesBtn = document.getElementById('julesBtn');
   freeInputBtn = document.getElementById('freeInputBtn');
   queueBtn = document.getElementById('queueBtn');
+  scheduleBtn = document.getElementById('scheduleBtn');
   moreBtn = document.getElementById('moreBtn');
 
   document.addEventListener('click', handleDocumentClick);
   window.addEventListener('branchChanged', handleBranchChanged);
 }
 
+async function refreshCopenOptions() {
+  if (!copenContainer || !copenSplitBtn) return;
+  
+  try {
+    const options = await getCopenOptions();
+    updateSplitButtonOptions(copenContainer, options);
+  } catch (error) {
+    console.error('Error refreshing copen options:', error);
+  }
+}
+
 export function destroyPromptRenderer() {
   document.removeEventListener('click', handleDocumentClick);
   window.removeEventListener('branchChanged', handleBranchChanged);
+  window.removeEventListener('copensChanged', refreshCopenOptions);
   
   if (copenContainer) {
     destroySplitButton(copenContainer);
@@ -194,6 +229,25 @@ function handleDocumentClick(event) {
       } catch (err) {
         console.error('Failed to add prompt to queue:', err);
         showToast('Failed to add prompt to queue', 'error');
+      }
+    })();
+    return;
+  }
+
+  if (target === scheduleBtn) {
+    if (!currentFile || !currentPromptText || !currentOwner || !currentRepo || !currentBranch) {
+      showToast('No prompt selected to schedule', 'warn');
+      return;
+    }
+    
+    (async () => {
+      try {
+        const { showJulesEnvModal } = await import('./jules-modal.js');
+        // Show repo/branch selection modal in schedule mode
+        await showJulesEnvModal(currentPromptText, 'schedule');
+      } catch (err) {
+        console.error('Failed to show schedule modal:', err);
+        showToast('Failed to show schedule options', 'error');
       }
     })();
     return;
@@ -469,19 +523,42 @@ export async function selectFile(f, pushHash, owner, repo, branch) {
     titleEl.textContent = firstLine.replace(/^#\s+/, '');
   }
 
-  // Lazy load marked.js
-  const marked = await loadMarked();
+  // Lazy load marked.js with fallback
+  try {
+    const marked = await loadMarked();
 
-  if (isGistContent) {
-    const looksLikeMarkdown = /^#|^\*|^-|^\d+\.|```/.test(raw.trim());
-    if (!looksLikeMarkdown) {
-      const wrappedContent = '```\n' + raw + '\n```';
-      contentEl.innerHTML = sanitizeHtml(marked.parse(wrappedContent, { breaks: true }));
+    if (!marked) {
+      throw new Error('marked.js loaded but undefined');
+    }
+
+    if (isGistContent) {
+      const looksLikeMarkdown = /^#|^\*|^-|^\d+\.|```/.test(raw.trim());
+      if (!looksLikeMarkdown) {
+        const wrappedContent = '```\n' + raw + '\n```';
+        contentEl.innerHTML = sanitizeHtml(marked.parse(wrappedContent, { breaks: true }));
+      } else {
+        contentEl.innerHTML = sanitizeHtml(marked.parse(raw, { breaks: true }));
+      }
     } else {
       contentEl.innerHTML = sanitizeHtml(marked.parse(raw, { breaks: true }));
     }
-  } else {
-    contentEl.innerHTML = sanitizeHtml(marked.parse(raw, { breaks: true }));
+  } catch (err) {
+    console.error('Failed to load marked.js or parse markdown:', err);
+    showToast('Markdown rendering unavailable', 'error');
+
+    contentEl.innerHTML = '';
+
+    // Warning banner
+    const warningDiv = document.createElement('div');
+    warningDiv.className = 'markdown-warning';
+    warningDiv.textContent = '⚠ Markdown rendering unavailable. Displaying raw text.';
+    contentEl.appendChild(warningDiv);
+
+    // Raw text fallback
+    const pre = document.createElement('pre');
+    pre.className = 'markdown-fallback';
+    pre.textContent = raw;
+    contentEl.appendChild(pre);
   }
 
   setCurrentPromptText(raw);

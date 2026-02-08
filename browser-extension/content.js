@@ -1,6 +1,12 @@
 (function() {
   'use strict';
 
+  if (window.location.hostname === 'promptroot.ai' || 
+      window.location.hostname === 'promptroot-b02a2.firebaseapp.com' ||
+      window.location.hostname === 'localhost') {
+    document.documentElement.setAttribute('data-promptroot-extension', 'installed');
+  }
+
   function extractPageContent() {
     const title = document.title || 'Untitled Page';
     const url = window.location.href;

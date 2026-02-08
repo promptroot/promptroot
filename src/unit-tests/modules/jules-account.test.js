@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { showUserProfileModal, loadProfileDirectly } from '../../modules/jules-account.js';
 import * as firebaseService from '../../modules/firebase-service.js';
 import * as julesKeys from '../../modules/jules-keys.js';
-import * as julesApi from '../../modules/jules-api.js';
 import * as statusRenderer from '../../modules/status-renderer.js';
 import * as errorHandler from '../../utils/error-handler.js';
 import * as domHelpers from '../../utils/dom-helpers.js';

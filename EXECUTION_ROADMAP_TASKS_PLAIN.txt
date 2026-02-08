@@ -1,0 +1,188 @@
+# Specification-Driven Execution Roadmap: 10 Granular Tasks
+
+Generated: 2026-02-08
+Repository: promptroot/promptroot
+Context: Zero-Build Vanilla JavaScript SPA with Firebase Backend
+
+===============================================================================
+
+### 1. Establish Firebase Environment Configuration
+
+Verify the development and production Firebase environments are properly configured before any feature implementation begins. The application uses port-based detection (port 5000 for emulators, port 3000 for production) to determine which Firebase endpoint to use.
+
+Citations:
+- src/firebase-init.js lines 46-50
+- src/firebase-init.js lines 8-15
+
+Task Steps:
+1. Run `npm start` and verify app runs on port 3000 with production Firebase
+2. Run `docker-compose up --build` and verify app runs on port 5000 with emulators
+3. Check `src/firebase-init.js` port detection logic matches requirements
+4. Verify Firebase emulator endpoints are correctly configured for development
+5. Document environment variables in `firebase.json` and `src/utils/constants.js`
+6. Test Firebase authentication state persistence across page refreshes
+7. Verify Firestore emulator connection on localhost:8090 in dev mode
+
+===============================================================================
+
+### 2. Define Feature Constants and Configuration
+
+Add all feature-specific constants to the centralized constants file following the zero-build architecture. All magic strings, timeouts, API endpoints, and configuration must be defined in `src/utils/constants.js` to maintain consistency.
+
+Citations:
+- src/utils/constants.js lines 1-50
+
+Task Steps:
+1. Identify all feature-specific magic strings and values needed
+2. Add constants to `src/utils/constants.js` following existing patterns
+3. Group constants by category (timeouts, UI text, API endpoints, etc.)
+4. Export constants using named exports only (no default exports)
+5. Add JSDoc comments for complex constants explaining their purpose
+6. Verify all constants use UPPER_SNAKE_CASE naming convention
+7. Test that constants can be imported in browser without errors
+
+===============================================================================
+
+### 3. Create Firestore Data Model and Security Rules
+
+Define Firestore collections, document structure, and security rules before implementing any data persistence logic. All Firestore rules must enforce user-only data access patterns.
+
+Citations:
+- config/firestore/firestore.rules lines 1-30
+
+Task Steps:
+1. Document collection structure with example documents in markdown
+2. Add new collection paths to `config/firestore/firestore.rules`
+3. Implement user-only read/write rules: `request.auth.uid == userId`
+4. Add authentication requirement checks for all new collections
+5. Create composite indexes in `firestore.indexes.json` if needed
+6. Test rules using Firebase emulator UI at http://localhost:4000
+7. Verify unauthorized users cannot access other users' data
+
+===============================================================================
+
+### 4. Scaffold Module Files with Named Exports
+
+Create empty module files in `src/modules/` following the one-feature-per-module pattern. All modules must use named exports only and maintain module-scoped private state.
+
+Citations:
+- docs/CODE_STYLE_GUIDE.md lines 1-20
+
+Task Steps:
+1. Create module file in `src/modules/{feature-name}.js`
+2. Add file header comment describing module purpose
+3. Import required dependencies using relative paths
+4. Export placeholder functions using named exports: `export function myFunc() {}`
+5. Define module-level private state variables using `let` or `const`
+6. Test module can be imported in browser console without errors
+7. Verify no HTML strings or inline styles exist in the module
+
+===============================================================================
+
+### 5. Implement DOM Manipulation Using Helper Functions
+
+Build UI components using DOM APIs and helper functions from `src/utils/dom-helpers.js`. Never use innerHTML with HTML strings or inline styles.
+
+Citations:
+- docs/CODE_STYLE_GUIDE.md lines 40-75
+
+Task Steps:
+1. Use `createElement` helper for creating elements with classes
+2. Use `clearElement` helper to remove all child nodes
+3. Apply CSS classes only, never inline styles (except dynamic positioning)
+4. Use BEM naming convention: `.component`, `.component__element`, `.component--modifier`
+5. Append elements using `appendChild` or `append` methods
+6. Test UI renders correctly in browser DevTools
+7. Verify no console errors appear during element creation
+
+===============================================================================
+
+### 6. Integrate Firebase Authentication State Listener
+
+Set up authentication state management using the existing Firebase service patterns. All auth-dependent features must wait for Firebase to initialize.
+
+Citations:
+- src/shared-init.js lines 15-24
+
+Task Steps:
+1. Import `waitForFirebase` from `src/shared-init.js`
+2. Import `getAuth` from `src/modules/firebase-service.js`
+3. Wrap auth-dependent code in `waitForFirebase()` callback
+4. Use `getAuth()?.currentUser` to check current user state
+5. Add `onAuthStateChanged` listener for real-time auth updates
+6. Handle user sign-in required errors with ErrorCategory.AUTH
+7. Test authentication flow in browser with sign in/out
+
+===============================================================================
+
+### 7. Implement Session Caching for API Responses
+
+Add session-based caching for API responses using the existing cache manager. Cache policies are defined per resource type in constants.js.
+
+Citations:
+- src/modules/jules-queue.js lines 1-100
+
+Task Steps:
+1. Import `setCache` and `CACHE_KEYS` from `src/utils/session-cache.js`
+2. Define cache key in CACHE_KEYS constant object
+3. Implement cache-first strategy: check cache before API call
+4. Store API responses in sessionStorage using setCache
+5. Add TTL (time-to-live) support using cache-manager.js
+6. Implement LRU eviction when cache exceeds maxEntries limit
+7. Test cache hit/miss behavior in browser DevTools Application tab
+
+===============================================================================
+
+### 8. Create Page Initialization Module
+
+Build page-specific initialization file in `src/pages/` following the pattern established in PR #218. Each page must wait for shared components before initializing.
+
+Citations:
+- docs/CODE_STYLE_GUIDE.md lines 8-78
+
+Task Steps:
+1. Create `src/pages/{page-name}-page.js` file
+2. Import `waitForFirebase` from `src/shared-init.js`
+3. Create `waitForComponents()` function to check for header element
+4. Create `initApp()` function for page-specific setup
+5. Add DOMContentLoaded event listener with readyState check
+6. Set up event handlers using `onclick` or `addEventListener`
+7. Test page loads without errors and initializes correctly
+
+===============================================================================
+
+### 9. Write Unit Tests with Vitest and jsdom
+
+Create unit tests for pure functions and module logic following existing test patterns. Tests must use jsdom environment and meet coverage thresholds.
+
+Citations:
+- vitest.config.js lines 1-48
+
+Task Steps:
+1. Create test file in `src/unit-tests/modules/{feature}.test.js`
+2. Import test functions from vitest: `describe`, `it`, `expect`
+3. Use `beforeEach` to set up test fixtures and mocks
+4. Test pure logic functions with various input/output scenarios
+5. Mock Firebase services using patterns from setup.js
+6. Run tests with `npm run test:run` and verify all pass
+7. Check coverage report meets thresholds: 10% lines, 24% functions
+
+===============================================================================
+
+### 10. Implement Error Handling with Error Handler Utility
+
+Add comprehensive error handling using the centralized error handler. All errors must be categorized and logged appropriately.
+
+Citations:
+- src/modules/jules-queue.js lines 80-96
+
+Task Steps:
+1. Import `handleError` and `ErrorCategory` from `src/utils/error-handler.js`
+2. Wrap async operations in try-catch blocks
+3. Call `handleError(err, { source: 'functionName' })` in catch blocks
+4. Specify error category: ErrorCategory.AUTH, NETWORK, or VALIDATION
+5. Set toastType for user notifications: 'error', 'warn', or 'info'
+6. Test error scenarios by simulating network failures
+7. Verify user-friendly error messages appear via toast notifications
+
+===============================================================================

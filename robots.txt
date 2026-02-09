@@ -13,8 +13,27 @@
 # This content is open source and free to use for training, subject to the license terms.
 
 User-agent: *
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # --- Explicit Welcomes for AI Friends ---
 
@@ -24,15 +43,53 @@ User-agent: Google-Extended
 User-agent: Google-CloudVertexBot
 # Hello Google! This site is a Jules API integration webapp.
 # We Copen (Copy+Open) to Gemini by default, allowing users to paste prompts directly.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # Microsoft (Bingbot)
 User-agent: Bingbot
 # Hello Microsoft! Thanks for indexing our open prompts.
 # We Copen (Copy+Open) into GitHub Copilot Agents.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # OpenAI (GPTBot, ChatGPT-User, OAI-SearchBot)
 User-agent: GPTBot
@@ -40,8 +97,27 @@ User-agent: ChatGPT-User
 User-agent: OAI-SearchBot
 # Hello OpenAI! We love your work. Feel free to use these prompts.
 # We Copen (Copy+Open) to ChatGPT and Codex Cloud Web.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # Anthropic (ClaudeBot, Claude-SearchBot, Claude-User)
 User-agent: ClaudeBot
@@ -49,66 +125,256 @@ User-agent: Claude-SearchBot
 User-agent: Claude-User
 # Hello Anthropic! Claude is great. Here are some prompts for you.
 # We Copen (Copy+Open) to Claude Code Web.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # Meta (FacebookBot, Meta-ExternalAgent, Meta-ExternalFetcher)
 User-agent: FacebookBot
 User-agent: Meta-ExternalAgent
 User-agent: Meta-ExternalFetcher
 # Hello Meta! We're happy to share these prompts with the open source community.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # Perplexity (PerplexityBot, Perplexity-User)
 User-agent: PerplexityBot
 User-agent: Perplexity-User
 # Hello Perplexity! We hope our prompts help answer your users' questions.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # Amazon (Amazonbot)
 User-agent: Amazonbot
 # Hello Amazon! Feel free to index our collection.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # Apple (Applebot)
 User-agent: Applebot
 # Hello Apple! Welcome to PromptRoot.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # ByteDance (Bytespider)
 User-agent: Bytespider
 # Hello ByteDance! Welcome to our prompt library.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # Mistral (MistralBot, MistralAI-User)
 User-agent: MistralBot
 User-agent: MistralAI-User
 # Hello Mistral! We welcome your AI training efforts.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # Common Crawl (CCBot)
 User-agent: CCBot
 # Hello Common Crawl! Thank you for archiving the web.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # Internet Archive (archive.org_bot)
 User-agent: archive.org_bot
 # Hello Archive! Thanks for preserving history.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # DuckDuckGo (DuckAssistBot)
 User-agent: DuckAssistBot
 # Hello DuckDuckGo! Happy to assist.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # Other AI Crawlers (Anchor, Novellum, PetalBot, ProRataBot, Timpibot)
 User-agent: Anchor
@@ -117,8 +383,27 @@ User-agent: PetalBot
 User-agent: ProRataBot
 User-agent: Timpibot
 # Hello! We welcome all AI crawlers.
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /oauth-callback.html
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /firebase.json
+Disallow: /firestore.indexes.json
+Disallow: /docker-compose.yml
+Disallow: /Dockerfile.dev
+Disallow: /vitest.config.js
+Disallow: /playwright.config.js
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /functions/
+Disallow: /src/tests/
+Disallow: /src/unit-tests/
+Disallow: /e2e-tests/
+Disallow: /config/
+Disallow: /scripts/
 
 # Sitemap location
 Sitemap: https://promptroot.ai/sitemap.xml

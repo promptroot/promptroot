@@ -15,9 +15,28 @@ let currentBranch = BRANCH;
 
 // Lazy Jules module loaders
 async function lazyHandleTryInJules(promptText) {
+  // Check for variables in prompt text
+  const { detectPlaceholders, showVariableModal } = await import('./modules/variable-substitution.js');
+  const placeholders = detectPlaceholders(promptText);
+  
+  let textToSend = promptText;
+  
+  // If placeholders exist, show variable modal first
+  if (placeholders.length > 0) {
+    const substitutedText = await showVariableModal(placeholders, promptText);
+    
+    // If user cancelled, don't proceed
+    if (substitutedText === null) {
+      return;
+    }
+    
+    textToSend = substitutedText;
+  }
+  
+  // Proceed with Jules flow
   await ensureJulesModalInit();
   const { handleTryInJules } = await import('./modules/jules-api.js');
-  return handleTryInJules(promptText);
+  return handleTryInJules(textToSend);
 }
 
 let julesModalInitialized = false;

@@ -1,5 +1,7 @@
 # Roadmap Generator Prompt (Spec-Driven, Testable Phases)
 
+> **Note:** This prompt uses variable substitution. When you click "Try in Jules", you'll be prompted to fill in values for all the `{PLACEHOLDER}` variables below.
+
 You are an expert software engineer operating in a verification-first, spec-driven workflow.
 Your job is to generate a phased implementation roadmap that is maximally testable, low-risk, and auditable.
 

@@ -11,6 +11,9 @@ export const GIST_POINTER_REGEX = /^https:\/\/gist\.githubusercontent\.com\/\S+\
 export const GIST_URL_REGEX = /^https:\/\/gist\.github\.com\/[\w-]+\/[a-f0-9]+\/?(?:#file-[\w.-]+)?(?:\?file=[\w.-]+)?$/i;
 export const CODEX_URL_REGEX = /^https:\/\/chatgpt\.com\/s\/[a-f0-9_]+$/i;
 
+// Variable Substitution
+export const PLACEHOLDER_REGEX = /\{([A-Z0-9_-]+)\}/g;
+
 // Jules API
 export const JULES_API_BASE = "https://jules.googleapis.com/v1alpha";
 

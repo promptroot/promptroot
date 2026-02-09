@@ -7,6 +7,16 @@
  * @param {import('@playwright/test').Page} page
  */
 export async function mockGitHubAPI(page) {
+  // Mock raw content endpoint first
+  await page.route('https://raw.githubusercontent.com/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/plain',
+      body: '# Test Prompt\n\nThis is mock content for testing.'
+    });
+  });
+
+  // Mock API endpoints
   await page.route('https://api.github.com/**', async (route) => {
     const url = route.request().url();
     
@@ -41,14 +51,6 @@ export async function mockGitHubAPI(page) {
           tree: getMockRepoTree(),
           truncated: false
         })
-      });
-    }
-    // Mock file content endpoint
-    else if (url.includes('raw.githubusercontent.com')) {
-      await route.fulfill({
-        status: 200,
-        contentType: 'text/plain',
-        body: '# Test Prompt\n\nThis is mock content for testing.'
       });
     }
     // Mock user endpoint

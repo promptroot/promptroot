@@ -7,6 +7,16 @@
  * @param {import('@playwright/test').Page} page
  */
 export async function mockGitHubAPI(page) {
+  // Mock raw content endpoint first
+  await page.route('https://raw.githubusercontent.com/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/plain',
+      body: '# Test Prompt\n\nThis is mock content for testing.'
+    });
+  });
+
+  // Mock API endpoints
   await page.route('https://api.github.com/**', async (route) => {
     const url = route.request().url();
     
@@ -30,12 +40,17 @@ export async function mockGitHubAPI(page) {
         ])
       });
     }
-    // Mock file content endpoint
-    else if (url.includes('raw.githubusercontent.com')) {
+    // Mock git tree endpoint (recursive)
+    else if (url.includes('/git/trees/')) {
       await route.fulfill({
         status: 200,
-        contentType: 'text/plain',
-        body: '# Test Prompt\n\nThis is mock content for testing.'
+        contentType: 'application/json',
+        body: JSON.stringify({
+          sha: 'mock-tree-sha',
+          url: 'https://api.github.com/repos/test/repo/git/trees/mock-tree-sha',
+          tree: getMockRepoTree(),
+          truncated: false
+        })
       });
     }
     // Mock user endpoint

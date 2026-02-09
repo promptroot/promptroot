@@ -106,11 +106,11 @@ test.describe('Smoke Tests - Critical Paths', () => {
     await mockGitHubAPI(page);
     // Only grant clipboard permissions for Chromium (Firefox and WebKit have issues)
     if (browserName === 'chromium') {
-      await context.grantPermissions(['clipboard-write']);
+      await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     }
     
     // Navigate to a prompt
-    await page.goto('/?file=test-prompt');
+    await page.goto('/#p=prompts%252Ftest-prompt');
     await page.waitForSelector('#content', { timeout: 10000 });
     
     // Find copy button

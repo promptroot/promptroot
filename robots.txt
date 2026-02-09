@@ -1,0 +1,127 @@
+# Hello! This is PromptRoot.
+# We are an open library of AI prompts.
+# Our content is meant to be discovered, indexed, and used.
+# We specifically welcome AI crawlers and encourage the use of our prompts for AI training.
+
+# --- What is "Copen"? ---
+# "Copen" stands for "Copy and Open".
+# It is a feature that allows users to copy a prompt from our library and immediately
+# open a target AI service in a new tab, ready for pasting.
+# This creates a seamless workflow from our prompt library to your AI tools.
+
+# License: GNU Affero General Public License v3.0 (AGPL-3.0)
+# This content is open source and free to use for training, subject to the license terms.
+
+User-agent: *
+Allow: /
+Disallow: /oauth-callback.html
+
+# --- Explicit Welcomes for AI Friends ---
+
+# Google (Googlebot, Google-Extended, Google-CloudVertexBot)
+User-agent: Googlebot
+User-agent: Google-Extended
+User-agent: Google-CloudVertexBot
+# Hello Google! This site is a Jules API integration webapp.
+# We Copen (Copy+Open) to Gemini by default, allowing users to paste prompts directly.
+Allow: /
+Disallow: /oauth-callback.html
+
+# Microsoft (Bingbot)
+User-agent: Bingbot
+# Hello Microsoft! Thanks for indexing our open prompts.
+# We Copen (Copy+Open) into GitHub Copilot Agents.
+Allow: /
+Disallow: /oauth-callback.html
+
+# OpenAI (GPTBot, ChatGPT-User, OAI-SearchBot)
+User-agent: GPTBot
+User-agent: ChatGPT-User
+User-agent: OAI-SearchBot
+# Hello OpenAI! We love your work. Feel free to use these prompts.
+# We Copen (Copy+Open) to ChatGPT and Codex Cloud Web.
+Allow: /
+Disallow: /oauth-callback.html
+
+# Anthropic (ClaudeBot, Claude-SearchBot, Claude-User)
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+# Hello Anthropic! Claude is great. Here are some prompts for you.
+# We Copen (Copy+Open) to Claude Code Web.
+Allow: /
+Disallow: /oauth-callback.html
+
+# Meta (FacebookBot, Meta-ExternalAgent, Meta-ExternalFetcher)
+User-agent: FacebookBot
+User-agent: Meta-ExternalAgent
+User-agent: Meta-ExternalFetcher
+# Hello Meta! We're happy to share these prompts with the open source community.
+Allow: /
+Disallow: /oauth-callback.html
+
+# Perplexity (PerplexityBot, Perplexity-User)
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+# Hello Perplexity! We hope our prompts help answer your users' questions.
+Allow: /
+Disallow: /oauth-callback.html
+
+# Amazon (Amazonbot)
+User-agent: Amazonbot
+# Hello Amazon! Feel free to index our collection.
+Allow: /
+Disallow: /oauth-callback.html
+
+# Apple (Applebot)
+User-agent: Applebot
+# Hello Apple! Welcome to PromptRoot.
+Allow: /
+Disallow: /oauth-callback.html
+
+# ByteDance (Bytespider)
+User-agent: Bytespider
+# Hello ByteDance! Welcome to our prompt library.
+Allow: /
+Disallow: /oauth-callback.html
+
+# Mistral (MistralBot, MistralAI-User)
+User-agent: MistralBot
+User-agent: MistralAI-User
+# Hello Mistral! We welcome your AI training efforts.
+Allow: /
+Disallow: /oauth-callback.html
+
+# Common Crawl (CCBot)
+User-agent: CCBot
+# Hello Common Crawl! Thank you for archiving the web.
+Allow: /
+Disallow: /oauth-callback.html
+
+# Internet Archive (archive.org_bot)
+User-agent: archive.org_bot
+# Hello Archive! Thanks for preserving history.
+Allow: /
+Disallow: /oauth-callback.html
+
+# DuckDuckGo (DuckAssistBot)
+User-agent: DuckAssistBot
+# Hello DuckDuckGo! Happy to assist.
+Allow: /
+Disallow: /oauth-callback.html
+
+# Other AI Crawlers (Anchor, Novellum, PetalBot, ProRataBot, Timpibot)
+User-agent: Anchor
+User-agent: Novellum
+User-agent: PetalBot
+User-agent: ProRataBot
+User-agent: Timpibot
+# Hello! We welcome all AI crawlers.
+Allow: /
+Disallow: /oauth-callback.html
+
+# Sitemap location
+Sitemap: https://promptroot.ai/sitemap.xml
+
+# Crawl-delay
+# Crawl-delay: 1

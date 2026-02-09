@@ -4,7 +4,7 @@
 import { waitForFirebase } from '../shared-init.js';
 import { getAuth } from '../modules/firebase-service.js';
 import { calculateAnalytics } from '../modules/analytics.js';
-import { syncActiveSessions, importJulesHistory } from '../modules/session-tracking.js';
+import { syncActiveSessions, importJulesHistory, getUserSessions } from '../modules/session-tracking.js';
 import { handleError } from '../utils/error-handler.js';
 import { TIMEOUTS } from '../utils/constants.js';
 import { createElement, createIcon, toggleVisibility } from '../utils/dom-helpers.js';
@@ -50,89 +50,129 @@ async function initApp() {
       });
     }
 
-    // Refresh button
-    const refreshBtn = document.getElementById('refreshAnalyticsBtn');
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', async () => {
-        refreshBtn.disabled = true;
-        refreshBtn.querySelector('.icon').textContent = 'hourglass_empty';
-        
-        try {
-          // Show status bar and sync with progress updates
-          statusBar.showMessage('Syncing sessions...', { timeout: 0 });
-          
-          await syncActiveSessions((synced, total) => {
-            statusBar.setProgress(`${synced} / ${total}`, (synced / total) * 100);
-          });
-          
-          statusBar.clearProgress();
-          statusBar.showMessage('Loading analytics...', { timeout: 0 });
-          
-          await loadAnalytics();
-          
-          statusBar.showMessage('Refresh complete!', { timeout: 3000 });
-        } catch (error) {
-          handleError(error, { source: 'refreshAnalytics' });
-          statusBar.showMessage('Refresh failed', { timeout: 3000 });
-        } finally {
-          refreshBtn.disabled = false;
-          refreshBtn.querySelector('.icon').textContent = 'refresh';
-        }
-      });
-    }
-
-    // Import history button
-    const importBtn = document.getElementById('importHistoryBtn');
-    if (importBtn) {
-      importBtn.addEventListener('click', async () => {
-        const confirmed = await showConfirm(
-          'This will import all your Jules sessions from history. This may take a few minutes. Continue?',
-          {
-            title: 'Import Jules History',
-            confirmText: 'Import',
-            confirmStyle: 'primary',
-            cancelText: 'Cancel'
-          }
-        );
-        
-        if (!confirmed) {
-          return;
-        }
-
-        importBtn.disabled = true;
-        importBtn.querySelector('.icon').textContent = 'hourglass_empty';
-        const originalText = importBtn.childNodes[2].textContent;
-        importBtn.childNodes[2].textContent = ' Importing...';
-        
-        try {
-          // Show status bar with progress
-          statusBar.showMessage('Importing Jules history...', { timeout: 0 });
-          
-          const stats = await importJulesHistory((processed, total) => {
-            statusBar.setProgress(`${processed} / ${total}`, (processed / total) * 100);
-          });
-          
-          statusBar.clearProgress();
-          statusBar.showMessage('Loading analytics...', { timeout: 0 });
-          
-          showToast(`Import complete: ${stats.imported} imported, ${stats.skipped} skipped, ${stats.errors} errors`, 'success');
-          await loadAnalytics();
-          
-          statusBar.showMessage('Import complete!', { timeout: 3000 });
-        } catch (error) {
-          handleError(error, { source: 'importHistory' });
-          showToast('Failed to import history. Check console for details.', 'error');
-          statusBar.showMessage('Import failed', { timeout: 3000 });
-        } finally {
-          importBtn.disabled = false;
-          importBtn.querySelector('.icon').textContent = 'download';
-          importBtn.childNodes[2].textContent = originalText;
-        }
+    // Smart refresh button - intelligently imports or refreshes based on existing data
+    const smartRefreshBtn = document.getElementById('smartRefreshBtn');
+    if (smartRefreshBtn) {
+      smartRefreshBtn.addEventListener('click', async () => {
+        await handleSmartRefresh(smartRefreshBtn);
       });
     }
   } catch (error) {
     handleError(error, { source: 'analyticsInit' });
   }
+}
+
+/**
+ * Check if user has any existing sessions in their database
+ * @returns {Promise<boolean>} True if user has sessions, false if none found
+ */
+async function hasExistingSessions() {
+  try {
+    const sessions = await getUserSessions({ startDate: null, endDate: null });
+    return sessions.length > 0;
+  } catch (error) {
+    console.error('Error checking existing sessions:', error);
+    return false;
+  }
+}
+
+/**
+ * Handle smart refresh - comprehensive sync that handles both active sessions and missing history
+ * @param {HTMLButtonElement} button - The refresh button element
+ */
+async function handleSmartRefresh(button) {
+  if (button.disabled) return;
+  
+  button.disabled = true;
+  const iconElement = button.querySelector('.icon');
+  const originalIcon = iconElement.textContent;
+  
+  try {
+    // Check if user has existing sessions
+    const hasData = await hasExistingSessions();
+    
+    if (!hasData) {
+      // No sessions found - perform initial import with confirmation
+      await performInitialImport(button, iconElement);
+    } else {
+      // Sessions found - perform comprehensive refresh (sync + smart import)
+      await performComprehensiveRefresh(button, iconElement);
+    }
+  } catch (error) {
+    handleError(error, { source: 'smartRefresh' });
+    statusBar.showMessage('Operation failed', { timeout: 3000 });
+  } finally {
+    button.disabled = false;
+    iconElement.textContent = originalIcon;
+  }
+}
+
+/**
+ * Perform initial import for users with no existing data
+ */
+async function performInitialImport(button, iconElement) {
+  // Show confirmation for first-time import
+  const confirmed = await showConfirm(
+    'No session history found. Import all your Jules sessions from history? This may take a few minutes.',
+    {
+      title: 'Import Jules History',
+      confirmText: 'Import',
+      confirmStyle: 'primary',
+      cancelText: 'Cancel'
+    }
+  );
+  
+  if (!confirmed) {
+    return;
+  }
+  
+  iconElement.textContent = 'download';
+  button.title = 'Importing history...';
+  
+  statusBar.showMessage('Importing Jules history...', { timeout: 0 });
+  
+  const stats = await importJulesHistory((processed, total) => {
+    statusBar.setProgress(`${processed} / ${total}`, (processed / total) * 100);
+  });
+  
+  statusBar.clearProgress();
+  statusBar.showMessage('Loading analytics...', { timeout: 0 });
+  
+  showToast(`Import complete: ${stats.imported} imported, ${stats.skipped} skipped, ${stats.errors} errors`, 'success');
+  await loadAnalytics();
+  
+  statusBar.showMessage('Import complete!', { timeout: 3000 });
+  button.title = 'Refresh data';
+}
+
+/**
+ * Perform comprehensive refresh: smart import that handles both active sessions and missing history
+ */
+async function performComprehensiveRefresh(button, iconElement) {
+  iconElement.textContent = 'hourglass_empty';
+  button.title = 'Refreshing...';
+  
+  // Single comprehensive sync - imports/updates both active and completed sessions
+  statusBar.showMessage('Syncing all sessions...', { timeout: 0 });
+  
+  const stats = await importJulesHistory((processed, total) => {
+    statusBar.setProgress(`${processed} / ${total}`, (processed / total) * 100);
+  });
+  
+  statusBar.clearProgress();
+  statusBar.showMessage('Loading analytics...', { timeout: 0 });
+  
+  // Show appropriate success message based on what was found
+  let message = 'Refresh complete!';
+  if (stats.imported > 0) {
+    message = `Refresh complete! Found ${stats.imported} new sessions.`;
+    showToast(`${stats.imported} new sessions imported`, 'success');
+  }
+  
+  await loadAnalytics();
+  
+  statusBar.showMessage(message, { timeout: 3000 });
+  button.title = 'Refresh data';
 }
 
 function showNotSignedIn() {

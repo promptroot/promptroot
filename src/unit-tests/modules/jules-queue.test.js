@@ -111,7 +111,6 @@ vi.mock('../../modules/jules-queue-store.js', () => ({
 }));
 
 // Add mock for getSelectedQueueIds after imports
-
 const createMockElement = (id = '') => ({
   id,
   setAttribute: vi.fn(),

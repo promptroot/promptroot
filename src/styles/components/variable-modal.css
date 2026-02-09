@@ -20,6 +20,16 @@
 
 .variable-modal .modal-content {
   max-width: 540px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollable body */
+.variable-modal .modal-body {
+  overflow-y: auto;
+  max-height: calc(90vh - 140px); /* Account for header and button height */
+  padding-right: 4px; /* Space for scrollbar */
 }
 
 /* Modal description */
@@ -118,6 +128,11 @@
   .variable-modal .modal-content {
     max-width: 95%;
     width: 95%;
+    max-height: 95vh;
+  }
+
+  .variable-modal .modal-body {
+    max-height: calc(95vh - 140px);
   }
 
   .variable-modal__label {

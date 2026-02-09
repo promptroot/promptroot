@@ -105,7 +105,7 @@ function buildVariableModalDOM(placeholders) {
 
   const modalBody = createElement('div', 'modal-body');
   const description = createElement('p', 'variable-modal__description', 
-    'Fill in the values for the following variables:');
+    'Fill in the values for the following variables (leave blank to use "N/A"):');
   modalBody.appendChild(description);
 
   const form = createElement('form', 'variable-modal__form');
@@ -122,8 +122,7 @@ function buildVariableModalDOM(placeholders) {
     input.type = 'text';
     input.id = `var_${placeholder}`;
     input.name = placeholder;
-    input.placeholder = `Enter ${placeholder}...`;
-    input.required = true;
+    input.placeholder = `Enter ${placeholder} (optional)...`;
     input.maxLength = 1000;
     
     fieldGroup.appendChild(label);
@@ -132,11 +131,6 @@ function buildVariableModalDOM(placeholders) {
   });
 
   modalBody.appendChild(form);
-
-  const errorMessage = createElement('div', 'variable-modal__error hidden');
-  errorMessage.id = 'variableModalError';
-  errorMessage.textContent = 'All fields are required';
-  modalBody.appendChild(errorMessage);
 
   const modalButtons = createElement('div', 'modal-buttons');
   const cancelBtn = createElement('button', 'btn', 'Cancel');
@@ -160,24 +154,13 @@ function buildVariableModalDOM(placeholders) {
 }
 
 /**
- * Validates all form inputs are filled
+ * Validates form (always returns true since fields are optional)
  * @param {HTMLFormElement} form - The form element
- * @returns {boolean} True if all inputs have values
+ * @returns {boolean} Always true
  */
 function validateForm(form) {
-  const inputs = form.querySelectorAll('.variable-modal__input');
-  let isValid = true;
-
-  inputs.forEach(input => {
-    if (!input.value.trim()) {
-      input.classList.add('variable-modal__input--error');
-      isValid = false;
-    } else {
-      input.classList.remove('variable-modal__input--error');
-    }
-  });
-
-  return isValid;
+  // All fields are optional, so validation always passes
+  return true;
 }
 
 /**
@@ -204,7 +187,6 @@ export function showVariableModal(placeholders, promptText) {
     const continueBtn = modalElement.querySelector('#variableModalContinue');
     const cancelBtn = modalElement.querySelector('#variableModalCancel');
     const closeBtn = modalElement.querySelector('#variableModalClose');
-    const errorMessage = modalElement.querySelector('#variableModalError');
 
     // Create managed modal instance
     const modal = createModal({
@@ -231,20 +213,13 @@ export function showVariableModal(placeholders, promptText) {
     const handleSubmit = (e) => {
       e.preventDefault();
       
-      // Validate form
-      if (!validateForm(form)) {
-        errorMessage.classList.remove('hidden');
-        return;
-      }
-
-      errorMessage.classList.add('hidden');
-
-      // Collect values from form
+      // Collect values from form (use "N/A" for empty fields)
       const values = {};
       placeholders.forEach(placeholder => {
         const input = form.querySelector(`#var_${placeholder}`);
         if (input) {
-          values[placeholder] = input.value.trim();
+          const value = input.value.trim();
+          values[placeholder] = value || 'N/A';
         }
       });
 
@@ -273,16 +248,14 @@ export function showVariableModal(placeholders, promptText) {
       }
     });
 
-    // Clear error on input
+    // Focus management for inputs
     const inputs = form.querySelectorAll('.variable-modal__input');
     inputs.forEach(input => {
-      modal.addListener(input, 'input', () => {
-        if (input.value.trim()) {
-          input.classList.remove('variable-modal__input--error');
-        }
-        // Check if all fields valid to hide error message
-        if (validateForm(form)) {
-          errorMessage.classList.add('hidden');
+      modal.addListener(input, 'keydown', (e) => {
+        // Submit on Enter key
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          handleSubmit(e);
         }
       });
     });

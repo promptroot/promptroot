@@ -20,13 +20,11 @@ async function decryptJulesKey(docData, uid) {
 
     // Check for New Scheme (Random IV + PBKDF2)
     if (docData.iv && docData.salt) {
-      const iv = Buffer.from(docData.iv, "base64");
-      const salt = Buffer.from(docData.salt, "base64");
-      const ciphertext = Buffer.from(encryptedBase64, "base64");
-
-      const ivArr = new Uint8Array(iv.buffer, iv.byteOffset, iv.byteLength);
-      const saltArr = new Uint8Array(salt.buffer, salt.byteOffset, salt.byteLength);
-      const cipherArr = new Uint8Array(ciphertext.buffer, ciphertext.byteOffset, ciphertext.byteLength);
+      // Frontend uses: btoa(String.fromCharCode(...new Uint8Array(data)))
+      // So we need to reverse this: Buffer.from(base64, 'base64')
+      const iv = new Uint8Array(Buffer.from(docData.iv, "base64"));
+      const salt = new Uint8Array(Buffer.from(docData.salt, "base64"));
+      const ciphertext = new Uint8Array(Buffer.from(encryptedBase64, "base64"));
 
       const keyMaterial = await crypto.subtle.importKey(
         "raw",
@@ -39,7 +37,7 @@ async function decryptJulesKey(docData, uid) {
       const key = await crypto.subtle.deriveKey(
         {
           name: "PBKDF2",
-          salt: saltArr,
+          salt: salt,
           iterations: 100000,
           hash: "SHA-256"
         },
@@ -50,9 +48,9 @@ async function decryptJulesKey(docData, uid) {
       );
 
       const plainBuf = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv: ivArr },
+        { name: "AES-GCM", iv: iv },
         key,
-        cipherArr
+        ciphertext
       );
 
       return td.decode(plainBuf);
@@ -71,7 +69,13 @@ async function decryptJulesKey(docData, uid) {
 
     return td.decode(plainBuf);
   } catch (error) {
-    console.error("Decryption error:", error.message);
+    console.error("Decryption error details:", {
+      message: error.message,
+      stack: error.stack,
+      hasIvSalt: !!(docData.iv && docData.salt),
+      keyLength: docData.key?.length || 0,
+      uid: uid?.substring(0, 8) + '...' // Only log first 8 chars for privacy
+    });
     throw new Error("Failed to decrypt Jules API key");
   }
 }
@@ -226,6 +230,14 @@ exports.runJules = functions.https.onCall(async (data, context) => {
 });
 
 exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
+  // Log incoming request for debugging
+  console.log('runJulesHttp called with:', {
+    method: req.method,
+    headers: Object.keys(req.headers),
+    body: req.body,
+    url: req.url
+  });
+
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -243,6 +255,7 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Missing or invalid auth header:', authHeader);
       res.status(401).json({ error: 'Missing or invalid Authorization header' });
       return;
     }

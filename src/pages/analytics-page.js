@@ -4,7 +4,7 @@
 import { waitForFirebase } from '../shared-init.js';
 import { getAuth } from '../modules/firebase-service.js';
 import { calculateAnalytics } from '../modules/analytics.js';
-import { syncActiveSessions, importJulesHistory, getUserSessions } from '../modules/session-tracking.js';
+import { importJulesHistory, getUserSessions } from '../modules/session-tracking.js';
 import { handleError } from '../utils/error-handler.js';
 import { TIMEOUTS } from '../utils/constants.js';
 import { createElement, createIcon, toggleVisibility } from '../utils/dom-helpers.js';

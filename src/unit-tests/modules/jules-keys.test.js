@@ -248,7 +248,7 @@ describe('jules-keys', () => {
 
   describe('checkJulesKey', () => {
     it('should return true if key exists', async () => {
-      mockDocGet.mockResolvedValue({ exists: true, data: () => ({}) });
+      mockDocGet.mockResolvedValue({ exists: true, data: () => ({ key: 'some-encrypted-key' }) });
       const result = await checkJulesKey('uid');
       expect(result).toBe(true);
     });

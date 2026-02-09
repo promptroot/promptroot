@@ -2,6 +2,7 @@ const functions = require("firebase-functions");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
+const { webcrypto: crypto } = require('crypto');
 
 admin.initializeApp();
 
@@ -9,12 +10,57 @@ function formatJulesError(error, statusCode) {
   return 'Failed to create Jules session. Most likely causes: (1) API rate limit - wait a few minutes, (2) Invalid API key - check your settings, (3) Repository access - verify permissions.';
 }
 
-async function decryptJulesKeyBase64(b64, uid) {
+async function decryptJulesKey(docData, uid) {
   try {
-    const enc = Buffer.from(b64, "base64");
-    const encView = enc.buffer.slice(enc.byteOffset, enc.byteOffset + enc.byteLength);
+    const encryptedBase64 = docData.key;
+    if (!encryptedBase64) throw new Error("Missing encrypted key data");
+
     const te = new TextEncoder();
     const td = new TextDecoder();
+
+    // Check for New Scheme (Random IV + PBKDF2)
+    if (docData.iv && docData.salt) {
+      const iv = Buffer.from(docData.iv, "base64");
+      const salt = Buffer.from(docData.salt, "base64");
+      const ciphertext = Buffer.from(encryptedBase64, "base64");
+
+      const ivArr = new Uint8Array(iv.buffer, iv.byteOffset, iv.byteLength);
+      const saltArr = new Uint8Array(salt.buffer, salt.byteOffset, salt.byteLength);
+      const cipherArr = new Uint8Array(ciphertext.buffer, ciphertext.byteOffset, ciphertext.byteLength);
+
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        te.encode(uid),
+        { name: "PBKDF2" },
+        false,
+        ["deriveKey"]
+      );
+
+      const key = await crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt: saltArr,
+          iterations: 100000,
+          hash: "SHA-256"
+        },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["decrypt"]
+      );
+
+      const plainBuf = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: ivArr },
+        key,
+        cipherArr
+      );
+
+      return td.decode(plainBuf);
+    }
+
+    // Fallback to Legacy Scheme (Deterministic IV + Padded Key)
+    const enc = Buffer.from(encryptedBase64, "base64");
+    const encView = new Uint8Array(enc.buffer, enc.byteOffset, enc.byteLength);
 
     const paddedKeyString = (uid + '\0'.repeat(32)).slice(0, 32);
     const keyBytes = te.encode(paddedKeyString);
@@ -67,14 +113,14 @@ exports.runJules = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError("failed-precondition", "No Jules API key stored. Please save your API key first.");
     }
 
-    const encryptedBase64 = snap.data().key;
-    if (!encryptedBase64) {
+    const docData = snap.data();
+    if (!docData.key) {
       throw new functions.https.HttpsError("failed-precondition", "Stored key is missing or invalid");
     }
 
     let julesKey;
     try {
-      julesKey = await decryptJulesKeyBase64(encryptedBase64, uid);
+      julesKey = await decryptJulesKey(docData, uid);
     } catch (e) {
       console.error("Decryption failed for user:", uid);
       throw new functions.https.HttpsError("internal", "Failed to decrypt Jules API key");
@@ -228,15 +274,15 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    const encryptedBase64 = snap.data().key;
-    if (!encryptedBase64) {
+    const docData = snap.data();
+    if (!docData.key) {
       res.status(400).json({ error: 'Stored key is missing or invalid' });
       return;
     }
 
     let julesKey;
     try {
-      julesKey = await decryptJulesKeyBase64(encryptedBase64, uid);
+      julesKey = await decryptJulesKey(docData, uid);
     } catch (e) {
       console.error('Decryption failed:', e.message);
       res.status(500).json({ error: 'Failed to decrypt Jules API key' });
@@ -356,8 +402,12 @@ exports.validateJulesKey = functions.https.onCall(async (data, context) => {
       return { valid: false, message: "No Jules API key stored" };
     }
 
-    const encryptedBase64 = snap.data().key;
-    const julesKey = await decryptJulesKeyBase64(encryptedBase64, uid);
+    const docData = snap.data();
+    if (!docData.key) {
+      return { valid: false, message: "Stored key is invalid" };
+    }
+
+    const julesKey = await decryptJulesKey(docData, uid);
 
     const r = await fetch("https://jules.googleapis.com/v1alpha/sessions", {
       method: "GET",
@@ -574,8 +624,18 @@ exports.activateScheduledQueueItems = onSchedule('every 1 minutes', async (event
           continue;
         }
         
-        const encryptedBase64 = keySnap.data().key;
-        const julesKey = await decryptJulesKeyBase64(encryptedBase64, userId);
+        const docData = keySnap.data();
+        if (!docData.key) {
+           console.error(`Jules API key empty/invalid for user ${userId}`);
+           await doc.ref.update({
+             status: 'error',
+             error: 'Jules API key invalid',
+             updatedAt: now
+           });
+           continue;
+        }
+
+        const julesKey = await decryptJulesKey(docData, userId);
         
         if (item.type === 'single') {
           await doc.ref.update({ status: 'in-progress', updatedAt: now });

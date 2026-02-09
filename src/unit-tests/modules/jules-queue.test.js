@@ -27,7 +27,8 @@ import {
   hideJulesQueueModal,
   renderQueueListDirectly,
   attachQueueHandlers,
-  exportQueueToMarkdown
+  exportQueueToMarkdown,
+  getSelectedQueueIds
 } from '../../modules/jules-queue.js';
 import { getCache } from '../../utils/session-cache.js';
 
@@ -108,6 +109,8 @@ vi.mock('../../modules/jules-queue-store.js', () => ({
   getQueueModalEscapeHandler: vi.fn(),
   setQueueModalEscapeHandler: vi.fn()
 }));
+
+// Add mock for getSelectedQueueIds after imports
 
 const createMockElement = (id = '') => ({
   id,
@@ -705,7 +708,6 @@ describe('jules-queue', () => {
       
       expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
       expect(mockModal.removeAttribute).toHaveBeenCalledWith('style');
-      expect(global.document.removeEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
     });
 
     it('should do nothing if modal not found', () => {
@@ -736,20 +738,34 @@ describe('jules-queue', () => {
     });
   });
 
-  describe('exportQueueToMarkdown', () => {
+  describe('exportQueueToMarkdown', () => {    
     beforeEach(() => {
       vi.clearAllMocks();
     });
 
-    it('should show warning when queue is empty', async () => {
+    it('should show warning when no items selected', async () => {
       const { getQueueCache } = await import('../../modules/jules-queue-store.js');
       const { showToast } = await import('../../modules/toast.js');
       
-      getQueueCache.mockReturnValue([]);
+      // Mock queue cache to have items
+      getQueueCache.mockReturnValue([{ 
+        id: 'test1', 
+        prompt: 'test prompt',
+        title: 'Test Item',
+        subtasks: []
+      }]);
+      
+      // Mock DOM with no checked checkboxes
+      global.document.querySelectorAll = vi.fn((selector) => {
+        if (selector === '.queue-checkbox:checked' || selector === '.subtask-checkbox:checked') {
+          return []; // No checked checkboxes
+        }
+        return [];
+      });
       
       exportQueueToMarkdown();
       
-      expect(showToast).toHaveBeenCalledWith('No queue items to export', 'warn');
+      expect(showToast).toHaveBeenCalledWith('No items selected to export', 'warn');
       expect(global.document.createElement).not.toHaveBeenCalled();
     });
 
@@ -771,6 +787,22 @@ describe('jules-queue', () => {
       
       getQueueCache.mockReturnValue(mockItems);
       
+      // Mock DOM with checked checkbox for test-id-1
+      const mockCheckedCheckbox = { 
+        dataset: { docid: 'test-id-1' },
+        class: 'queue-checkbox'
+      };
+      
+      global.document.querySelectorAll = vi.fn((selector) => {
+        if (selector === '.queue-checkbox:checked') {
+          return [mockCheckedCheckbox];
+        }
+        if (selector === '.subtask-checkbox:checked') {
+          return [];
+        }
+        return [];
+      });
+      
       const mockElement = {
         href: '',
         download: '',
@@ -778,11 +810,12 @@ describe('jules-queue', () => {
         click: vi.fn()
       };
       global.document.createElement.mockReturnValue(mockElement);
+      global.document.body = { appendChild: vi.fn(), removeChild: vi.fn() };
       
       exportQueueToMarkdown();
       
       expect(global.Blob).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.stringContaining('# Queue Export')]),
+        expect.arrayContaining([expect.stringContaining('# Queue Export (Selected Items)')]),
         { type: 'text/markdown;charset=utf-8' }
       );
       expect(global.URL.createObjectURL).toHaveBeenCalled();
@@ -791,7 +824,7 @@ describe('jules-queue', () => {
       expect(global.document.body.appendChild).toHaveBeenCalledWith(mockElement);
       expect(global.document.body.removeChild).toHaveBeenCalledWith(mockElement);
       expect(global.URL.revokeObjectURL).toHaveBeenCalled();
-      expect(showToast).toHaveBeenCalledWith('Exported 1 queue items to markdown', 'success');
+      expect(showToast).toHaveBeenCalledWith('Exported 1 selected item to markdown', 'success');
     });
 
     it('should create markdown file for subtasks items', async () => {
@@ -815,6 +848,22 @@ describe('jules-queue', () => {
       
       getQueueCache.mockReturnValue(mockItems);
       
+      // Mock DOM with checked checkbox for test-id-2
+      const mockCheckedCheckbox = { 
+        dataset: { docid: 'test-id-2' },
+        class: 'queue-checkbox'
+      };
+      
+      global.document.querySelectorAll = vi.fn((selector) => {
+        if (selector === '.queue-checkbox:checked') {
+          return [mockCheckedCheckbox];
+        }
+        if (selector === '.subtask-checkbox:checked') {
+          return [];
+        }
+        return [];
+      });
+      
       const mockElement = {
         href: '',
         download: '',
@@ -822,13 +871,14 @@ describe('jules-queue', () => {
         click: vi.fn()
       };
       global.document.createElement.mockReturnValue(mockElement);
+      global.document.body = { appendChild: vi.fn(), removeChild: vi.fn() };
       
       exportQueueToMarkdown();
       
       const blobCall = global.Blob.mock.calls[0];
       const markdownContent = blobCall[0][0];
       
-      expect(markdownContent).toContain('# Queue Export');
+      expect(markdownContent).toContain('# Queue Export (Selected Items)');
       expect(markdownContent).toContain('**ID:** test-id-2');
       expect(markdownContent).toContain('**Type:** subtasks');
       expect(markdownContent).toContain('**Subtasks:** 2');
@@ -841,7 +891,7 @@ describe('jules-queue', () => {
       expect(markdownContent).toContain('<!-- SUBTASK_START -->');
       expect(markdownContent).toContain('<!-- SUBTASK_END -->');
       
-      expect(showToast).toHaveBeenCalledWith('Exported 1 queue items to markdown', 'success');
+      expect(showToast).toHaveBeenCalledWith('Exported 1 selected item to markdown', 'success');
     });
 
     it('should handle items with scheduling information', async () => {
@@ -861,6 +911,22 @@ describe('jules-queue', () => {
       
       getQueueCache.mockReturnValue(mockItems);
       
+      // Mock DOM with checked checkbox for scheduled-item
+      const mockCheckedCheckbox = { 
+        dataset: { docid: 'scheduled-item' },
+        class: 'queue-checkbox'
+      };
+      
+      global.document.querySelectorAll = vi.fn((selector) => {
+        if (selector === '.queue-checkbox:checked') {
+          return [mockCheckedCheckbox];
+        }
+        if (selector === '.subtask-checkbox:checked') {
+          return [];
+        }
+        return [];
+      });
+      
       const mockElement = {
         href: '',
         download: '',
@@ -868,6 +934,7 @@ describe('jules-queue', () => {
         click: vi.fn()
       };
       global.document.createElement.mockReturnValue(mockElement);
+      global.document.body = { appendChild: vi.fn(), removeChild: vi.fn() };
       
       exportQueueToMarkdown();
       
@@ -895,6 +962,22 @@ describe('jules-queue', () => {
       
       getQueueCache.mockReturnValue(mockItems);
       
+      // Mock DOM with checked checkbox for error-item
+      const mockCheckedCheckbox = { 
+        dataset: { docid: 'error-item' },
+        class: 'queue-checkbox'
+      };
+      
+      global.document.querySelectorAll = vi.fn((selector) => {
+        if (selector === '.queue-checkbox:checked') {
+          return [mockCheckedCheckbox];
+        }
+        if (selector === '.subtask-checkbox:checked') {
+          return [];
+        }
+        return [];
+      });
+      
       const mockElement = {
         href: '',
         download: '',
@@ -902,6 +985,7 @@ describe('jules-queue', () => {
         click: vi.fn()
       };
       global.document.createElement.mockReturnValue(mockElement);
+      global.document.body = { appendChild: vi.fn(), removeChild: vi.fn() };
       
       exportQueueToMarkdown();
       

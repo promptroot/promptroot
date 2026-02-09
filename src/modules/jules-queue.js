@@ -58,7 +58,7 @@ import {
 } from '../utils/jules-queue-helpers.js';
 import { getHandler } from '../utils/handler-registry.js';
 
-function getSelectedQueueIds() {
+export function getSelectedQueueIds() {
   const queueSelections = [];
   const subtaskSelections = {};
 

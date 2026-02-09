@@ -92,7 +92,7 @@ function buildVariableModalDOM(placeholders) {
   const modalContent = createElement('div', 'modal-content');
 
   const modalHeader = createElement('div', 'modal-header');
-  const title = createElement('h3', '', 'Fill Variables');
+  const title = createElement('h3', '', 'Customize Prompt');
   title.id = 'variableModalTitle';
 
   const closeBtn = createElement('button', 'btn-icon close-modal', '✕');

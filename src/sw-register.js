@@ -15,23 +15,20 @@ function showUpdateToast() {
 
   const refreshBtn = document.createElement('button');
   refreshBtn.textContent = 'Refresh Now';
-  refreshBtn.style.marginLeft = '10px';
-  refreshBtn.style.padding = '4px 8px';
-  refreshBtn.style.borderRadius = '4px';
-  refreshBtn.style.border = 'none';
-  refreshBtn.style.background = 'rgba(255,255,255,0.2)';
-  refreshBtn.style.color = 'inherit';
-  refreshBtn.style.cursor = 'pointer';
-  refreshBtn.style.fontSize = '0.9em';
+  refreshBtn.className = 'toast__refresh-button';
 
   refreshBtn.onclick = () => {
     // Notify waiting worker to skip waiting
     navigator.serviceWorker.getRegistration().then(reg => {
-      if (reg && reg.waiting) {
-        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      } else if (navigator.serviceWorker.controller) {
-        // Fallback
-        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+      try {
+        if (reg && reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        } else if (navigator.serviceWorker.controller) {
+          // Fallback
+          navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+        }
+      } catch (error) {
+        window.location.reload(); // Fallback
       }
       // Reload will be triggered by controllerchange event
     });

@@ -79,6 +79,17 @@
   opacity: 1;
 }
 
+.toast__refresh-button {
+  margin-left: 10px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
 /* Toast type variants */
 .toast--success {
   border-color: var(--success);

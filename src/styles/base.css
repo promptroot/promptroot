@@ -5,6 +5,34 @@ body {
   visibility: hidden;
 }
 
+/* Global scrollbar styling for Chromium browsers */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Base variables, reset, and global styles */
 :root {
   --bg: #0a0e1a;

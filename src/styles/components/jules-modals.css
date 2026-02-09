@@ -34,6 +34,11 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
+#subtaskErrorModal > div::-webkit-scrollbar { width: 6px; }
+#subtaskErrorModal > div::-webkit-scrollbar-track { background: transparent; }
+#subtaskErrorModal > div::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+#subtaskErrorModal > div::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
 #subtaskErrorModal > div {
   max-width: 500px;
 }

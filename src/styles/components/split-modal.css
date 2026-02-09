@@ -9,4 +9,8 @@
 
 /* Split editor container styles extracted from inline */
 #splitEditPanel { margin-bottom: 16px; border: 1px solid var(--border); border-radius: 8px; max-height: 400px; overflow-y: auto; background: rgba(255,255,255,0.02); }
+#splitEditPanel::-webkit-scrollbar { width: 6px; }
+#splitEditPanel::-webkit-scrollbar-track { background: transparent; }
+#splitEditPanel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+#splitEditPanel::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 #splitEditList { padding: 8px; }

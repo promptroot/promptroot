@@ -25,6 +25,12 @@
 .modal-content { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; max-width: 400px; width: 90%; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
 .modal-content.modal-lg { max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; overflow-y: auto; }
 .modal-content.modal-xl { max-width: 700px; max-height: 80vh; display: flex; flex-direction: column; overflow-y: auto; }
+
+/* Modal scrollbar styling */
+.modal-content::-webkit-scrollbar { width: 6px; }
+.modal-content::-webkit-scrollbar-track { background: transparent; }
+.modal-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.modal-content::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 .modal-content.modal-sm { max-width: 500px; }
 .modal-content h2 { margin: 0 0 12px; font-size: 18px; }
 .modal-content p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
@@ -69,6 +75,10 @@
 .modal-header { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
 .modal-title { margin: 0; font-size: 18px; font-weight: 600; }
 .modal-body { padding: 20px; flex: 1; overflow-y: auto; }
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.modal-body::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 .modal-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
 
 /* Dropdown menus inside modals need fixed positioning to avoid overflow clipping */

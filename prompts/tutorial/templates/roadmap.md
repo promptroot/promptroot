@@ -32,6 +32,7 @@ Your job is to generate a phased implementation roadmap that is maximally testab
 - Existing architecture to follow: {ARCH_CONSTRAINTS}
 - Code style / conventions: {CODE_CONVENTIONS}
 - Forbidden changes / non-goals: {NON_GOALS}
+- Relevant documentation: {DOCUMENTATION}
 
 ### Data and Correctness Requirements
 - Data integrity expectations: {DATA_INTEGRITY_RULES}
@@ -164,6 +165,7 @@ Before any planning or implementation begins, confirm:
 - **Code conventions:** {CODE_CONVENTIONS}
 - **Security/Compliance:** {SECURITY_COMPLIANCE}
 - **Forbidden changes:** {NON_GOALS}
+- **Reference documentation:** {DOCUMENTATION}
 
 ---
 

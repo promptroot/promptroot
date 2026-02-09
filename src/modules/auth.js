@@ -208,12 +208,18 @@ export function initAuthStateListener() {
     const auth = getAuth();
     if (!auth) {
       console.error('Auth not initialized yet');
-      return;
+      return Promise.reject(new Error('Auth not initialized'));
     }
-    auth.onAuthStateChanged((user) => {
-      updateAuthUI(user);
+    
+    return new Promise((resolve) => {
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        updateAuthUI(user);
+        resolve(user);
+        unsubscribe();
+      });
     });
   } catch (error) {
     console.error('Failed to initialize auth listener:', error);
+    return Promise.reject(error);
   }
 }

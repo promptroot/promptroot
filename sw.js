@@ -1,6 +1,14 @@
 // Service Worker for PromptRoot
 // Provides offline support and dramatic performance improvements for repeat visits
 // Expected: 88% faster repeat loads (~50ms vs 409ms)
+//
+// Update Flow:
+// 1. New SW installs (waits in 'installed' state).
+// 2. Client detects update, shows notification with "Refresh" button.
+// 3. User clicks "Refresh", client sends { type: 'SKIP_WAITING' }.
+// 4. SW calls skipWaiting(), activates, and claims clients.
+// 5. SW broadcasts { type: 'SW_UPDATED' } to all clients (e.g. other tabs).
+// 6. Clients reload or show notification.
 
 const CACHE_VERSION = 'promptroot-v8';
 const CACHE_NAME = `${CACHE_VERSION}-static`;
@@ -83,10 +91,6 @@ self.addEventListener('install', (event) => {
         // Use addAll for atomic caching - fails if any asset fails
         return cache.addAll(STATIC_ASSETS);
       })
-      .then(() => {
-        // Force activate immediately (skip waiting)
-        return self.skipWaiting();
-      })
       .catch((error) => {
         console.error('[SW] Failed to cache static assets:', error);
         // Still install even if some assets fail to cache
@@ -109,6 +113,10 @@ self.addEventListener('activate', (event) => {
         );
       })
       .then(() => {
+        // Notify clients about the update
+        self.clients.matchAll().then(clients => {
+          clients.forEach(c => c.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION }));
+        });
         // Take control of all pages immediately
         return self.clients.claim();
       })
@@ -253,7 +261,7 @@ async function cacheFirstStrategy(request) {
 
 // Message handler for manual cache updates (future use)
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
   

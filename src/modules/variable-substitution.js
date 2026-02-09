@@ -154,16 +154,6 @@ function buildVariableModalDOM(placeholders) {
 }
 
 /**
- * Validates form (always returns true since fields are optional)
- * @param {HTMLFormElement} form - The form element
- * @returns {boolean} Always true
- */
-function validateForm(form) {
-  // All fields are optional, so validation always passes
-  return true;
-}
-
-/**
  * Shows the variable substitution modal and collects user input
  * @param {string[]} placeholders - Array of placeholder names to fill
  * @param {string} promptText - The original prompt text

@@ -7,50 +7,45 @@ Your job is to generate a phased implementation roadmap that is maximally testab
 
 ## Inputs (Parameters)
 
-### Project / Feature Name
+### Feature Name
 {FEATURE_NAME}
 
-### One-Sentence Goal
-{ONE_SENTENCE_GOAL}
+### Goal
+{GOAL}
 
 ### Users / Stakeholders
-{USERS_OR_STAKEHOLDERS}
+{USERS}
 
-### Target Environment
-- OS/runtime: {OS_RUNTIME}
-- Execution model: {LOCAL_CONTAINER_VM_CI}
-- Deployment: {DEPLOYMENT_TARGET}
+### Tech Stack
+{TECH_STACK}
+*List frontend, backend, database, and third-party integrations*
 
-### Stack
-- Frontend: {FRONTEND_STACK}
-- Backend: {BACKEND_STACK}
-- Database: {DATABASE_STACK}
-- Background jobs / workflows: {JOBS_STACK}
-- External integrations: {INTEGRATIONS}
+### Runtime and Deployment
+- Runtime environment: {RUNTIME_ENVIRONMENT}
+- Deployment target: {DEPLOYMENT_TARGET}
 
-### Repo Constraints
-- Existing architecture to follow: {ARCH_CONSTRAINTS}
-- Code style / conventions: {CODE_CONVENTIONS}
+### Constraints
+{CONSTRAINTS}
+*Describe architecture patterns, code style, naming conventions*
+
 - Forbidden changes / non-goals: {NON_GOALS}
 - Relevant documentation: {DOCUMENTATION}
 
-### Data and Correctness Requirements
-- Data integrity expectations: {DATA_INTEGRITY_RULES}
-- Auditability/logging requirements: {AUDIT_REQUIREMENTS}
-- Security/compliance constraints: {SECURITY_COMPLIANCE}
+### Compliance Requirements
+{COMPLIANCE_REQUIREMENTS}
+*Leave as N/A if not applicable. Include security, audit, data integrity rules.*
 
 ### Primary Flows (Happy Paths)
 {HAPPY_PATHS}
+*Numbered list of primary user workflows*
 
 ### Edge Cases / Failure Modes
 {EDGE_CASES}
+*Error conditions, boundary cases, race conditions, rollback scenarios*
 
-### Acceptance Criteria (Business Level)
-{BUSINESS_ACCEPTANCE_CRITERIA}
-
-### Time / Scope Constraints
-- Deadline or timebox: {TIMEBOX}
-- Must-have vs nice-to-have: {PRIORITIES}
+### Acceptance Criteria
+{ACCEPTANCE_CRITERIA}
+*Specific, testable conditions that define "done"*
 
 ---
 
@@ -93,14 +88,13 @@ But still keep the phases sequential. Parallelism can only occur *within* a phas
 
 ## Output Format
 
-Use the template structure below to generate the roadmap. Save output to: `20_ROADMAP_OUTPUT.md`
+Use the template structure below to generate the roadmap.
 
----
 ---
 
 # TEMPLATE: Specification-Driven Execution Roadmap
 
-**Instructions:** Fill in ALL sections below using the inputs provided above. Replace placeholder text with specific, actionable content.
+**Instructions:** Expand each phase below with specific tasks based on the inputs. Replace generic examples with concrete file/function names from the stack.
 
 ## 0. Clarifications and Assumptions
 
@@ -118,7 +112,7 @@ Use the template structure below to generate the roadmap. Save output to: `20_RO
 
 ## 1. Purpose and Scope
 
-**Objective:** {ONE_SENTENCE_GOAL}
+**Objective:** {GOAL}
 
 **In Scope:**  
 - {List specific features and behaviors from inputs}
@@ -137,8 +131,8 @@ Before any planning or implementation begins, confirm:
 
 - [ ] Correct repository and branch
 - [ ] **Target deployment:** {DEPLOYMENT_TARGET}
-- [ ] **Runtime:** {OS_RUNTIME} ({LOCAL_CONTAINER_VM_CI})
-- [ ] Required services running (DB, queues, APIs from stack above)
+- [ ] **Runtime:** {RUNTIME_ENVIRONMENT}
+- [ ] Required services running (DB, queues, APIs from stack)
 - [ ] Environment variables present and documented
 - [ ] Tooling access verified (CI, test runners, AI tools)
 
@@ -150,20 +144,15 @@ Before any planning or implementation begins, confirm:
 
 ### Domain Context
 **Feature:** {FEATURE_NAME}  
-**Goal:** {ONE_SENTENCE_GOAL}  
-**Users:** {USERS_OR_STAKEHOLDERS}
+**Goal:** {GOAL}  
+**Users:** {USERS}
 
 ### Stack
-- **Frontend:** {FRONTEND_STACK}
-- **Backend:** {BACKEND_STACK}
-- **Database:** {DATABASE_STACK}
-- **Jobs/Workflows:** {JOBS_STACK}
-- **Integrations:** {INTEGRATIONS}
+{TECH_STACK}
 
 ### Constraints and Standards
-- **Architecture to follow:** {ARCH_CONSTRAINTS}
-- **Code conventions:** {CODE_CONVENTIONS}
-- **Security/Compliance:** {SECURITY_COMPLIANCE}
+- **Constraints:** {CONSTRAINTS}
+- **Compliance:** {COMPLIANCE_REQUIREMENTS}
 - **Forbidden changes:** {NON_GOALS}
 - **Reference documentation:** {DOCUMENTATION}
 
@@ -177,19 +166,10 @@ Before any planning or implementation begins, confirm:
 ### Edge Cases and Failure Modes
 {EDGE_CASES}
 
-### Business Acceptance Criteria
-{BUSINESS_ACCEPTANCE_CRITERIA}
-
-### Data Integrity and Audit Requirements
-- **Data integrity:** {DATA_INTEGRITY_RULES}
-- **Audit/logging:** {AUDIT_REQUIREMENTS}
+### Acceptance Criteria
+{ACCEPTANCE_CRITERIA}
 
 ---
-
-## 5. Scope and Timeline
-
-- **Deadline/Timebox:** {TIMEBOX}
-- **Priorities:** {PRIORITIES}
 
 ## 5. Phased Roadmap Overview
 
@@ -300,7 +280,7 @@ No new features added beyond scope of this phase.
 - [ ] All tests pass
 - [ ] No skipped or flaky tests
 - [ ] CI pipeline is green
-- [ ] {BUSINESS_ACCEPTANCE_CRITERIA} verified
+- [ ] {ACCEPTANCE_CRITERIA} verified
 
 ### Verification Artifacts
 ```bash
@@ -327,7 +307,7 @@ npm run coverage
 - [ ] Document known limitations and future work
 
 ### Acceptance Criteria
-- [ ] Codebase follows {CODE_CONVENTIONS}
+- [ ] Codebase follows {CONSTRAINTS}
 - [ ] Docs match actual behavior
 - [ ] No TODOs related to core functionality
 - [ ] Handoff notes prepared for stakeholders
@@ -354,7 +334,7 @@ npm run coverage
 - [ ] All acceptance criteria met for every phase
 - [ ] All tests passing (unit, integration, e2e)
 - [ ] Manual verification performed for {HAPPY_PATHS}
-- [ ] {BUSINESS_ACCEPTANCE_CRITERIA} verified
+- [ ] {ACCEPTANCE_CRITERIA} verified
 - [ ] {EDGE_CASES} handled and verified
 - [ ] Documentation updated
 - [ ] Known issues documented in section 12

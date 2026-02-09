@@ -122,7 +122,7 @@ function buildVariableModalDOM(placeholders) {
     input.type = 'text';
     input.id = `var_${placeholder}`;
     input.name = placeholder;
-    input.placeholder = `Enter ${placeholder} (optional)...`;
+    input.placeholder = `Enter ${placeholder}...`;
     input.maxLength = 1000;
     
     fieldGroup.appendChild(label);

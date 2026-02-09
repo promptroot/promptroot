@@ -26,7 +26,8 @@ import {
   showJulesQueueModal,
   hideJulesQueueModal,
   renderQueueListDirectly,
-  attachQueueHandlers
+  attachQueueHandlers,
+  exportQueueToMarkdown
 } from '../../modules/jules-queue.js';
 import { getCache } from '../../utils/session-cache.js';
 
@@ -91,6 +92,23 @@ vi.mock('../../modules/jules-modal.js', () => ({
   showSubtaskErrorModal: vi.fn()
 }));
 
+vi.mock('../../modules/jules-queue-store.js', () => ({
+  getQueueCache: vi.fn(() => []),
+  setQueueCache: vi.fn(),
+  findQueueItem: vi.fn(),
+  clearPromptViewerHandlers: vi.fn(),
+  registerPromptViewerHandler: vi.fn(),
+  getEditModalState: vi.fn(() => ({})),
+  updateEditModalState: vi.fn(),
+  resetEditModalState: vi.fn(),
+  getActiveEditModal: vi.fn(),
+  setActiveEditModal: vi.fn(),
+  getActiveScheduleModal: vi.fn(),
+  setActiveScheduleModal: vi.fn(),
+  getQueueModalEscapeHandler: vi.fn(),
+  setQueueModalEscapeHandler: vi.fn()
+}));
+
 const createMockElement = (id = '') => ({
   id,
   setAttribute: vi.fn(),
@@ -140,7 +158,11 @@ global.document = {
   createElement: vi.fn(() => createMockElement()),
   querySelectorAll: vi.fn(() => []),
   addEventListener: vi.fn(),
-  removeEventListener: vi.fn()
+  removeEventListener: vi.fn(),
+  body: {
+    appendChild: vi.fn(),
+    removeChild: vi.fn()
+  }
 };
 
 global.console = {
@@ -148,6 +170,15 @@ global.console = {
   warn: vi.fn(),
   log: vi.fn()
 };
+
+global.URL = {
+  createObjectURL: vi.fn(() => 'mock-blob-url'),
+  revokeObjectURL: vi.fn()
+};
+
+global.Blob = vi.fn((content, options) => ({
+  type: options?.type || 'text/plain'
+}));
 
 function mockReset() {
   vi.clearAllMocks();
@@ -702,6 +733,182 @@ describe('jules-queue', () => {
   describe('attachQueueHandlers', () => {
     it('should execute without errors', () => {
       expect(() => attachQueueHandlers()).not.toThrow();
+    });
+  });
+
+  describe('exportQueueToMarkdown', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('should show warning when queue is empty', async () => {
+      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
+      const { showToast } = await import('../../modules/toast.js');
+      
+      getQueueCache.mockReturnValue([]);
+      
+      exportQueueToMarkdown();
+      
+      expect(showToast).toHaveBeenCalledWith('No queue items to export', 'warn');
+      expect(global.document.createElement).not.toHaveBeenCalled();
+    });
+
+    it('should create markdown file for single prompt items', async () => {
+      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
+      const { showToast } = await import('../../modules/toast.js');
+      
+      const mockItems = [
+        {
+          id: 'test-id-1',
+          type: 'single',
+          status: 'pending',
+          prompt: 'Test prompt content',
+          sourceId: 'owner/repo',
+          branch: 'main',
+          createdAt: { seconds: 1644000000 }
+        }
+      ];
+      
+      getQueueCache.mockReturnValue(mockItems);
+      
+      const mockElement = {
+        href: '',
+        download: '',
+        style: { display: '' },
+        click: vi.fn()
+      };
+      global.document.createElement.mockReturnValue(mockElement);
+      
+      exportQueueToMarkdown();
+      
+      expect(global.Blob).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.stringContaining('# Queue Export')]),
+        { type: 'text/markdown;charset=utf-8' }
+      );
+      expect(global.URL.createObjectURL).toHaveBeenCalled();
+      expect(mockElement.download).toMatch(/queue-export-.*\.md/);
+      expect(mockElement.click).toHaveBeenCalled();
+      expect(global.document.body.appendChild).toHaveBeenCalledWith(mockElement);
+      expect(global.document.body.removeChild).toHaveBeenCalledWith(mockElement);
+      expect(global.URL.revokeObjectURL).toHaveBeenCalled();
+      expect(showToast).toHaveBeenCalledWith('Exported 1 queue items to markdown', 'success');
+    });
+
+    it('should create markdown file for subtasks items', async () => {
+      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
+      const { showToast } = await import('../../modules/toast.js');
+      
+      const mockItems = [
+        {
+          id: 'test-id-2',
+          type: 'subtasks',
+          status: 'pending',
+          remaining: [
+            { fullContent: 'First subtask' },
+            { fullContent: 'Second subtask' }
+          ],
+          sourceId: 'owner/repo',
+          branch: 'develop',
+          createdAt: { seconds: 1644000000 }
+        }
+      ];
+      
+      getQueueCache.mockReturnValue(mockItems);
+      
+      const mockElement = {
+        href: '',
+        download: '',
+        style: { display: '' },
+        click: vi.fn()
+      };
+      global.document.createElement.mockReturnValue(mockElement);
+      
+      exportQueueToMarkdown();
+      
+      const blobCall = global.Blob.mock.calls[0];
+      const markdownContent = blobCall[0][0];
+      
+      expect(markdownContent).toContain('# Queue Export');
+      expect(markdownContent).toContain('**ID:** test-id-2');
+      expect(markdownContent).toContain('**Type:** subtasks');
+      expect(markdownContent).toContain('**Subtasks:** 2');
+      expect(markdownContent).toContain('### Subtask 1');
+      expect(markdownContent).toContain('First subtask');
+      expect(markdownContent).toContain('### Subtask 2');
+      expect(markdownContent).toContain('Second subtask');
+      expect(markdownContent).toContain('<!-- QUEUE_ITEM_START -->');
+      expect(markdownContent).toContain('<!-- QUEUE_ITEM_END -->');
+      expect(markdownContent).toContain('<!-- SUBTASK_START -->');
+      expect(markdownContent).toContain('<!-- SUBTASK_END -->');
+      
+      expect(showToast).toHaveBeenCalledWith('Exported 1 queue items to markdown', 'success');
+    });
+
+    it('should handle items with scheduling information', async () => {
+      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
+      
+      const mockItems = [
+        {
+          id: 'scheduled-item',
+          type: 'single',
+          status: 'scheduled',
+          prompt: 'Scheduled prompt',
+          scheduledAt: { seconds: 1644000000 },
+          scheduledTimeZone: 'America/New_York',
+          createdAt: { seconds: 1643000000 }
+        }
+      ];
+      
+      getQueueCache.mockReturnValue(mockItems);
+      
+      const mockElement = {
+        href: '',
+        download: '',
+        style: { display: '' },
+        click: vi.fn()
+      };
+      global.document.createElement.mockReturnValue(mockElement);
+      
+      exportQueueToMarkdown();
+      
+      const blobCall = global.Blob.mock.calls[0];
+      const markdownContent = blobCall[0][0];
+      
+      expect(markdownContent).toContain('**Status:** scheduled');
+      expect(markdownContent).toContain('**Scheduled:**');
+      expect(markdownContent).toContain('America/New_York');
+    });
+
+    it('should handle items with errors', async () => {
+      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
+      
+      const mockItems = [
+        {
+          id: 'error-item',
+          type: 'single',
+          status: 'error',
+          prompt: 'Failed prompt',
+          error: 'Network timeout',
+          createdAt: { seconds: 1644000000 }
+        }
+      ];
+      
+      getQueueCache.mockReturnValue(mockItems);
+      
+      const mockElement = {
+        href: '',
+        download: '',
+        style: { display: '' },
+        click: vi.fn()
+      };
+      global.document.createElement.mockReturnValue(mockElement);
+      
+      exportQueueToMarkdown();
+      
+      const blobCall = global.Blob.mock.calls[0];
+      const markdownContent = blobCall[0][0];
+      
+      expect(markdownContent).toContain('**Error:** Network timeout');
     });
   });
 });

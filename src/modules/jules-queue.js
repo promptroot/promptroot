@@ -845,6 +845,20 @@ function attachQueuePromptViewerHandlers(queueItems) {
       
       const handler = () => showPromptViewer(promptContent, item.id);
       registerPromptViewerHandler(handlerKey, handler);
+      
+      // Register individual subtask handlers
+      if (item.type === 'subtasks' && item.remaining && item.remaining.length > 0) {
+        item.remaining.forEach((subtask, index) => {
+          if (subtask.fullContent) {
+            const subtaskHandlerKey = `viewQueueSubtask_${cleanId}_${index}`;
+            const subtaskHandler = () => showPromptViewer(
+              subtask.fullContent || 'No subtask content', 
+              `${item.id} - Subtask ${index + 1}`
+            );
+            registerPromptViewerHandler(subtaskHandlerKey, subtaskHandler);
+          }
+        });
+      }
     }
   });
 }
@@ -1335,6 +1349,23 @@ function createSubtasksList(item) {
     const textDiv = document.createElement('div');
     textDiv.className = 'queue-subtask-text';
     textDiv.textContent = preview + (preview.length >= 150 ? '...' : '');
+    
+    // Add view button for subtask
+    if (subtask.fullContent) {
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'btn-icon queue-view-btn';
+      viewBtn.dataset.docid = item.id;
+      viewBtn.dataset.subtaskIndex = index;
+      viewBtn.dataset.action = 'view-subtask';
+      viewBtn.setAttribute('aria-label', `View subtask ${index + 1} full content`);
+      viewBtn.title = `View subtask ${index + 1} full content`;
+      const viewIcon = document.createElement('span');
+      viewIcon.className = 'icon';
+      viewIcon.setAttribute('aria-hidden', 'true');
+      viewIcon.textContent = 'visibility';
+      viewBtn.appendChild(viewIcon);
+      textDiv.appendChild(viewBtn);
+    }
 
     contentDiv.append(metaDiv, textDiv);
     subtaskDiv.append(indexDiv, contentDiv);
@@ -1562,6 +1593,20 @@ function setupQueueDelegation() {
         }
         return;
       }
+
+      if (action === 'view-subtask' && docId) {
+        event.stopPropagation();
+        const subtaskIndex = actionBtn.dataset.subtaskIndex;
+        if (subtaskIndex !== undefined) {
+          const cleanId = cleanIdForDOM(docId);
+          const handlerKey = `viewQueueSubtask_${cleanId}_${subtaskIndex}`;
+          const handler = getHandler('queueViewer', handlerKey);
+          if (handler) {
+            handler();
+          }
+        }
+        return;
+      }
     }
   });
 
@@ -1594,6 +1639,7 @@ function setupQueueHandlers() {
   const runBtn = document.getElementById('queueRunBtn');
   const deleteBtn = document.getElementById('queueDeleteBtn');
   const scheduleBtn = document.getElementById('queueScheduleBtn');
+  const exportBtn = document.getElementById('queueExportBtn');
   const closeBtn = document.getElementById('closeQueueBtn');
 
   if (selectAll && !selectAll.dataset.listenerAttached) {
@@ -1615,6 +1661,7 @@ function setupQueueHandlers() {
       await showScheduleModal();
     }
   };
+  const exportHandler = () => { exportQueueToMarkdown(); };
 
   if (runBtn && !runBtn.dataset.listenerAttached) {
     runBtn.dataset.listenerAttached = 'true';
@@ -1629,6 +1676,11 @@ function setupQueueHandlers() {
   if (scheduleBtn && !scheduleBtn.dataset.listenerAttached) {
     scheduleBtn.dataset.listenerAttached = 'true';
     scheduleBtn.addEventListener('click', scheduleHandler);
+  }
+
+  if (exportBtn && !exportBtn.dataset.listenerAttached) {
+    exportBtn.dataset.listenerAttached = 'true';
+    exportBtn.addEventListener('click', exportHandler);
   }
 
   if (closeBtn && !closeBtn.dataset.listenerAttached) {
@@ -2044,4 +2096,130 @@ async function runSelectedQueueItems() {
   statusBar.clear();
   statusBar.clearAction();
   await loadQueuePage();
+}
+
+export function exportQueueToMarkdown() {
+  const { queueSelections, subtaskSelections } = getSelectedQueueIds();
+  const queueCache = getQueueCache();
+  
+  if (queueSelections.length === 0 && Object.keys(subtaskSelections).length === 0) {
+    showToast('No items selected to export', 'warn');
+    return;
+  }
+  
+  // Get selected items and subtasks
+  const selectedItems = [];
+  
+  // Add fully selected queue items
+  queueSelections.forEach(docId => {
+    const item = queueCache.find(i => i.id === docId);
+    if (item) {
+      selectedItems.push(item);
+    }
+  });
+  
+  // Add items with selected subtasks (create partial items)
+  Object.entries(subtaskSelections).forEach(([docId, indices]) => {
+    if (!queueSelections.includes(docId)) {
+      const originalItem = queueCache.find(i => i.id === docId);
+      if (originalItem && originalItem.type === 'subtasks' && Array.isArray(originalItem.remaining)) {
+        const selectedSubtasks = indices.map(index => originalItem.remaining[index]).filter(Boolean);
+        if (selectedSubtasks.length > 0) {
+          const partialItem = {
+            ...originalItem,
+            remaining: selectedSubtasks,
+            _isPartialExport: true
+          };
+          selectedItems.push(partialItem);
+        }
+      }
+    }
+  });
+  
+  if (selectedItems.length === 0) {
+    showToast('No valid items selected to export', 'warn');
+    return;
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+  let markdown = `# Queue Export (Selected Items)\n\n`;
+  markdown += `**Exported:** ${new Date().toLocaleString()}\n`;
+  markdown += `**Selected Items:** ${selectedItems.length}\n\n`;
+  markdown += `---\n\n`;
+
+  selectedItems.forEach((item, index) => {
+    // Task header with metadata
+    markdown += `## Task ${index + 1}\n\n`;
+    markdown += `<!-- QUEUE_ITEM_START -->\n`;
+    markdown += `**ID:** ${item.id}\n`;
+    markdown += `**Type:** ${item.type || 'single'}\n`;
+    markdown += `**Status:** ${item.status || 'pending'}\n`;
+    
+    if (item.sourceId) {
+      markdown += `**Repository:** ${item.sourceId}\n`;
+      markdown += `**Branch:** ${item.branch || 'master'}\n`;
+    }
+    
+    if (item.createdAt) {
+      const createdDate = item.createdAt.seconds 
+        ? new Date(item.createdAt.seconds * 1000) 
+        : new Date(item.createdAt);
+      markdown += `**Created:** ${createdDate.toLocaleString()}\n`;
+    }
+    
+    if (item.status === 'scheduled' && item.scheduledAt) {
+      const scheduledDate = item.scheduledAt.seconds 
+        ? new Date(item.scheduledAt.seconds * 1000)
+        : new Date(item.scheduledAt);
+      markdown += `**Scheduled:** ${scheduledDate.toLocaleString()} (${item.scheduledTimeZone || 'Unknown timezone'})\n`;
+    }
+    
+    if (item.error) {
+      markdown += `**Error:** ${item.error}\n`;
+    }
+
+    markdown += `\n`;
+
+    // Add partial export note if applicable
+    if (item._isPartialExport) {
+      markdown += `**Note:** Partial export (selected subtasks only)\n`;
+    }
+
+    // Content based on type
+    if (item.type === 'subtasks' && Array.isArray(item.remaining)) {
+      markdown += `**Subtasks:** ${item.remaining.length}\n\n`;
+      
+      item.remaining.forEach((subtask, subtaskIndex) => {
+        markdown += `### Subtask ${subtaskIndex + 1}\n\n`;
+        markdown += `<!-- SUBTASK_START -->\n`;
+        markdown += `${(subtask.fullContent || subtask.prompt || '').trim()}\n`;
+        markdown += `<!-- SUBTASK_END -->\n\n`;
+      });
+    } else {
+      markdown += `### Prompt\n\n`;
+      markdown += `<!-- PROMPT_START -->\n`;
+      markdown += `${(item.prompt || '').trim()}\n`;
+      markdown += `<!-- PROMPT_END -->\n\n`;
+    }
+    
+    markdown += `<!-- QUEUE_ITEM_END -->\n\n`;
+    markdown += `---\n\n`;
+  });
+
+  // Create and download the file
+  const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `queue-export-${timestamp}.md`;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  const totalSubtasks = Object.values(subtaskSelections).reduce((sum, arr) => sum + arr.length, 0);
+  const exportedCount = queueSelections.length + (totalSubtasks > 0 && queueSelections.length === 0 ? 1 : 0);
+  const itemText = exportedCount === 1 ? 'item' : 'items';
+  showToast(`Exported ${exportedCount} selected ${itemText} to markdown`, 'success');
 }

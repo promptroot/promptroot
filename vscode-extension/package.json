@@ -136,6 +136,31 @@
         "command": "promptroot.openPRInBrowser",
         "title": "Promptroot: Open PR in Browser",
         "icon": "$(link-external)"
+      },
+      {
+        "command": "promptroot.refreshRepositories",
+        "title": "Promptroot: Refresh Repositories",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "promptroot.openRepository",
+        "title": "Promptroot: Open Repository",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "promptroot.addFavoriteRepo",
+        "title": "Promptroot: Add to Favorites",
+        "icon": "$(star-empty)"
+      },
+      {
+        "command": "promptroot.removeFavoriteRepo",
+        "title": "Promptroot: Remove from Favorites",
+        "icon": "$(star-full)"
+      },
+      {
+        "command": "promptroot.configureRepositories",
+        "title": "Promptroot: Configure Repositories",
+        "icon": "$(gear)"
       }
     ],
     "views": {
@@ -154,6 +179,11 @@
           "id": "promptroot.sessionsView",
           "name": "Jules Sessions",
           "icon": "$(history)"
+        },
+        {
+          "id": "promptroot.repositoriesView",
+          "name": "GitHub Repositories",
+          "icon": "$(repo)"
         }
       ]
     },
@@ -203,6 +233,16 @@
           "command": "promptroot.refreshSessions",
           "when": "view == promptroot.sessionsView",
           "group": "navigation@1"
+        },
+        {
+          "command": "promptroot.refreshRepositories",
+          "when": "view == promptroot.repositoriesView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "promptroot.configureRepositories",
+          "when": "view == promptroot.repositoriesView",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -240,6 +280,16 @@
           "command": "promptroot.openPRInBrowser",
           "when": "view == promptroot.sessionsView && viewItem == session",
           "group": "session@2"
+        },
+        {
+          "command": "promptroot.addFavoriteRepo",
+          "when": "view == promptroot.repositoriesView && viewItem =~ /repository-/",
+          "group": "inline"
+        },
+        {
+          "command": "promptroot.openRepository",
+          "when": "view == promptroot.repositoriesView && viewItem =~ /repository-/",
+          "group": "repo@1"
         }
       ]
     },

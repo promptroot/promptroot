@@ -14,6 +14,9 @@ import { QueueManager } from './queue-manager';
 import { SessionTreeProvider } from './session-tree-provider';
 import { SessionTreeItem } from './session-tree-provider';
 import { SessionDetailsView } from './session-details-view';
+import { RepositoryTreeProvider } from './repository-tree-provider';
+import { RepositoryTreeItem } from './repository-tree-provider';
+import { GitHubRepository } from './github-service';
 import { JulesSession, SessionStatus } from './models';
 import { User } from 'firebase/auth';
 
@@ -21,6 +24,7 @@ let outputChannel: vscode.OutputChannel;
 let treeProvider: PromptrootTreeProvider;
 let queueTreeProvider: QueueTreeProvider | null = null;
 let sessionTreeProvider: SessionTreeProvider | null = null;
+let repositoryTreeProvider: RepositoryTreeProvider | null = null;
 let julesConfig: JulesConfig;
 let julesClient: JulesClient;
 let authManager: AuthManager | null = null;
@@ -99,6 +103,13 @@ export function activate(context: vscode.ExtensionContext) {
   sessionTreeProvider = new SessionTreeProvider(firestoreService, authManager, outputChannel);
   const sessionTreeView = vscode.window.createTreeView(VIEWS.sessions, {
     treeDataProvider: sessionTreeProvider,
+    showCollapseAll: true
+  });
+
+  // Initialize repository tree view provider
+  repositoryTreeProvider = new RepositoryTreeProvider(authManager, outputChannel);
+  const repositoryTreeView = vscode.window.createTreeView(VIEWS.repositories, {
+    treeDataProvider: repositoryTreeProvider,
     showCollapseAll: true
   });
 
@@ -378,6 +389,46 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  const refreshRepositoriesCommand = vscode.commands.registerCommand(
+    COMMANDS.refreshRepositories,
+    () => {
+      outputChannel.appendLine('Refresh repositories command executed');
+      repositoryTreeProvider?.refresh();
+    }
+  );
+
+  const openRepositoryCommand = vscode.commands.registerCommand(
+    COMMANDS.openRepository,
+    async (repo: GitHubRepository) => {
+      outputChannel.appendLine('Open repository command executed');
+      await openRepository(repo);
+    }
+  );
+
+  const addFavoriteRepoCommand = vscode.commands.registerCommand(
+    COMMANDS.addFavoriteRepo,
+    async (item: RepositoryTreeItem) => {
+      outputChannel.appendLine('Add favorite repo command executed');
+      await addFavoriteRepo(item);
+    }
+  );
+
+  const removeFavoriteRepoCommand = vscode.commands.registerCommand(
+    COMMANDS.removeFavoriteRepo,
+    async (item: RepositoryTreeItem) => {
+      outputChannel.appendLine('Remove favorite repo command executed');
+      await removeFavoriteRepo(item);
+    }
+  );
+
+  const configureRepositoriesCommand = vscode.commands.registerCommand(
+    COMMANDS.configureRepositories,
+    async () => {
+      outputChannel.appendLine('Configure repositories command executed');
+      await configureRepositories();
+    }
+  );
+
   // Add commands to subscriptions for proper cleanup
   context.subscriptions.push(
     initializeCommand,
@@ -409,9 +460,15 @@ export function activate(context: vscode.ExtensionContext) {
     viewSessionHistoryCommand,
     filterSessionsCommand,
     clearOldSessionsCommand,
+    refreshRepositoriesCommand,
+    openRepositoryCommand,
+    addFavoriteRepoCommand,
+    removeFavoriteRepoCommand,
+    configureRepositoriesCommand,
     treeView,
     queueTreeView,
     sessionTreeView,
+    repositoryTreeView,
     outputChannel
   );
 
@@ -427,6 +484,9 @@ export function activate(context: vscode.ExtensionContext) {
   }
   if (sessionTreeProvider) {
     context.subscriptions.push(sessionTreeProvider);
+  }
+  if (repositoryTreeProvider) {
+    context.subscriptions.push(repositoryTreeProvider);
   }
 
   outputChannel.appendLine('All commands registered successfully');
@@ -1376,6 +1436,136 @@ function getStatusIconText(status: SessionStatus): string {
     default:
       return '⚪';
   }
+}
+
+/**
+ * Open repository in browser
+ */
+async function openRepository(repo: GitHubRepository): Promise<void> {
+  if (repo && repo.html_url) {
+    await vscode.env.openExternal(vscode.Uri.parse(repo.html_url));
+    outputChannel.appendLine(`Opened repository: ${repo.full_name}`);
+  } else {
+    vscode.window.showErrorMessage('Repository URL not available');
+  }
+}
+
+/**
+ * Add repository to favorites
+ */
+async function addFavoriteRepo(item: RepositoryTreeItem): Promise<void> {
+  if (!repositoryTreeProvider || !item.repository) {
+    return;
+  }
+
+  try {
+    await repositoryTreeProvider.addFavorite(item.repository.full_name);
+    vscode.window.showInformationMessage(`Added ${item.repository.name} to favorites`);
+    outputChannel.appendLine(`Added favorite: ${item.repository.full_name}`);
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to add favorite: ${error}`);
+    outputChannel.appendLine(`Error adding favorite: ${error}`);
+  }
+}
+
+/**
+ * Remove repository from favorites
+ */
+async function removeFavoriteRepo(item: RepositoryTreeItem): Promise<void> {
+  if (!repositoryTreeProvider || !item.repository) {
+    return;
+  }
+
+  try {
+    await repositoryTreeProvider.removeFavorite(item.repository.full_name);
+    vscode.window.showInformationMessage(`Removed ${item.repository.name} from favorites`);
+    outputChannel.appendLine(`Removed favorite: ${item.repository.full_name}`);
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to remove favorite: ${error}`);
+    outputChannel.appendLine(`Error removing favorite: ${error}`);
+  }
+}
+
+/**
+ * Configure repositories (show quick pick to manage favorites)
+ */
+async function configureRepositories(): Promise<void> {
+  const items = [
+    {
+      label: '$(star) Manage Favorites',
+      description: 'Add or remove repositories from favorites',
+      action: 'manageFavorites'
+    },
+    {
+      label: '$(search) Search Repositories',
+      description: 'Search for repositories on GitHub',
+      action: 'searchRepos'
+    },
+    {
+      label: '$(refresh) Refresh Repository List',
+      description: 'Reload repositories from GitHub',
+      action: 'refresh'
+    }
+  ];
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: 'Select a repository configuration option',
+    title: 'Configure GitHub Repositories'
+  });
+
+  if (!selected) {
+    return;
+  }
+
+  switch (selected.action) {
+    case 'manageFavorites':
+      await manageFavorites();
+      break;
+    case 'searchRepos':
+      await searchRepositories();
+      break;
+    case 'refresh':
+      repositoryTreeProvider?.refresh();
+      vscode.window.showInformationMessage('Repositories refreshed');
+      break;
+  }
+}
+
+/**
+ * Manage favorite repositories
+ */
+async function manageFavorites(): Promise<void> {
+  if (!authManager || !repositoryTreeProvider) {
+    vscode.window.showErrorMessage('Please sign in first');
+    return;
+  }
+
+  // This would show a QuickPick to manage favorites
+  // For now, users can use the tree view context menu
+  vscode.window.showInformationMessage(
+    'Use the star icon in the repository tree view to add/remove favorites'
+  );
+}
+
+/**
+ * Search for repositories on GitHub
+ */
+async function searchRepositories(): Promise<void> {
+  if (!authManager) {
+    vscode.window.showErrorMessage('Please sign in first');
+    return;
+  }
+
+  const query = await vscode.window.showInputBox({
+    prompt: 'Enter search query',
+    placeHolder: 'e.g., language:typescript stars:>100'
+  });
+
+  if (!query) {
+    return;
+  }
+
+  vscode.window.showInformationMessage(`Search feature coming soon: ${query}`);
 }
 
 /**

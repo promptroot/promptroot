@@ -32,13 +32,19 @@ export const COMMANDS = {
   openPRInBrowser: 'promptroot.openPRInBrowser',
   viewSessionHistory: 'promptroot.viewSessionHistory',
   filterSessions: 'promptroot.filterSessions',
-  clearOldSessions: 'promptroot.clearOldSessions'
+  clearOldSessions: 'promptroot.clearOldSessions',
+  refreshRepositories: 'promptroot.refreshRepositories',
+  openRepository: 'promptroot.openRepository',
+  addFavoriteRepo: 'promptroot.addFavoriteRepo',
+  removeFavoriteRepo: 'promptroot.removeFavoriteRepo',
+  configureRepositories: 'promptroot.configureRepositories'
 } as const;
 
 export const VIEWS = {
   assets: 'promptroot.assetsView',
   queue: 'promptroot.queueView',
-  sessions: 'promptroot.sessionsView'
+  sessions: 'promptroot.sessionsView',
+  repositories: 'promptroot.repositoriesView'
 } as const;
 
 export const CONFIG_KEYS = {

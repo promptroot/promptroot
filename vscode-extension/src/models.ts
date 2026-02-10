@@ -88,6 +88,7 @@ export interface UserProfile {
 	timezone?: string;
 	defaultRepo?: string;
 	defaultBranch?: string;
+	favoriteRepos?: string[];
 	createdAt: Timestamp;
 	lastLoginAt: Timestamp;
 }

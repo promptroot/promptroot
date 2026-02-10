@@ -42,7 +42,7 @@ let connectionStatusItem: vscode.StatusBarItem;
  * Extension activation entry point.
  * This function is called when the extension is activated.
  */
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   // Initialize output channel for logging
   outputChannel = vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME);
   outputChannel.appendLine('Promptroot extension activated');
@@ -552,17 +552,8 @@ export function activate(context: vscode.ExtensionContext) {
   outputChannel.appendLine('Tree view provider registered');
   outputChannel.appendLine('Jules API integration ready');
   
-  // Set up network monitoring
-  if (typeof window !== 'undefined' && window.addEventListener) {
-    window.addEventListener('online', () => {
-      updateConnectionStatus('online');
-      outputChannel.appendLine('Network connection restored');
-    });
-    window.addEventListener('offline', () => {
-      updateConnectionStatus('offline');
-      outputChannel.appendLine('Network connection lost');
-    });
-  }
+  // Note: Browser APIs (window, navigator) not available in VS Code extension environment
+  // Network monitoring would need VS Code-specific implementation
   
   outputChannel.appendLine('Firebase and Authentication ready');
 }
@@ -709,8 +700,8 @@ async function showConnectionStatus(): Promise<void> {
   const items = [
     {
       label: '$(cloud) Network Status',
-      description: navigator.onLine ? 'Online' : 'Offline',
-      detail: navigator.onLine ? 'Internet connection available' : 'No internet connection'
+      description: 'Unknown',
+      detail: 'Network status monitoring not available in VS Code extension'
     },
     {
       label: '$(database) Firebase',

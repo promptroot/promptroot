@@ -41,7 +41,7 @@ describe('GitHubService', () => {
 			name: 'Test'
 		};
 
-		service = new GitHubService(mockAuthManager, mockOutputChannel);
+		service = new GitHubService(mockAuthManager as any, mockOutputChannel as any);
 	});
 
 	describe('listRepositories', () => {

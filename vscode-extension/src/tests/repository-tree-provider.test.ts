@@ -43,7 +43,7 @@ describe('RepositoryTreeProvider', () => {
 			name: 'Test'
 		};
 
-		provider = new RepositoryTreeProvider(mockAuthManager, mockOutputChannel);
+		provider = new RepositoryTreeProvider(mockAuthManager as any, mockOutputChannel as any);
 	});
 
 	describe('getTreeItem', () => {

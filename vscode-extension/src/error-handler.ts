@@ -5,7 +5,7 @@
  */
 
 import * as vscode from 'vscode';
-import { RetryManager, RetryOptions, RetryResult } from './utils/retry-manager';
+import { RetryManager, RetryOptions } from './utils/retry-manager';
 
 /**
  * Error categories for classification

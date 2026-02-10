@@ -37,7 +37,11 @@ export const COMMANDS = {
   openRepository: 'promptroot.openRepository',
   addFavoriteRepo: 'promptroot.addFavoriteRepo',
   removeFavoriteRepo: 'promptroot.removeFavoriteRepo',
-  configureRepositories: 'promptroot.configureRepositories'
+  configureRepositories: 'promptroot.configureRepositories',
+  selectBranch: 'promptroot.selectBranch',
+  setDefaultBranch: 'promptroot.setDefaultBranch',
+  reportError: 'promptroot.reportError',
+  showConnectionStatus: 'promptroot.showConnectionStatus'
 } as const;
 
 export const VIEWS = {

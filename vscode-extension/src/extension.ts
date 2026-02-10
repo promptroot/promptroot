@@ -16,7 +16,9 @@ import { SessionTreeItem } from './session-tree-provider';
 import { SessionDetailsView } from './session-details-view';
 import { RepositoryTreeProvider } from './repository-tree-provider';
 import { RepositoryTreeItem } from './repository-tree-provider';
-import { GitHubRepository } from './github-service';
+import { GitHubRepository, GitHubService } from './github-service';
+import { BranchSelector } from './branch-selector';
+import { ErrorHandler } from './error-handler';
 import { JulesSession, SessionStatus } from './models';
 import { User } from 'firebase/auth';
 
@@ -25,13 +27,16 @@ let treeProvider: PromptrootTreeProvider;
 let queueTreeProvider: QueueTreeProvider | null = null;
 let sessionTreeProvider: SessionTreeProvider | null = null;
 let repositoryTreeProvider: RepositoryTreeProvider | null = null;
+let branchSelector: BranchSelector | null = null;
 let julesConfig: JulesConfig;
 let julesClient: JulesClient;
 let authManager: AuthManager | null = null;
 let firestoreService: FirestoreService | null = null;
 let queueManager: QueueManager | null = null;
 let sessionDetailsView: SessionDetailsView | null = null;
+let errorHandler: ErrorHandler | null = null;
 let statusBarItem: vscode.StatusBarItem;
+let connectionStatusItem: vscode.StatusBarItem;
 
 /**
  * Extension activation entry point.
@@ -42,13 +47,21 @@ export function activate(context: vscode.ExtensionContext) {
   outputChannel = vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME);
   outputChannel.appendLine('Promptroot extension activated');
 
+  // Initialize error handler
+  errorHandler = new ErrorHandler(outputChannel);
+
   // Initialize Firebase
   try {
     initializeFirebase(context);
     outputChannel.appendLine('Firebase initialized successfully');
   } catch (error) {
     outputChannel.appendLine(`Firebase initialization failed: ${error}`);
-    vscode.window.showWarningMessage('Firebase initialization failed. Some features may not work.');
+    if (errorHandler) {
+      await errorHandler.handleError(
+        error instanceof Error ? error : new Error(String(error)),
+        'Firebase initialization'
+      );
+    }
   }
 
   // Initialize authentication manager
@@ -70,6 +83,13 @@ export function activate(context: vscode.ExtensionContext) {
   updateStatusBar(null); // Show "Sign In" initially
   statusBarItem.show();
   context.subscriptions.push(statusBarItem);
+
+  // Create connection status indicator
+  connectionStatusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 99);
+  connectionStatusItem.command = COMMANDS.showConnectionStatus;
+  updateConnectionStatus('online');
+  connectionStatusItem.show();
+  context.subscriptions.push(connectionStatusItem);
 
   // Listen to auth state changes
   authManager.onAuthStateChanged((user) => {
@@ -112,6 +132,9 @@ export function activate(context: vscode.ExtensionContext) {
     treeDataProvider: repositoryTreeProvider,
     showCollapseAll: true
   });
+
+  // Initialize branch selector
+  branchSelector = new BranchSelector(authManager, outputChannel);
 
   // Register commands
   const initializeCommand = vscode.commands.registerCommand(
@@ -429,6 +452,38 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  const selectBranchCommand = vscode.commands.registerCommand(
+    COMMANDS.selectBranch,
+    async (item: RepositoryTreeItem) => {
+      outputChannel.appendLine('Select branch command executed');
+      await selectBranch(item);
+    }
+  );
+
+  const setDefaultBranchCommand = vscode.commands.registerCommand(
+    COMMANDS.setDefaultBranch,
+    async (item: RepositoryTreeItem) => {
+      outputChannel.appendLine('Set default branch command executed');
+      await setDefaultBranch(item);
+    }
+  );
+
+  const reportErrorCommand = vscode.commands.registerCommand(
+    COMMANDS.reportError,
+    async () => {
+      outputChannel.appendLine('Report error command executed');
+      await reportError();
+    }
+  );
+
+  const showConnectionStatusCommand = vscode.commands.registerCommand(
+    COMMANDS.showConnectionStatus,
+    async () => {
+      outputChannel.appendLine('Show connection status command executed');
+      await showConnectionStatus();
+    }
+  );
+
   // Add commands to subscriptions for proper cleanup
   context.subscriptions.push(
     initializeCommand,
@@ -465,6 +520,10 @@ export function activate(context: vscode.ExtensionContext) {
     addFavoriteRepoCommand,
     removeFavoriteRepoCommand,
     configureRepositoriesCommand,
+    selectBranchCommand,
+    setDefaultBranchCommand,
+    reportErrorCommand,
+    showConnectionStatusCommand,
     treeView,
     queueTreeView,
     sessionTreeView,
@@ -492,6 +551,19 @@ export function activate(context: vscode.ExtensionContext) {
   outputChannel.appendLine('All commands registered successfully');
   outputChannel.appendLine('Tree view provider registered');
   outputChannel.appendLine('Jules API integration ready');
+  
+  // Set up network monitoring
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('online', () => {
+      updateConnectionStatus('online');
+      outputChannel.appendLine('Network connection restored');
+    });
+    window.addEventListener('offline', () => {
+      updateConnectionStatus('offline');
+      outputChannel.appendLine('Network connection lost');
+    });
+  }
+  
   outputChannel.appendLine('Firebase and Authentication ready');
 }
 
@@ -604,6 +676,103 @@ function updateStatusBar(user: User | null): void {
 }
 
 /**
+ * Update connection status indicator
+ */
+function updateConnectionStatus(status: 'online' | 'offline' | 'connecting'): void {
+  if (!connectionStatusItem) {
+    return;
+  }
+
+  switch (status) {
+    case 'online':
+      connectionStatusItem.text = '$(check) Online';
+      connectionStatusItem.backgroundColor = undefined;
+      connectionStatusItem.tooltip = 'Connected to all services';
+      break;
+    case 'offline':
+      connectionStatusItem.text = '$(x) Offline';
+      connectionStatusItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+      connectionStatusItem.tooltip = 'No network connection';
+      break;
+    case 'connecting':
+      connectionStatusItem.text = '$(sync~spin) Connecting';
+      connectionStatusItem.backgroundColor = undefined;
+      connectionStatusItem.tooltip = 'Establishing connection...';
+      break;
+  }
+}
+
+/**
+ * Show connection status details
+ */
+async function showConnectionStatus(): Promise<void> {
+  const items = [
+    {
+      label: '$(cloud) Network Status',
+      description: navigator.onLine ? 'Online' : 'Offline',
+      detail: navigator.onLine ? 'Internet connection available' : 'No internet connection'
+    },
+    {
+      label: '$(database) Firebase',
+      description: authManager?.isSignedIn() ? 'Connected' : 'Not connected',
+      detail: authManager?.isSignedIn() ? 'Authenticated and ready' : 'Sign in to connect'
+    },
+    {
+      label: '$(github) GitHub API',
+      description: authManager?.isSignedIn() ? 'Connected' : 'Not connected',
+      detail: 'GitHub authentication status'
+    },
+    {
+      label: '$(beaker) Jules API',
+      description: await julesConfig.getApiKey() ? 'Configured' : 'Not configured',
+      detail: 'Jules API key status'
+    }
+  ];
+
+  await vscode.window.showQuickPick(items, {
+    placeHolder: 'Service connection status',
+    title: 'Promptroot Connection Status'
+  });
+}
+
+/**
+ * Generate and show error report
+ */
+async function reportError(): Promise<void> {
+  if (!errorHandler) {
+    vscode.window.showErrorMessage('Error handler not initialized');
+    return;
+  }
+
+  const report = errorHandler.generateErrorReport();
+  
+  const action = await vscode.window.showInformationMessage(
+    'Error report generated',
+    'Copy to Clipboard',
+    'Save to File',
+    'View in Output'
+  );
+
+  if (action === 'Copy to Clipboard') {
+    await vscode.env.clipboard.writeText(report);
+    vscode.window.showInformationMessage('Error report copied to clipboard');
+  } else if (action === 'Save to File') {
+    const uri = await vscode.window.showSaveDialog({
+      defaultUri: vscode.Uri.file('promptroot-error-report.txt'),
+      filters: { 'Text Files': ['txt'] }
+    });
+    if (uri) {
+      await vscode.workspace.fs.writeFile(uri, Buffer.from(report, 'utf8'));
+      vscode.window.showInformationMessage(`Error report saved to ${uri.fsPath}`);
+    }
+  } else if (action === 'View in Output') {
+    outputChannel.clear();
+    outputChannel.appendLine(report);
+    outputChannel.show();
+  }
+}
+
+/**
  * Handle user signed in event
  */
 async function onUserSignedIn(user: User): Promise<void> {
@@ -627,8 +796,14 @@ async function onUserSignedIn(user: User): Promise<void> {
       });
       outputChannel.appendLine(`Updated user profile: ${user.uid}`);
     }
+    
+    // Update connection status - user is now authenticated
+    updateConnectionStatus('online');
   } catch (error) {
     outputChannel.appendLine(`Error handling user sign-in: ${error}`);
+    if (errorHandler) {
+      await errorHandler.handleError(error as Error, 'User Sign In');
+    }
   }
 }
 
@@ -1551,21 +1726,176 @@ async function manageFavorites(): Promise<void> {
  * Search for repositories on GitHub
  */
 async function searchRepositories(): Promise<void> {
-  if (!authManager) {
+  if (!authManager || !repositoryTreeProvider) {
     vscode.window.showErrorMessage('Please sign in first');
     return;
   }
 
   const query = await vscode.window.showInputBox({
-    prompt: 'Enter search query',
-    placeHolder: 'e.g., language:typescript stars:>100'
+    prompt: 'Search GitHub repositories',
+    placeHolder: 'e.g., language:typescript stars:>100, or simply: react router',
+    validateInput: (value) => {
+      if (!value || value.trim().length === 0) {
+        return 'Search query cannot be empty';
+      }
+      return null;
+    }
   });
 
   if (!query) {
     return;
   }
 
-  vscode.window.showInformationMessage(`Search feature coming soon: ${query}`);
+  try {
+    // Create GitHubService instance
+    const githubService = new GitHubService(authManager, outputChannel);
+    
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Searching for "${query}"...`,
+      cancellable: false
+    }, async () => {
+      const result = await githubService.searchRepositories(query);
+      
+      if (!result || !result.items || result.items.length === 0) {
+        vscode.window.showInformationMessage(`No repositories found for "${query}"`);
+        return;
+      }
+
+      // Create QuickPick items from search results
+      const quickPickItems = result.items.map(repo => ({
+        label: `$(repo) ${repo.full_name}`,
+        description: repo.private ? '$(lock) Private' : '$(globe) Public',
+        detail: `${repo.description || 'No description'} | ⭐ ${repo.stargazers_count} | 🍴 ${repo.forks_count} | ${repo.language || 'N/A'}`,
+        repo: repo
+      }));
+
+      const selected = await vscode.window.showQuickPick(quickPickItems, {
+        placeHolder: `Found ${result.items.length} repositories - Select to view actions`,
+        title: `Search Results for "${query}"`,
+        matchOnDescription: true,
+        matchOnDetail: true
+      });
+
+      if (!selected) {
+        return;
+      }
+
+      // Show actions for selected repository
+      await showRepositoryActions(selected.repo);
+    });
+  } catch (error) {
+    vscode.window.showErrorMessage(`Search failed: ${error}`);
+    outputChannel.appendLine(`Search error: ${error}`);
+  }
+}
+
+/**
+ * Show action menu for a repository
+ */
+async function showRepositoryActions(repo: GitHubRepository): Promise<void> {
+  if (!repositoryTreeProvider) {
+    return;
+  }
+
+  const isFavorite = repositoryTreeProvider.isFavorite(repo.full_name);
+  
+  const actions = [
+    {
+      label: '$(link-external) Open in Browser',
+      description: 'Open repository on GitHub.com',
+      action: 'open'
+    },
+    {
+      label: isFavorite ? '$(star-full) Remove from Favorites' : '$(star-empty) Add to Favorites',
+      description: isFavorite ? 'Remove from favorites list' : 'Add to favorites list',
+      action: 'favorite'
+    },
+    {
+      label: '$(clippy) Copy URL',
+      description: 'Copy repository URL to clipboard',
+      action: 'copy'
+    }
+  ];
+
+  const selected = await vscode.window.showQuickPick(actions, {
+    placeHolder: `Actions for ${repo.full_name}`,
+    title: repo.name
+  });
+
+  if (!selected) {
+    return;
+  }
+
+  switch (selected.action) {
+    case 'open':
+      await vscode.env.openExternal(vscode.Uri.parse(repo.html_url));
+      outputChannel.appendLine(`Opened repository: ${repo.full_name}`);
+      break;
+    
+    case 'favorite':
+      try {
+        if (isFavorite) {
+          await repositoryTreeProvider.removeFavorite(repo.full_name);
+          vscode.window.showInformationMessage(`Removed ${repo.name} from favorites`);
+          outputChannel.appendLine(`Removed favorite: ${repo.full_name}`);
+        } else {
+          await repositoryTreeProvider.addFavorite(repo.full_name);
+          vscode.window.showInformationMessage(`Added ${repo.name} to favorites`);
+          outputChannel.appendLine(`Added favorite: ${repo.full_name}`);
+        }
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to update favorites: ${error}`);
+      }
+      break;
+    
+    case 'copy':
+      await vscode.env.clipboard.writeText(repo.html_url);
+      vscode.window.showInformationMessage(`Copied URL: ${repo.html_url}`);
+      outputChannel.appendLine(`Copied URL: ${repo.html_url}`);
+      break;
+  }
+}
+
+/**
+ * Select branch for a repository
+ */
+async function selectBranch(item: RepositoryTreeItem): Promise<void> {
+  if (!branchSelector || !item.repository) {
+    vscode.window.showErrorMessage('Branch selection not available');
+    return;
+  }
+
+  const selectedBranch = await branchSelector.selectBranch(item.repository);
+  
+  if (selectedBranch) {
+    // Show confirmation with the selected branch
+    const action = await vscode.window.showInformationMessage(
+      `Selected branch: ${selectedBranch.name}`,
+      'Copy Branch Name',
+      'View on GitHub'
+    );
+
+    if (action === 'Copy Branch Name') {
+      await vscode.env.clipboard.writeText(selectedBranch.name);
+      vscode.window.showInformationMessage(`Copied: ${selectedBranch.name}`);
+    } else if (action === 'View on GitHub') {
+      const branchUrl = `${item.repository.html_url}/tree/${selectedBranch.name}`;
+      await vscode.env.openExternal(vscode.Uri.parse(branchUrl));
+    }
+  }
+}
+
+/**
+ * Set default branch for a repository
+ */
+async function setDefaultBranch(item: RepositoryTreeItem): Promise<void> {
+  if (!branchSelector || !item.repository) {
+    vscode.window.showErrorMessage('Branch selection not available');
+    return;
+  }
+
+  await branchSelector.setDefaultBranch(item.repository);
 }
 
 /**

@@ -161,6 +161,16 @@
         "command": "promptroot.configureRepositories",
         "title": "Promptroot: Configure Repositories",
         "icon": "$(gear)"
+      },
+      {
+        "command": "promptroot.selectBranch",
+        "title": "Promptroot: Select Branch",
+        "icon": "$(git-branch)"
+      },
+      {
+        "command": "promptroot.setDefaultBranch",
+        "title": "Promptroot: Set Default Branch",
+        "icon": "$(star)"
       }
     ],
     "views": {
@@ -290,6 +300,16 @@
           "command": "promptroot.openRepository",
           "when": "view == promptroot.repositoriesView && viewItem =~ /repository-/",
           "group": "repo@1"
+        },
+        {
+          "command": "promptroot.selectBranch",
+          "when": "view == promptroot.repositoriesView && viewItem =~ /repository-/",
+          "group": "repo@2"
+        },
+        {
+          "command": "promptroot.setDefaultBranch",
+          "when": "view == promptroot.repositoriesView && viewItem =~ /repository-/",
+          "group": "repo@3"
         }
       ]
     },

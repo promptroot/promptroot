@@ -14,7 +14,7 @@ export type QueueStatus = 'pending' | 'running' | 'completed' | 'failed' | 'paus
 /**
  * Queue item type
  */
-export type QueueType = 'single' | 'batch';
+export type QueueType = 'single' | 'subtasks';
 
 /**
  * Session status from Jules API
@@ -45,7 +45,7 @@ interface BaseQueueItem {
 export interface SingleQueueItem extends BaseQueueItem {
 	type: 'single';
 	prompt: string;
-	promptPath: string;
+	promptPath?: string; // Optional to match web app
 	scheduledAt?: Timestamp;
 	scheduledTimeZone?: string;
 	activatedAt?: Timestamp;
@@ -56,8 +56,8 @@ export interface SingleQueueItem extends BaseQueueItem {
  * Batch queue item subtask
  */
 export interface BatchSubtask {
-	promptPath: string;
-	status: QueueStatus;
+	fullContent: string; // Changed from promptPath to match web app
+	status?: QueueStatus; // Made optional
 	sessionId?: string;
 	error?: string;
 }
@@ -66,8 +66,10 @@ export interface BatchSubtask {
  * Batch prompt queue item
  */
 export interface BatchQueueItem extends BaseQueueItem {
-	type: 'batch';
-	subtasks: BatchSubtask[];
+	type: 'subtasks'; // Changed from 'batch' to match web app
+	prompt?: string; // Added to match web app
+	remaining: BatchSubtask[]; // Changed from subtasks to remaining
+	totalCount?: number; // Added to match web app
 	completedCount?: number;
 	failedCount?: number;
 }
@@ -88,7 +90,11 @@ export interface UserProfile {
 	timezone?: string;
 	defaultRepo?: string;
 	defaultBranch?: string;
-	favoriteRepos?: string[];
+	favoriteRepos?: Array<{
+		branch: string;
+		id: string;
+		name: string;
+	}>;
 	createdAt: Timestamp;
 	lastLoginAt: Timestamp;
 }
@@ -173,7 +179,7 @@ export function isSingleQueueItem(item: JulesQueueItem): item is SingleQueueItem
 }
 
 export function isBatchQueueItem(item: JulesQueueItem): item is BatchQueueItem {
-	return item.type === 'batch';
+	return item.type === 'subtasks';
 }
 
 /**

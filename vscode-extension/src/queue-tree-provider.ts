@@ -105,14 +105,14 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 		}
 
 		// If element is a batch item, return subtasks
-		if (element.contextValue === 'batch' && element.queueItem) {
+		if (element.contextValue === 'subtasks' && element.queueItem) {
 			const batchItem = element.queueItem;
 			if (isBatchQueueItem(batchItem)) {
-				return batchItem.subtasks.map((subtask) => {
-					const icon = this.getStatusIcon(subtask.status);
-					const label = `${icon} ${subtask.promptPath}`;
-					const item = new QueueTreeItem(label, subtask.status, 'subtask');
-					item.tooltip = `Status: ${subtask.status}\nPath: ${subtask.promptPath}`;
+				return batchItem.remaining.map((subtask) => {
+				const icon = this.getStatusIcon(subtask.status || 'pending');
+					const label = `${icon} ${subtask.fullContent}`;
+					const item = new QueueTreeItem(label, subtask.status || 'pending', 'subtask');
+					item.tooltip = `Status: ${subtask.status || 'pending'}\nContent: ${subtask.fullContent}`;
 					if (subtask.sessionId) {
 						item.tooltip += `\nSession: ${subtask.sessionId}`;
 					}
@@ -139,12 +139,12 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 
 		if (isSingleQueueItem(queueItem)) {
 			// Single item
-			const promptName = queueItem.promptPath.split('/').pop() || 'Untitled';
+			const promptName = queueItem.promptPath?.split('/').pop() || 'Untitled';
 			label = `${icon} ${promptName}`;
 			description = queueItem.status;
 		} else {
 			// Batch item
-			label = `${icon} Batch (${queueItem.subtasks.length} items)`;
+			label = `${icon} Batch (${queueItem.remaining.length} items)`;
 			description = queueItem.status;
 			collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
 		}
@@ -166,7 +166,7 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 		tooltip += `Created: ${queueItem.createdAt.toDate().toLocaleString()}`;
 
 		if (isSingleQueueItem(queueItem)) {
-			tooltip += `\nPrompt: ${queueItem.promptPath}`;
+			tooltip += `\nPrompt: ${queueItem.promptPath || 'No path specified'}`;
 		}
 
 		if (queueItem.lastError) {

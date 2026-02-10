@@ -1,5 +1,6 @@
 const functions = require("firebase-functions");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
+const {onCall} = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
 
@@ -689,5 +690,118 @@ exports.activateScheduledQueueItems = onSchedule('every 1 minutes', async (event
   } catch (error) {
     console.error('Error in activateScheduledQueueItems:', error);
     return null;
+  }
+});
+
+/**
+ * Exchange VS Code GitHub token for Firebase custom token
+ * Used by VS Code extension for authentication
+ */
+exports.exchangeVSCodeGitHubToken = onCall(async (request) => {
+  const { githubToken } = request.data;
+
+  console.log('exchangeVSCodeGitHubToken called');
+  console.log('Data received:', JSON.stringify(request.data));
+  console.log('githubToken extracted:', githubToken ? `${githubToken.substring(0, 10)}...` : 'null/undefined');
+
+  if (!githubToken) {
+    console.error('No githubToken in data');
+    throw new functions.https.HttpsError('invalid-argument', 'GitHub token is required');
+  }
+
+  try {
+    // Verify GitHub token and get user info
+    const githubResponse = await fetch('https://api.github.com/user', {
+      headers: {
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/json',
+        'User-Agent': 'Promptroot-VSCode-Extension'
+      }
+    });
+
+    if (!githubResponse.ok) {
+      throw new functions.https.HttpsError(
+        'unauthenticated',
+        `GitHub API returned ${githubResponse.status}: ${githubResponse.statusText}`
+      );
+    }
+
+    const githubUser = await githubResponse.json();
+    console.log('GitHub user:', { id: githubUser.id, login: githubUser.login, email: githubUser.email });
+    
+    // Use a fallback email if GitHub email is null or private
+    const userEmail = githubUser.email || `${githubUser.login}@users.noreply.github.com`;
+    
+    let uid;
+    let existingUser = null;
+    
+    try {
+      // First, try to find existing web app user by GitHub provider ID
+      console.log('Searching for existing web app user...');
+      const users = await admin.auth().listUsers();
+      const webAppUser = users.users.find(user => 
+        user.providerData.some(provider => 
+          provider.providerId === 'github.com' && 
+          provider.uid === githubUser.id.toString()
+        )
+      );
+      
+      if (webAppUser) {
+        console.log('Found existing web app user:', webAppUser.uid);
+        uid = webAppUser.uid;
+        existingUser = webAppUser;
+      } else {
+        // Fallback to VS Code extension format
+        console.log('No existing web app user found, using extension format');
+        uid = `github:${githubUser.id}`;
+      }
+    } catch (error) {
+      console.log('Error searching for existing user, using extension format:', error);
+      uid = `github:${githubUser.id}`;
+    }
+    
+    // If no web app user found, try to get/create VS Code extension user
+    if (!existingUser) {
+      try {
+        existingUser = await admin.auth().getUser(uid);
+        console.log('Existing extension user found:', existingUser.uid);
+      } catch (error) {
+        // User doesn't exist, create them
+        console.log('Creating new user with uid:', uid, 'email:', userEmail);
+        await admin.auth().createUser({
+          uid,
+          email: userEmail,
+          displayName: githubUser.name || githubUser.login,
+          photoURL: githubUser.avatar_url,
+          emailVerified: true
+        });
+        console.log('User created successfully');
+      }
+    }
+
+    // Create custom token
+    const customToken = await admin.auth().createCustomToken(uid, {
+      github_id: githubUser.id,
+      github_login: githubUser.login,
+      provider: 'github.com'
+    });
+
+    console.log('Custom token created successfully');
+
+    return {
+      customToken,
+      user: {
+        uid,
+        email: userEmail,
+        displayName: githubUser.name || githubUser.login,
+        photoURL: githubUser.avatar_url
+      }
+    };
+  } catch (error) {
+    console.error('Token exchange error:', error);
+    throw new functions.https.HttpsError(
+      'internal',
+      error instanceof Error ? error.message : 'Failed to exchange token'
+    );
   }
 });

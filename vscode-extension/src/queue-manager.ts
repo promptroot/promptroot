@@ -58,21 +58,38 @@ export class QueueManager {
 			throw new Error('User not signed in');
 		}
 
-		// Create subtasks
-		const subtasks: BatchSubtask[] = [];
+		// Create remaining items by loading file content
+		const remaining: BatchSubtask[] = [];
 		for (const promptPath of promptPaths) {
-			subtasks.push({
-				promptPath,
-				status: 'pending'
-			});
+			try {
+				// Load the file content
+				const uri = vscode.Uri.file(promptPath);
+				const content = await vscode.workspace.fs.readFile(uri);
+				const fullContent = Buffer.from(content).toString('utf8');
+				
+				remaining.push({
+					fullContent,
+					status: 'pending'
+				});
+			} catch (error) {
+				this.outputChannel.appendLine(`Warning: Could not read file ${promptPath}: ${error}`);
+				// Add with path as content for debugging
+				remaining.push({
+					fullContent: `File not found: ${promptPath}`,
+					status: 'failed',
+					error: `Could not read file: ${error instanceof Error ? error.message : String(error)}`
+				});
+			}
 		}
 
 		const batchItem: Omit<BatchQueueItem, 'id'> = {
-			type: 'batch',
+			type: 'subtasks',
 			status: 'pending',
+			prompt: `Batch of ${remaining.length} prompts from VS Code`, // Added basic prompt description
 			sourceId: 'vscode-extension', // Source identifier
 			branch,
-			subtasks,
+			remaining,
+			totalCount: remaining.length,
 			completedCount: 0,
 			failedCount: 0,
 			createdAt: Timestamp.now(),

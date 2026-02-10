@@ -347,6 +347,7 @@ export const LIMITS = {
  * @typedef {object} PageSizes
  * @property {number} julesSessions - The number of Jules sessions to fetch per page.
  * @property {number} branches - The number of branches to fetch per page.
+ * @property {number} queueItems - The number of queue items to fetch per page.
  */
 
 /**
@@ -355,7 +356,8 @@ export const LIMITS = {
  */
 export const PAGE_SIZES = {
   julesSessions: 10,
-  branches: 100
+  branches: 100,
+  queueItems: 100
 };
 
 /**

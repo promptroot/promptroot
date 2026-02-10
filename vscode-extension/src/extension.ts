@@ -1268,7 +1268,7 @@ async function viewQueueItemDetails(item: QueueTreeItem): Promise<void> {
       },
       {
         label: 'Total Subtasks',
-        description: queueItem.subtasks.length.toString()
+        description: queueItem.remaining.length.toString()
       },
       {
         label: 'Completed',

@@ -8,13 +8,13 @@ import * as vscode from 'vscode';
 import {
 	Auth,
 	User,
-	signInWithCredential,
+	signInWithCustomToken,
 	signOut as firebaseSignOut,
 	onAuthStateChanged,
-	GithubAuthProvider,
 	UserCredential
 } from 'firebase/auth';
-import { getFirebaseAuth } from './firebase-config';
+import { getFirebaseAuth, getFirebaseApp } from './firebase-config';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Secret storage keys
 const GITHUB_TOKEN_KEY = 'promptroot.github.token';
@@ -119,12 +119,39 @@ export class AuthManager {
 	}
 
 	/**
-	 * Sign in to Firebase with GitHub access token
+	 * Sign in to Firebase with GitHub access token via token exchange
 	 */
 	private async signInWithGitHubToken(accessToken: string): Promise<User> {
-		const credential = GithubAuthProvider.credential(accessToken);
-		const userCredential: UserCredential = await signInWithCredential(this.auth, credential);
-		return userCredential.user;
+		try {
+			this.outputChannel.appendLine('Exchanging GitHub token for Firebase token...');
+			this.outputChannel.appendLine(`Token length: ${accessToken?.length || 0}`);
+			this.outputChannel.appendLine(`Token preview: ${accessToken?.substring(0, 10)}...`);
+
+			// Call Cloud Function to exchange token
+			const functions = getFunctions(getFirebaseApp(), 'us-central1');
+			const exchangeToken = httpsCallable(functions, 'exchangeVSCodeGitHubToken');
+			
+			this.outputChannel.appendLine(`Calling Cloud Function with token...`);
+			const result = await exchangeToken({ githubToken: accessToken });
+			this.outputChannel.appendLine(`Cloud Function response received`);
+			
+			const data = result.data as { customToken: string; user: any };
+
+			this.outputChannel.appendLine('Custom token received, signing in to Firebase...');
+
+			// Sign in with custom token
+			const userCredential: UserCredential = await signInWithCustomToken(this.auth, data.customToken);
+			
+			this.outputChannel.appendLine(`Successfully authenticated: ${userCredential.user.email}`);
+			
+			return userCredential.user;
+		} catch (error) {
+			this.outputChannel.appendLine(`Token exchange failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			if (error instanceof Error) {
+				this.outputChannel.appendLine(`Error stack: ${error.stack}`);
+			}
+			throw error;
+		}
 	}
 
 	/**

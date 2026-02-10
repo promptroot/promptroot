@@ -87,6 +87,15 @@ export class RepositoryTreeProvider implements vscode.TreeDataProvider<Repositor
 		
 		// Load favorites from Firestore
 		this.loadFavorites();
+		
+		// Listen for auth state changes and refresh tree
+		this.authManager.onAuthStateChanged((user) => {
+			this.outputChannel.appendLine(`Repository tree: Auth state changed, user=${user?.email || 'none'}`);
+			this.refresh();
+			if (user) {
+				this.loadFavorites();
+			}
+		});
 	}
 
 	/**
@@ -96,15 +105,38 @@ export class RepositoryTreeProvider implements vscode.TreeDataProvider<Repositor
 		try {
 			const user = this.authManager.getCurrentUser();
 			if (!user) {
+				this.outputChannel.appendLine('Repository tree: Cannot load favorites - no user');
 				return;
 			}
 			
+			this.outputChannel.appendLine(`Repository tree: Loading favorites for user ${user.uid}`);
 			const profile = await this.firestoreService.getUserProfile(user.uid);
-			if (profile && profile.favoriteRepos) {
-				this.favoriteRepos = new Set(profile.favoriteRepos);
+			
+			if (profile) {
+				this.outputChannel.appendLine(`Repository tree: Profile loaded, favoriteRepos=${JSON.stringify(profile.favoriteRepos)}`);
+			if (profile.favoriteRepos && Array.isArray(profile.favoriteRepos)) {
+				// Extract repo names from web app format: {branch, id, name}
+				const repoNames = profile.favoriteRepos.map(repo => {
+					if (typeof repo === 'string') {
+						// Handle legacy format
+						return repo;
+					} else if (repo && typeof repo === 'object' && 'name' in repo) {
+						// Handle web app format
+						return repo.name;
+					}
+					return null;
+				}).filter(name => name !== null);
+				this.favoriteRepos = new Set(repoNames as string[]);
+				this.outputChannel.appendLine(`Repository tree: Loaded ${this.favoriteRepos.size} favorite repositories: ${Array.from(this.favoriteRepos).join(', ')}`);
+				}
+			} else {
+				this.outputChannel.appendLine('Repository tree: No profile found');
 			}
+			
+			// Refresh tree to show the loaded favorites
+			this.refresh();
 		} catch (error) {
-			console.error('Failed to load favorite repositories:', error);
+			this.outputChannel.appendLine(`Repository tree: Failed to load favorite repositories: ${error instanceof Error ? error.message : 'Unknown error'}`);
 		}
 	}
 
@@ -118,9 +150,42 @@ export class RepositoryTreeProvider implements vscode.TreeDataProvider<Repositor
 				throw new Error('User not signed in');
 			}
 			
+			// Get current profile to preserve existing favorites format
+			const currentProfile = await this.firestoreService.getUserProfile(user.uid);
+			let favoriteRepos = currentProfile?.favoriteRepos || [];
+			
+			// Convert favorites to web app format while preserving existing entries
+			const repoNames = Array.from(this.favoriteRepos);
+			const updatedFavorites = [];
+			
+			// First add existing favorites that are still in the current set
+			for (const existing of favoriteRepos) {
+				const existingName = typeof existing === 'string' ? existing : existing.name;
+				if (repoNames.includes(existingName)) {
+					updatedFavorites.push(existing);
+				}
+			}
+			
+			// Then add new favorites in web app format
+			for (const repoName of repoNames) {
+				const existingEntry = favoriteRepos.find(fav => {
+					const name = typeof fav === 'string' ? fav : fav.name;
+					return name === repoName;
+				});
+				
+				if (!existingEntry) {
+					// Create new entry in web app format
+					updatedFavorites.push({
+						branch: 'main', // Default to main branch
+						id: `sources/github/${repoName}`,
+						name: repoName
+					});
+				}
+			}
+			
 			await this.firestoreService.saveUserProfile({
 				uid: user.uid,
-				favoriteRepos: Array.from(this.favoriteRepos)
+				favoriteRepos: updatedFavorites
 			});
 		} catch (error) {
 			console.error('Failed to save favorite repositories:', error);
@@ -210,7 +275,7 @@ export class RepositoryTreeProvider implements vscode.TreeDataProvider<Repositor
 		// Load repositories
 		try {
 			this.isLoading = true;
-			this.refresh();
+			// Don't call refresh here - it creates an infinite loop!
 
 			const repos = await this.githubService.listRepositories();
 			this.isLoading = false;

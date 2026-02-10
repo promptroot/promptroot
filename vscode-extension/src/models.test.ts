@@ -33,11 +33,11 @@ describe('models', () => {
       it('should return false for batch queue items', () => {
         const item: BatchQueueItem = {
           id: 'test-2',
-          type: 'batch',
+          type: 'subtasks',
           status: 'pending',
           sourceId: 'test-source',
           branch: 'main',
-          subtasks: [],
+          remaining: [],
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now()
         };
@@ -50,14 +50,15 @@ describe('models', () => {
       it('should return true for batch queue items', () => {
         const item: BatchQueueItem = {
           id: 'test-2',
-          type: 'batch',
+          type: 'subtasks',
           status: 'pending',
           sourceId: 'test-source',
           branch: 'main',
-          subtasks: [
-            { promptPath: '/test/1.md', status: 'pending' },
-            { promptPath: '/test/2.md', status: 'pending' }
+          remaining: [
+            { fullContent: 'Test content 1' },
+            { fullContent: 'Test content 2' }
           ],
+          totalCount: 2,
           completedCount: 0,
           failedCount: 0,
           createdAt: Timestamp.now(),

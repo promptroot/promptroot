@@ -92,25 +92,13 @@ export class GitHubService {
 	 * Get GitHub access token
 	 */
 	private async getAccessToken(): Promise<string | null> {
-		const user = this.authManager.getCurrentUser();
-		if (!user) {
+		// Get the GitHub access token stored by AuthManager
+		const token = await this.authManager.getGitHubToken();
+		if (!token) {
+			this.outputChannel.appendLine('No GitHub access token available');
 			return null;
 		}
-
-		// Check if user is authenticated with GitHub
-		const isGitHubAuth = user.providerData?.some((p: { providerId: string }) => p.providerId === 'github.com');
-		if (!isGitHubAuth) {
-			return null;
-		}
-
-		// Get token from Firebase user
-		try {
-			const token = await user.getIdToken();
-			return token;
-		} catch (error) {
-			this.outputChannel.appendLine(`Error getting GitHub token: ${error instanceof Error ? error.message : 'Unknown error'}`);
-			return null;
-		}
+		return token;
 	}
 
 	/**
@@ -192,23 +180,68 @@ export class GitHubService {
 	}
 
 	/**
-	 * List user's repositories
+	 * List user's repositories with pagination support
 	 */
 	public async listRepositories(options: {
 		affiliation?: 'owner' | 'collaborator' | 'organization_member';
 		sort?: 'created' | 'updated' | 'pushed' | 'full_name';
 		per_page?: number;
+		maxPages?: number;
+		includeArchived?: boolean;
 	} = {}): Promise<GitHubRepository[]> {
+		const perPage = options.per_page || 100;
+		const maxPages = options.maxPages || 10; // Limit to prevent infinite requests
+		
 		const params = new URLSearchParams({
-			affiliation: options.affiliation || 'owner,collaborator',
+			affiliation: options.affiliation || 'owner,collaborator,organization_member',
 			sort: options.sort || 'updated',
-			per_page: String(options.per_page || 100)
+			per_page: String(perPage)
 		});
 
-		const cacheKey = `repos:${params.toString()}`;
-		return await this.getOrFetch(cacheKey, async () => {
-			return await this.fetchGitHub<GitHubRepository[]>(`/user/repos?${params}`);
-		}) || [];
+		// Include archived repos if requested
+		if (options.includeArchived !== false) {
+			params.set('visibility', 'all'); // This includes archived
+		}
+
+		const cacheKey = `repos-full:${params.toString()}`; // Updated cache key for full repo list
+		const result = await this.getOrFetch(cacheKey, async () => {
+			const allRepositories: GitHubRepository[] = [];
+			let page = 1;
+			let hasMore = true;
+
+			while (hasMore && page <= maxPages) {
+				const pageParams = new URLSearchParams(params);
+				pageParams.set('page', String(page));
+				
+				this.outputChannel.appendLine(`Fetching repositories page ${page}...`);
+				const repositories = await this.fetchGitHub<GitHubRepository[]>(`/user/repos?${pageParams}`);
+				
+				if (!repositories || !Array.isArray(repositories) || repositories.length === 0) {
+					this.outputChannel.appendLine(`No repositories on page ${page}, stopping pagination`);
+					hasMore = false;
+				} else {
+					this.outputChannel.appendLine(`Page ${page}: Got ${repositories.length} repositories`);
+					allRepositories.push(...repositories);
+					hasMore = repositories.length === perPage;
+					if (!hasMore) {
+						this.outputChannel.appendLine(`Last page reached (${repositories.length} < ${perPage})`);
+					}
+					page++;
+				}
+			}
+
+			this.outputChannel.appendLine(`Loaded ${allRepositories.length} repositories across ${page - 1} pages`);
+			
+			// Debug: Show repository ownership breakdown
+			const ownerCount = allRepositories.filter(r => r.owner.login === r.owner.login).length;
+			const privateCount = allRepositories.filter(r => r.private).length;
+			const publicCount = allRepositories.length - privateCount;
+			this.outputChannel.appendLine(`Repository breakdown: ${publicCount} public, ${privateCount} private`);
+			
+			return allRepositories;
+		});
+		
+		return result || [];
 	}
 
 	/**
@@ -222,23 +255,61 @@ export class GitHubService {
 	}
 
 	/**
-	 * List branches for a repository
+	 * List branches for a repository with pagination support
 	 */
-	public async listBranches(owner: string, repo: string): Promise<GitHubBranch[]> {
+	public async listBranches(owner: string, repo: string, maxPages: number = 5): Promise<GitHubBranch[]> {
 		const cacheKey = `branches:${owner}/${repo}`;
-		return await this.getOrFetch(cacheKey, async () => {
-			return await this.fetchGitHub<GitHubBranch[]>(`/repos/${owner}/${repo}/branches?per_page=100`);
-		}) || [];
+		const result = await this.getOrFetch(cacheKey, async () => {
+			const allBranches: GitHubBranch[] = [];
+			let page = 1;
+			let hasMore = true;
+			const perPage = 100;
+
+			while (hasMore && page <= maxPages) {
+				const branches = await this.fetchGitHub<GitHubBranch[]>(`/repos/${owner}/${repo}/branches?per_page=${perPage}&page=${page}`);
+				
+				if (!branches || !Array.isArray(branches) || branches.length === 0) {
+					hasMore = false;
+				} else {
+					allBranches.push(...branches);
+					hasMore = branches.length === perPage;
+					page++;
+				}
+			}
+
+			return allBranches;
+		});
+		
+		return result || [];
 	}
 
 	/**
-	 * List pull requests for a repository
+	 * List pull requests for a repository with pagination support
 	 */
-	public async listPullRequests(owner: string, repo: string, state: 'open' | 'closed' | 'all' = 'open'): Promise<GitHubPullRequest[]> {
+	public async listPullRequests(owner: string, repo: string, state: 'open' | 'closed' | 'all' = 'open', maxPages: number = 3): Promise<GitHubPullRequest[]> {
 		const cacheKey = `prs:${owner}/${repo}:${state}`;
-		return await this.getOrFetch(cacheKey, async () => {
-			return await this.fetchGitHub<GitHubPullRequest[]>(`/repos/${owner}/${repo}/pulls?state=${state}&per_page=100`);
-		}) || [];
+		const result = await this.getOrFetch(cacheKey, async () => {
+			const allPRs: GitHubPullRequest[] = [];
+			let page = 1;
+			let hasMore = true;
+			const perPage = 100;
+
+			while (hasMore && page <= maxPages) {
+				const prs = await this.fetchGitHub<GitHubPullRequest[]>(`/repos/${owner}/${repo}/pulls?state=${state}&per_page=${perPage}&page=${page}`);
+				
+				if (!prs || !Array.isArray(prs) || prs.length === 0) {
+					hasMore = false;
+				} else {
+					allPRs.push(...prs);
+					hasMore = prs.length === perPage;
+					page++;
+				}
+			}
+
+			return allPRs;
+		});
+		
+		return result || [];
 	}
 
 	/**

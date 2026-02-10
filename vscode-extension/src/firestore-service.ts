@@ -123,12 +123,13 @@ export class FirestoreService {
 	/**
 	 * Get queue items for a user
 	 */
-	public async getQueueItems(uid: string): Promise<JulesQueueItem[]> {
+	public async getQueueItems(uid: string, limitCount: number = 100): Promise<JulesQueueItem[]> {
 		try {
 			const collectionPath = getUserCollectionPath(uid, 'queue');
 			const q = query(
 				collection(this.db, collectionPath),
-				orderBy('createdAt', 'desc')
+				orderBy('createdAt', 'desc'),
+				limit(limitCount)
 			);
 
 			const snapshot = await getDocs(q);
@@ -214,7 +215,8 @@ export class FirestoreService {
 	public subscribeToQueue(
 		uid: string,
 		onUpdate: (items: JulesQueueItem[]) => void,
-		onError?: (error: Error) => void
+		onError?: (error: Error) => void,
+		limitCount: number = 100
 	): Unsubscribe {
 		const listenerId = `queue:${uid}`;
 		
@@ -224,7 +226,8 @@ export class FirestoreService {
 		const collectionPath = getUserCollectionPath(uid, 'queue');
 		const q = query(
 			collection(this.db, collectionPath),
-			orderBy('createdAt', 'desc')
+			orderBy('createdAt', 'desc'),
+			limit(limitCount)
 		);
 
 		const unsubscribe = onSnapshot(

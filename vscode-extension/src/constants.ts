@@ -29,7 +29,10 @@ export const COMMANDS = {
   viewQueueItemDetails: 'promptroot.viewQueueItemDetails',
   refreshSessions: 'promptroot.refreshSessions',
   viewSessionDetails: 'promptroot.viewSessionDetails',
-  openPRInBrowser: 'promptroot.openPRInBrowser'
+  openPRInBrowser: 'promptroot.openPRInBrowser',
+  viewSessionHistory: 'promptroot.viewSessionHistory',
+  filterSessions: 'promptroot.filterSessions',
+  clearOldSessions: 'promptroot.clearOldSessions'
 } as const;
 
 export const VIEWS = {

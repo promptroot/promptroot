@@ -28,6 +28,7 @@ let isEmulatorMode = false;
 /**
  * Initialize Firebase with configuration from VS Code settings
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function initializeFirebase(context: vscode.ExtensionContext): void {
 	const config = vscode.workspace.getConfiguration('promptroot.firebase');
 	const useEmulator = config.get<boolean>('useEmulator', false);

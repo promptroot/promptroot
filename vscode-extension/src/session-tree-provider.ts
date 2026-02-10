@@ -209,6 +209,43 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeI
 	}
 
 	/**
+	 * Get all sessions (for history/filtering)
+	 */
+	getAllSessions(): JulesSession[] {
+		return this.sessions;
+	}
+
+	/**
+	 * Filter sessions by status
+	 */
+	filterSessionsByStatus(status: SessionStatus): JulesSession[] {
+		return this.sessions.filter(s => s.status === status);
+	}
+
+	/**
+	 * Filter sessions by date range
+	 */
+	filterSessionsByDateRange(startDate: Date, endDate: Date): JulesSession[] {
+		return this.sessions.filter(s => {
+			if (!s.createdAt) {return false;}
+			const sessionDate = new Date(s.createdAt.toMillis());
+			return sessionDate >= startDate && sessionDate <= endDate;
+		});
+	}
+
+	/**
+	 * Search sessions by prompt path or name
+	 */
+	searchSessions(query: string): JulesSession[] {
+		const lowerQuery = query.toLowerCase();
+		return this.sessions.filter(s => 
+			s.name?.toLowerCase().includes(lowerQuery) ||
+			s.promptPath?.toLowerCase().includes(lowerQuery) ||
+			s.branch?.toLowerCase().includes(lowerQuery)
+		);
+	}
+
+	/**
 	 * Dispose resources
 	 */
 	dispose(): void {

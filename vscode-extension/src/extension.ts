@@ -9,9 +9,13 @@ import { initializeFirebase, disposeFirebase } from './firebase-config';
 import { AuthManager } from './auth-manager';
 import { FirestoreService } from './firestore-service';
 import { QueueTreeProvider } from './queue-tree-provider';
+import { QueueTreeItem } from './queue-tree-provider';
 import { QueueManager } from './queue-manager';
 import { SessionTreeProvider } from './session-tree-provider';
+import { SessionTreeItem } from './session-tree-provider';
 import { SessionDetailsView } from './session-details-view';
+import { JulesSession, SessionStatus } from './models';
+import { User } from 'firebase/auth';
 
 let outputChannel: vscode.OutputChannel;
 let treeProvider: PromptrootTreeProvider;
@@ -350,6 +354,30 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  const viewSessionHistoryCommand = vscode.commands.registerCommand(
+    COMMANDS.viewSessionHistory,
+    async () => {
+      outputChannel.appendLine('View session history command executed');
+      await viewSessionHistory();
+    }
+  );
+
+  const filterSessionsCommand = vscode.commands.registerCommand(
+    COMMANDS.filterSessions,
+    async () => {
+      outputChannel.appendLine('Filter sessions command executed');
+      await filterSessions();
+    }
+  );
+
+  const clearOldSessionsCommand = vscode.commands.registerCommand(
+    COMMANDS.clearOldSessions,
+    async () => {
+      outputChannel.appendLine('Clear old sessions command executed');
+      await clearOldSessions();
+    }
+  );
+
   // Add commands to subscriptions for proper cleanup
   context.subscriptions.push(
     initializeCommand,
@@ -378,6 +406,9 @@ export function activate(context: vscode.ExtensionContext) {
     refreshSessionsCommand,
     viewSessionDetailsCommand,
     openPRInBrowserCommand,
+    viewSessionHistoryCommand,
+    filterSessionsCommand,
+    clearOldSessionsCommand,
     treeView,
     queueTreeView,
     sessionTreeView,
@@ -501,7 +532,7 @@ async function viewJulesSessions(): Promise<void> {
 /**
  * Update status bar with current user info
  */
-function updateStatusBar(user: any | null): void {
+function updateStatusBar(user: User | null): void {
   if (user) {
     const displayName = user.displayName || user.email || 'User';
     statusBarItem.text = `$(account) ${displayName}`;
@@ -515,7 +546,7 @@ function updateStatusBar(user: any | null): void {
 /**
  * Handle user signed in event
  */
-async function onUserSignedIn(user: any): Promise<void> {
+async function onUserSignedIn(user: User): Promise<void> {
   try {
     // Load or create user profile in Firestore
     const profile = await firestoreService?.getUserProfile(user.uid);
@@ -701,7 +732,7 @@ async function addToQueue(uri?: vscode.Uri): Promise<void> {
 /**
  * Delete queue item
  */
-async function deleteQueueItem(item: any): Promise<void> {
+async function deleteQueueItem(item: QueueTreeItem): Promise<void> {
   if (!item?.queueItem) {
     return;
   }
@@ -727,7 +758,7 @@ async function deleteQueueItem(item: any): Promise<void> {
 /**
  * Pause queue item
  */
-async function pauseQueueItem(item: any): Promise<void> {
+async function pauseQueueItem(item: QueueTreeItem): Promise<void> {
   if (!item?.queueItem) {
     return;
   }
@@ -743,7 +774,7 @@ async function pauseQueueItem(item: any): Promise<void> {
 /**
  * Resume queue item
  */
-async function resumeQueueItem(item: any): Promise<void> {
+async function resumeQueueItem(item: QueueTreeItem): Promise<void> {
   if (!item?.queueItem) {
     return;
   }
@@ -759,10 +790,12 @@ async function resumeQueueItem(item: any): Promise<void> {
 /**
  * Run queue item
  */
-async function runQueueItem(item: any): Promise<void> {
+async function runQueueItem(item: QueueTreeItem): Promise<void> {
   if (!item?.queueItem) {
     return;
   }
+
+  const queueItem = item.queueItem;
 
   try {
     // Run in background with progress notification
@@ -771,7 +804,7 @@ async function runQueueItem(item: any): Promise<void> {
       title: `Running queue item...`,
       cancellable: false
     }, async () => {
-      await queueManager?.runQueueItem(item.queueItem.id);
+      await queueManager?.runQueueItem(queueItem.id);
     });
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to run queue item: ${error instanceof Error ? error.message : String(error)}`);
@@ -928,7 +961,7 @@ async function clearFailed(): Promise<void> {
 /**
  * View queue item details in QuickPick
  */
-async function viewQueueItemDetails(item: any): Promise<void> {
+async function viewQueueItemDetails(item: QueueTreeItem): Promise<void> {
   if (!item?.queueItem) {
     return;
   }
@@ -1055,7 +1088,7 @@ async function viewQueueItemDetails(item: any): Promise<void> {
 /**
  * View session details
  */
-async function viewSessionDetails(item: any): Promise<void> {
+async function viewSessionDetails(item: SessionTreeItem): Promise<void> {
   if (!sessionDetailsView) {
     vscode.window.showErrorMessage('Session details view not available');
     return;
@@ -1071,6 +1104,277 @@ async function viewSessionDetails(item: any): Promise<void> {
     outputChannel.appendLine(`Showing details for session: ${item.session.sessionId}`);
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to show session details: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * View session history with pagination
+ */
+async function viewSessionHistory(): Promise<void> {
+  if (!authManager?.isSignedIn()) {
+    vscode.window.showInformationMessage('You must be signed in to view session history');
+    return;
+  }
+
+  const user = authManager.getCurrentUser();
+  if (!user) {
+    return;
+  }
+
+  try {
+    // Get all sessions from tree provider (already loaded)
+    const sessions = sessionTreeProvider?.getAllSessions() || [];
+
+    if (sessions.length === 0) {
+      vscode.window.showInformationMessage('No sessions found');
+      return;
+    }
+
+    // Create quick pick items
+    interface SessionQuickPickItem extends vscode.QuickPickItem {
+      session: JulesSession;
+    }
+
+    const items: SessionQuickPickItem[] = sessions.map(session => {
+      const date = session.createdAt ? new Date(session.createdAt.toMillis()).toLocaleString() : 'Unknown';
+      const statusIcon = getStatusIconText(session.status);
+      
+      return {
+        label: `${statusIcon} ${session.name || `Session ${session.sessionId.slice(0, 8)}`}`,
+        description: `${date} • ${session.branch}`,
+        detail: `${session.promptPath} • Status: ${session.status}${session.pr ? ' • PR: ' + session.pr.title : ''}`,
+        session
+      };
+    });
+
+    // Show quick pick
+    const selected = await vscode.window.showQuickPick(items, {
+      placeHolder: 'Select a session to view details',
+      matchOnDescription: true,
+      matchOnDetail: true
+    });
+
+    if (selected) {
+      const sessionItem = new SessionTreeItem(
+        selected.label as string,
+        selected.session,
+        vscode.TreeItemCollapsibleState.None
+      );
+      await viewSessionDetails(sessionItem);
+    }
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to load session history: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Filter sessions by status
+ */
+async function filterSessions(): Promise<void> {
+  if (!authManager?.isSignedIn()) {
+    vscode.window.showInformationMessage('You must be signed in to filter sessions');
+    return;
+  }
+
+  // Show filter options
+  const filterType = await vscode.window.showQuickPick([
+    { label: '$(filter) Filter by Status', value: 'status' },
+    { label: '$(calendar) Filter by Date Range', value: 'date' },
+    { label: '$(search) Search Sessions', value: 'search' }
+  ], {
+    placeHolder: 'Select filter type'
+  });
+
+  if (!filterType) {
+    return;
+  }
+
+  try {
+    let filteredSessions: JulesSession[] = [];
+
+    switch (filterType.value) {
+      case 'status': {
+        const status = await vscode.window.showQuickPick([
+          { label: '✅ Completed', value: 'COMPLETED' },
+          { label: '❌ Failed', value: 'FAILED' },
+          { label: '▶️ In Progress', value: 'IN_PROGRESS' },
+          { label: '💡 Planning', value: 'PLANNING' },
+          { label: '⏰ Queued', value: 'QUEUED' },
+          { label: '⏸️ Paused', value: 'PAUSED' }
+        ], {
+          placeHolder: 'Select status to filter'
+        });
+
+        if (!status) {
+          return;
+        }
+
+        filteredSessions = sessionTreeProvider?.filterSessionsByStatus(status.value as SessionStatus) || [];
+        break;
+      }
+
+      case 'date': {
+        const dateRange = await vscode.window.showQuickPick([
+          { label: 'Today', days: 1 },
+          { label: 'Last 7 days', days: 7 },
+          { label: 'Last 30 days', days: 30 },
+          { label: 'Last 90 days', days: 90 }
+        ], {
+          placeHolder: 'Select date range'
+        });
+
+        if (!dateRange) {
+          return;
+        }
+
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - dateRange.days);
+
+        filteredSessions = sessionTreeProvider?.filterSessionsByDateRange(startDate, endDate) || [];
+        break;
+      }
+
+      case 'search': {
+        const searchQuery = await vscode.window.showInputBox({
+          placeHolder: 'Enter search query (prompt path, name, or branch)',
+          prompt: 'Search sessions'
+        });
+
+        if (!searchQuery) {
+          return;
+        }
+
+        filteredSessions = sessionTreeProvider?.searchSessions(searchQuery) || [];
+        break;
+      }
+    }
+
+    // Display results
+    if (filteredSessions.length === 0) {
+      vscode.window.showInformationMessage('No sessions matched the filter');
+      return;
+    }
+
+    interface SessionQuickPickItem extends vscode.QuickPickItem {
+      session: JulesSession;
+    }
+
+    const items: SessionQuickPickItem[] = filteredSessions.map(session => {
+      const date = session.createdAt ? new Date(session.createdAt.toMillis()).toLocaleString() : 'Unknown';
+      const statusIcon = getStatusIconText(session.status);
+      
+      return {
+        label: `${statusIcon} ${session.name || `Session ${session.sessionId.slice(0, 8)}`}`,
+        description: `${date} • ${session.branch}`,
+        detail: `${session.promptPath} • Status: ${session.status}`,
+        session
+      };
+    });
+
+    const selected = await vscode.window.showQuickPick(items, {
+      placeHolder: `Found ${filteredSessions.length} session(s)`,
+      matchOnDescription: true,
+      matchOnDetail: true
+    });
+
+    if (selected) {
+      const sessionItem = new SessionTreeItem(
+        selected.label as string,
+        selected.session,
+        vscode.TreeItemCollapsibleState.None
+      );
+      await viewSessionDetails(sessionItem);
+    }
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to filter sessions: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Clear old sessions
+ */
+async function clearOldSessions(): Promise<void> {
+  if (!authManager?.isSignedIn()) {
+    vscode.window.showInformationMessage('You must be signed in to clear sessions');
+    return;
+  }
+
+  const user = authManager.getCurrentUser();
+  if (!user) {
+    return;
+  }
+
+  // Ask how old
+  const ageOption = await vscode.window.showQuickPick([
+    { label: 'Older than 30 days', days: 30 },
+    { label: 'Older than 60 days', days: 60 },
+    { label: 'Older than 90 days', days: 90 },
+    { label: 'Older than 180 days', days: 180 },
+    { label: 'Older than 1 year', days: 365 }
+  ], {
+    placeHolder: 'Select age threshold for sessions to delete'
+  });
+
+  if (!ageOption) {
+    return;
+  }
+
+  const beforeDate = new Date();
+  beforeDate.setDate(beforeDate.getDate() - ageOption.days);
+
+  // Confirm deletion
+  const confirm = await vscode.window.showWarningMessage(
+    `This will permanently delete all sessions created before ${beforeDate.toLocaleDateString()}. This cannot be undone.`,
+    { modal: true },
+    'Delete Sessions'
+  );
+
+  if (confirm !== 'Delete Sessions') {
+    return;
+  }
+
+  try {
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: 'Deleting old sessions...',
+      cancellable: false
+    }, async () => {
+      const deletedCount = await firestoreService?.deleteOldSessions(user.uid, beforeDate);
+      
+      if (deletedCount && deletedCount > 0) {
+        vscode.window.showInformationMessage(`Deleted ${deletedCount} old session(s)`);
+      } else {
+        vscode.window.showInformationMessage('No old sessions found to delete');
+      }
+
+      // Refresh the sessions view
+      sessionTreeProvider?.refresh();
+    });
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to clear old sessions: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Get status icon text for quick pick
+ */
+function getStatusIconText(status: SessionStatus): string {
+  switch (status) {
+    case 'COMPLETED':
+      return '✅';
+    case 'FAILED':
+      return '❌';
+    case 'IN_PROGRESS':
+      return '▶️';
+    case 'PLANNING':
+      return '💡';
+    case 'QUEUED':
+      return '⏰';
+    case 'PAUSED':
+      return '⏸️';
+    default:
+      return '⚪';
   }
 }
 

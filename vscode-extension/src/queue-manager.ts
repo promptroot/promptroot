@@ -7,7 +7,7 @@
 import * as vscode from 'vscode';
 import { FirestoreService } from './firestore-service';
 import { AuthManager } from './auth-manager';
-import { JulesQueueItem, QueueStatus, SingleQueueItem, BatchQueueItem, BatchSubtask } from './models';
+import { JulesQueueItem, SingleQueueItem, BatchQueueItem, BatchSubtask } from './models';
 import { Timestamp } from 'firebase/firestore';
 import * as path from 'path';
 import * as fs from 'fs';

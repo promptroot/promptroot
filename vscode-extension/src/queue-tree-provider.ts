@@ -108,7 +108,7 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 		if (element.contextValue === 'batch' && element.queueItem) {
 			const batchItem = element.queueItem;
 			if (isBatchQueueItem(batchItem)) {
-				return batchItem.subtasks.map((subtask, index) => {
+				return batchItem.subtasks.map((subtask) => {
 					const icon = this.getStatusIcon(subtask.status);
 					const label = `${icon} ${subtask.promptPath}`;
 					const item = new QueueTreeItem(label, subtask.status, 'subtask');

@@ -20,7 +20,6 @@ import {
 	limit,
 	onSnapshot,
 	Timestamp,
-	DocumentSnapshot,
 	QuerySnapshot,
 	Unsubscribe,
 	serverTimestamp,
@@ -31,6 +30,7 @@ import {
 	UserProfile,
 	JulesQueueItem,
 	JulesSession,
+	SessionStatus,
 	COLLECTIONS,
 	getUserCollectionPath
 } from './models';
@@ -45,6 +45,7 @@ interface CacheEntry<T> {
 
 export class FirestoreService {
 	private db: Firestore;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private cache: Map<string, CacheEntry<any>> = new Map();
 	private listeners: Map<string, Unsubscribe> = new Map();
 
@@ -98,6 +99,7 @@ export class FirestoreService {
 				await updateDoc(docRef, {
 					...profile,
 					lastLoginAt: serverTimestamp()
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				} as any);
 			} else {
 				// Create new profile
@@ -105,6 +107,7 @@ export class FirestoreService {
 					...profile,
 					createdAt: serverTimestamp(),
 					lastLoginAt: serverTimestamp()
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				} as any);
 			}
 
@@ -179,6 +182,7 @@ export class FirestoreService {
 			await updateDoc(docRef, {
 				...updates,
 				updatedAt: serverTimestamp()
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			} as any);
 
 			this.outputChannel.appendLine(`Queue item updated: ${itemId}`);
@@ -200,33 +204,6 @@ export class FirestoreService {
 			this.outputChannel.appendLine(`Queue item deleted: ${itemId}`);
 		} catch (error) {
 			this.outputChannel.appendLine(`Error deleting queue item: ${error instanceof Error ? error.message : 'Unknown error'}`);
-			throw error;
-		}
-	}
-
-	/**
-	 * Get sessions for a user
-	 */
-	public async getSessions(uid: string, limitCount = 50): Promise<JulesSession[]> {
-		try {
-			const collectionPath = getUserCollectionPath(uid, 'sessions');
-			const q = query(
-				collection(this.db, collectionPath),
-				orderBy('createdAt', 'desc'),
-				limit(limitCount)
-			);
-
-			const snapshot = await getDocs(q);
-			const sessions: JulesSession[] = [];
-
-			snapshot.forEach((doc) => {
-				sessions.push(doc.data() as JulesSession);
-			});
-
-			this.outputChannel.appendLine(`Fetched ${sessions.length} sessions for user ${uid}`);
-			return sessions;
-		} catch (error) {
-			this.outputChannel.appendLine(`Error fetching sessions: ${error instanceof Error ? error.message : 'Unknown error'}`);
 			throw error;
 		}
 	}
@@ -279,7 +256,8 @@ export class FirestoreService {
 	public subscribeToSessions(
 		uid: string,
 		onUpdate: (sessions: JulesSession[]) => void,
-		onError?: (error: Error) => void
+		onError?: (error: Error) => void,
+		limitCount: number = 50
 	): Unsubscribe {
 		const listenerId = `sessions:${uid}`;
 		
@@ -290,7 +268,7 @@ export class FirestoreService {
 		const q = query(
 			collection(this.db, collectionPath),
 			orderBy('createdAt', 'desc'),
-			limit(50)
+			limit(limitCount)
 		);
 
 		const unsubscribe = onSnapshot(
@@ -314,6 +292,102 @@ export class FirestoreService {
 		this.outputChannel.appendLine(`Subscribed to session updates: ${uid}`);
 
 		return unsubscribe;
+	}
+
+	/**
+	 * Get sessions with pagination and filtering
+	 */
+	public async getSessions(
+		uid: string,
+		options?: {
+			limitCount?: number;
+			status?: SessionStatus;
+			startAfterDate?: Date;
+		}
+	): Promise<JulesSession[]> {
+		try {
+			const collectionPath = getUserCollectionPath(uid, 'sessions');
+			let q = query(
+				collection(this.db, collectionPath),
+				orderBy('createdAt', 'desc')
+			);
+
+			// Add status filter if provided
+			if (options?.status) {
+				q = query(q, where('status', '==', options.status));
+			}
+
+			// Add limit
+			if (options?.limitCount) {
+				q = query(q, limit(options.limitCount));
+			}
+
+			const snapshot = await getDocs(q);
+			const sessions: JulesSession[] = [];
+
+			snapshot.forEach((doc) => {
+				sessions.push(doc.data() as JulesSession);
+			});
+
+			this.outputChannel.appendLine(`Fetched ${sessions.length} sessions for user ${uid}`);
+			return sessions;
+		} catch (error) {
+			this.outputChannel.appendLine(`Error fetching sessions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw error;
+		}
+	}
+
+	/**
+	 * Delete sessions older than specified date
+	 */
+	public async deleteOldSessions(uid: string, beforeDate: Date): Promise<number> {
+		try {
+			const collectionPath = getUserCollectionPath(uid, 'sessions');
+			const q = query(
+				collection(this.db, collectionPath),
+				where('createdAt', '<', Timestamp.fromDate(beforeDate))
+			);
+
+			const snapshot = await getDocs(q);
+			const batch = writeBatch(this.db);
+			let deleteCount = 0;
+
+			snapshot.forEach((docSnapshot) => {
+				batch.delete(docSnapshot.ref);
+				deleteCount++;
+			});
+
+			if (deleteCount > 0) {
+				await batch.commit();
+				this.outputChannel.appendLine(`Deleted ${deleteCount} old sessions for user ${uid}`);
+			}
+
+			return deleteCount;
+		} catch (error) {
+			this.outputChannel.appendLine(`Error deleting old sessions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw error;
+		}
+	}
+
+	/**
+	 * Delete specific sessions by IDs
+	 */
+	public async deleteSessions(uid: string, sessionIds: string[]): Promise<void> {
+		try {
+			const collectionPath = getUserCollectionPath(uid, 'sessions');
+			const batch = writeBatch(this.db);
+
+			for (const sessionId of sessionIds) {
+				const docRef = doc(this.db, collectionPath, sessionId);
+				batch.delete(docRef);
+			}
+
+			await batch.commit();
+			this.outputChannel.appendLine(`Deleted ${sessionIds.length} sessions for user ${uid}`);
+		} catch (error) {
+			this.outputChannel.appendLine(`Error deleting sessions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw error;
+		}
 	}
 
 	/**

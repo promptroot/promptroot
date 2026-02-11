@@ -149,7 +149,26 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeI
 	 * Create tree item for a session
 	 */
 	private createSessionTreeItem(session: JulesSession): SessionTreeItem {
-		const label = session.name || `Session ${session.sessionId.slice(0, 8)}`;
+		// Use the name field (which is mapped from title in Firestore)
+		let label: string;
+		
+		// Check if name looks like a generic session path "sessions/XXXXXXXX"
+		const isSessionPath = session.name && /^sessions\/\d+$/.test(session.name);
+		
+		if (isSessionPath || !session.name) {
+			// Fallback to promptPath or session ID if name is missing or generic
+			if (session.promptPath) {
+				const pathParts = session.promptPath.split('/');
+				const filename = pathParts[pathParts.length - 1];
+				label = filename.replace(/\.md$/, '');
+			} else {
+				label = `Session ${session.sessionId.slice(0, 8)}`;
+			}
+		} else {
+			// Use the descriptive title
+			label = session.name;
+		}
+		
 		const item = new SessionTreeItem(
 			label,
 			session,
@@ -182,14 +201,12 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeI
 		// Add context value for menu items
 		item.contextValue = 'session';
 
-		// Make PR sessions clickable
-		if (session.pr?.url) {
-			item.command = {
-				command: 'promptroot.openPRInBrowser',
-				title: 'Open PR',
-				arguments: [session.pr.url]
-			};
-		}
+		// Make sessions clickable to open in Jules
+		item.command = {
+			command: 'vscode.open',
+			title: 'Open Session in Jules',
+			arguments: [vscode.Uri.parse(session.julesUrl)]
+		};
 
 		return item;
 	}

@@ -280,7 +280,13 @@ export class FirestoreService {
 			(snapshot: QuerySnapshot) => {
 				const sessions: JulesSession[] = [];
 				snapshot.forEach((doc) => {
-					sessions.push(doc.data() as JulesSession);
+					const data = doc.data();
+					// Map Firestore field names to model and generate julesUrl
+					sessions.push({
+						...data,
+						name: data.title || data.sessionName || data.name,  // Prefer title, fallback to sessionName
+						julesUrl: `https://jules.google.com/session/${data.sessionId}`
+					} as JulesSession);
 				});
 				onUpdate(sessions);
 			},
@@ -289,8 +295,8 @@ export class FirestoreService {
 				if (onError) {
 					onError(error);
 				}
-			}
-		);
+				}
+			);
 
 		this.listeners.set(listenerId, unsubscribe);
 		this.outputChannel.appendLine(`Subscribed to session updates: ${uid}`);

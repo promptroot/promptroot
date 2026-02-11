@@ -5,6 +5,8 @@
 PromptRoot is a zero-build, modular single-page application for sharing and managing AI prompts stored as markdown files in GitHub repositories. Key features include:
 - Prompt library browser with tree navigation and branch/repo switching
 - Jules AI integration (Google's coding assistant) with queue-based batch processing
+- Jules session analytics dashboard with usage metrics and history
+- Copen (context opener) system for launching prompts in AI tools (Claude, ChatGPT, Gemini, etc.)
 - Browser extension (Manifest v3) for web capture with GitHub sync
 - GitHub OAuth authentication via Firebase
 - Firebase backend for user data, API key encryption, and queue management
@@ -28,6 +30,7 @@ index.html              # Main entry point (prompt browser)
 oauth-callback.html     # GitHub OAuth redirect handler
 sw.js                   # Service worker (versioned cache strategy)
 pages/                  # Page routes (HTML entry points)
+  ├── analytics/        # Jules session analytics dashboard
   ├── jules/            # Jules account & API key management
   ├── queue/            # Jules queue batch processing
   ├── sessions/         # Jules session history
@@ -35,11 +38,11 @@ pages/                  # Page routes (HTML entry points)
   ├── webcapture/       # Extension download & instructions
   └── privacy/          # Privacy policy (static)
 src/
-  ├── modules/          # Feature modules (~30 files)
-  ├── pages/            # Page initialization modules (8 files)
-  ├── utils/            # Shared utilities (19 files)
+  ├── modules/          # Feature modules (~35 files)
+  ├── pages/            # Page initialization modules (9 files)
+  ├── utils/            # Shared utilities (~20 files)
   ├── styles/           # CSS modules (base, components, pages)
-  ├── unit-tests/       # Vitest unit tests (~42 files)
+  ├── unit-tests/       # Vitest unit tests (~49 files)
   ├── tests/            # Integration tests
   ├── app.js            # Main app initialization
   ├── firebase-init.js  # Firebase SDK config & environment detection
@@ -105,7 +108,7 @@ Unit tests use jsdom environment with setup in `src/unit-tests/setup.js`. Covera
 - **Port-based Config**: `src/firebase-init.js` checks `window.location.port` to determine emulator vs production endpoints
 - **Session Caching**: Uses sessionStorage with LRU eviction for API responses; cache policies defined in `constants.js` (cache-first, network-only, stale-while-revalidate)
 - **Auth State**: Authentication state persists in localStorage; checked on every page load
-- **Service Worker**: Versioned cache (`promptroot-v7-static`) pre-caches ~40 static assets; network-first for GitHub API/raw markdown; excludes Firestore and dynamic data
+- **Service Worker**: Versioned cache (`promptroot-v8-static`) pre-caches ~40 static assets; network-first for GitHub API/raw markdown; excludes Firestore and dynamic data
 - **Lazy Loading**: Fuse.js loaded on demand for search functionality
 - **Version Checking**: Compares current version (meta tag) against latest GitHub commit; shows update banner if outdated
 
@@ -127,7 +130,7 @@ Unit tests use jsdom environment with setup in `src/unit-tests/setup.js`. Covera
 - Cache management via `src/utils/cache-manager.js` with TTL support
 
 ### CSS Architecture
-- Modular CSS imported via `src/styles.css` (31 component/layout imports)
+- Modular CSS imported via `src/styles.css` (28 component/layout imports)
 - BEM naming: `.component`, `.component--modifier`, `.component__element`
 - CSS variables defined in `src/styles/base.css`
 - Component styles in `src/styles/components/`
@@ -179,6 +182,15 @@ Unit tests use jsdom environment with setup in `src/unit-tests/setup.js`. Covera
 | `prompt-list.js` | Sidebar tree navigation, file listing, caching |
 | `prompt-service.js` | High-level prompt service layer |
 | `prompt-viewer.js` | Prompt viewer/display component |
+| `copen.js` | Copen URL resolution and caching for AI tool launchers |
+| `copen-manager.js` | Manages user's custom copens in Firestore (CRUD operations) |
+
+### Analytics & Tracking (`src/modules/`)
+
+| Module | Purpose |
+|--------|---------|
+| `analytics.js` | Calculates and aggregates analytics data from tracked sessions |
+| `session-tracking.js` | Tracks Jules sessions in Firestore for analytics and history |
 
 ### Jules Integration (`src/modules/`)
 
@@ -231,18 +243,26 @@ Unit tests use jsdom environment with setup in `src/unit-tests/setup.js`. Covera
 | `slug.js` | URL slug utilities |
 | `title.js` | Page title utilities |
 | `extension-detector.js` | Chrome extension presence detection |
-| `copen-config.js` | COPEN-related configuration |
+| `copen-config.js` | Dynamic copen options configuration from user settings |
+| `handler-registry.js` | Global handler registry for namespaced event management |
+| `jules-queue-helpers.js` | Jules queue utilities (date parsing, timezone handling) |
 
 ## Database
 
 Firestore collections:
 - `julesQueues/{uid}/items` - User's Jules queue items (prompt tasks, batch operations)
-- `users/{uid}` - User profile and settings
-- `apiKeys/{uid}` - Encrypted API keys (AES-GCM encryption)
+- `julesKeys/{uid}` - Encrypted Jules API keys (AES-GCM encryption)
+- `juleSessions/{uid}/sessions/{sessionId}` - Tracked Jules session data for analytics
+- `juleSessions/{uid}/sessions/{sessionId}/activities/{activityId}` - Session activity details
+- `juleSessions/{uid}/analytics/{period}` - Aggregated analytics data
+- `users/{uid}` - User preferences (favorites, settings)
+- `userProfiles/{uid}` - User profile data (timezone preferences, etc.)
+- `userCopens/{uid}` - User's custom copen configurations
 
 Security rules: `config/firestore/firestore.rules`
 - Users can only read/write their own documents
 - Authentication required for all operations
+- Deny-all default for unmatched paths
 
 Indexes: `firestore.indexes.json`
 
@@ -262,10 +282,9 @@ Indexes: `firestore.indexes.json`
 
 GitHub Actions workflows in `.github/workflows/`:
 - `test.yml` - Unit tests on push to main and PRs (vitest with coverage to Codecov)
-- `smoke-tests.yml` - Quick critical-path E2E tests on push/PR
-- `e2e-tests.yml` - Full Playwright E2E suite on push/PR
-- `extended-e2e-tests.yml` - Extended integration tests (manual trigger)
-- `dependabot.yml` - Automatic dependency updates
+- `smoke-tests.yml` - Quick critical-path E2E tests on push to any branch and PRs
+- `e2e-tests.yml` - Full Playwright E2E suite (manual trigger only; Chromium, Firefox, WebKit)
+- `extended-e2e-tests.yml` - Extended integration tests (manual trigger with browser choice)
 
 ## Browser Extension
 
@@ -311,5 +330,6 @@ cd functions && npm run deploy      # Deploy functions to Firebase
 - `docs/UI_GUIDELINES.md` - UI/UX design patterns and component guidelines
 - `docs/DOCKER.md` - Docker and emulator setup
 - `docs/SECURITY.md` - Security considerations, encryption, CSP
+- `docs/SESSION_TRACKING.md` - Session tracking implementation guide
 - `FORKING_GUIDE.md` - Guide for forking the repository
 - `UNIT_TESTS.md` - Unit testing documentation

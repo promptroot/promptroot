@@ -1,4 +1,4 @@
-pr---
+---
 title: "CompTIA certs details"
 source: https://chatgpt.com/gg/69362bac4214819387054d164f253ab6
 domain: chatgpt.com

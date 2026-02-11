@@ -2028,7 +2028,10 @@ async function openRepository(repo: GitHubRepository): Promise<void> {
  * Add repository to favorites
  */
 async function addFavoriteRepo(item: RepositoryTreeItem): Promise<void> {
+  outputChannel.appendLine(`addFavoriteRepo called with item: ${item?.label}, contextValue: ${item?.contextValue}, hasRepository: ${!!item?.repository}`);
+  
   if (!repositoryTreeProvider || !item.repository) {
+    outputChannel.appendLine(`addFavoriteRepo early return - repositoryTreeProvider: ${!!repositoryTreeProvider}, item.repository: ${!!item?.repository}`);
     return;
   }
 
@@ -2046,7 +2049,10 @@ async function addFavoriteRepo(item: RepositoryTreeItem): Promise<void> {
  * Remove repository from favorites
  */
 async function removeFavoriteRepo(item: RepositoryTreeItem): Promise<void> {
+  outputChannel.appendLine(`removeFavoriteRepo called with item: ${item?.label}, contextValue: ${item?.contextValue}, hasRepository: ${!!item?.repository}`);
+  
   if (!repositoryTreeProvider || !item.repository) {
+    outputChannel.appendLine(`removeFavoriteRepo early return - repositoryTreeProvider: ${!!repositoryTreeProvider}, item.repository: ${!!item?.repository}`);
     return;
   }
 

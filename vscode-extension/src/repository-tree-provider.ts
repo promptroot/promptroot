@@ -31,7 +31,10 @@ export class RepositoryTreeItem extends vscode.TreeItem {
 			this.iconPath = new vscode.ThemeIcon('repo');
 			this.description = repository.private ? 'Private' : 'Public';
 			this.tooltip = this.createTooltip(repository);
-			this.contextValue = repository.private ? 'repository-private' : 'repository-public';
+			// Use passed contextValue if provided, otherwise fall back to default
+			if (!this.contextValue) {
+				this.contextValue = repository.private ? 'repository-private' : 'repository-public';
+			}
 			
 			// Make repositories clickable
 			this.command = {
@@ -343,16 +346,20 @@ export class RepositoryTreeProvider implements vscode.TreeDataProvider<Repositor
 
 			// Create tree items
 			return filteredRepos.map(repo => {
+				const isFavorite = this.favoriteRepos.has(repo.full_name);
+				const visibility = repo.private ? 'private' : 'public';
+				const contextValue = isFavorite ? `repository-favorite-${visibility}` : `repository-normal-${visibility}`;
+				
 				const item = new RepositoryTreeItem(
 					repo.name,
 					RepositoryItemType.REPOSITORY,
 					repo,
 					vscode.TreeItemCollapsibleState.None,
-					repo.private ? 'repository-private' : 'repository-public'
+					contextValue
 				);
 				
 				// Add star icon for favorites
-				if (this.favoriteRepos.has(repo.full_name)) {
+				if (isFavorite) {
 					item.iconPath = new vscode.ThemeIcon('star-full');
 				}
 				

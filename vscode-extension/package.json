@@ -340,7 +340,12 @@
         },
         {
           "command": "promptroot.addFavoriteRepo",
-          "when": "view == promptroot.repositoriesView && viewItem =~ /repository-/",
+          "when": "view == promptroot.repositoriesView && (viewItem == repository-normal-public || viewItem == repository-normal-private)",
+          "group": "inline"
+        },
+        {
+          "command": "promptroot.removeFavoriteRepo",
+          "when": "view == promptroot.repositoriesView && (viewItem == repository-favorite-public || viewItem == repository-favorite-private)",
           "group": "inline"
         },
         {

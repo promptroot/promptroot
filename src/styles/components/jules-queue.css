@@ -245,3 +245,22 @@
 #scheduleQueueModal .form-error.hidden {
   display: none;
 }
+
+/* Repository Filter Styles */
+.queue-repo-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.queue-repo-filter .form-label {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.queue-repo-filter .form-control {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+}

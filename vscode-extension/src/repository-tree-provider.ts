@@ -76,7 +76,8 @@ export class RepositoryTreeProvider implements vscode.TreeDataProvider<Repositor
 	private githubService: GitHubService;
 	private firestoreService: FirestoreService;
 	private favoriteRepos: Set<string> = new Set();
-	private isLoading = false;
+	private isLoading = true;  // Start in loading state
+	private authChecked = false;  // Track if auth status is verified
 
 	constructor(
 		private readonly authManager: AuthManager,
@@ -85,17 +86,30 @@ export class RepositoryTreeProvider implements vscode.TreeDataProvider<Repositor
 		this.githubService = new GitHubService(authManager, outputChannel);
 		this.firestoreService = new FirestoreService(outputChannel);
 		
+		// Start in loading state until auth is verified
+		this.isLoading = true;
+		this.authChecked = false;
+		
 		// Load favorites from Firestore
 		this.loadFavorites();
 		
 		// Listen for auth state changes and refresh tree
 		this.authManager.onAuthStateChanged((user) => {
 			this.outputChannel.appendLine(`Repository tree: Auth state changed, user=${user?.email || 'none'}`);
+			this.authChecked = true;
+			this.isLoading = false;
 			this.refresh();
 			if (user) {
 				this.loadFavorites();
 			}
 		});
+		
+		// Check current auth state immediately  
+		setTimeout(() => {
+			this.authChecked = true;
+			this.isLoading = false;
+			this.refresh();
+		}, 100); // Small delay to let auth initialize
 	}
 
 	/**
@@ -230,11 +244,23 @@ export class RepositoryTreeProvider implements vscode.TreeDataProvider<Repositor
 	}
 
 	async getChildren(element?: RepositoryTreeItem): Promise<RepositoryTreeItem[]> {
-		// Check authentication
+		// Check if auth is still being verified
+		if (!this.authChecked) {
+			return [
+				new RepositoryTreeItem(
+					'⏳ Loading...',
+					RepositoryItemType.LOADING,
+					undefined,
+					vscode.TreeItemCollapsibleState.None
+				)
+			];
+		}
+		
+		// Check authentication (only after auth is verified)
 		if (!this.authManager.isSignedIn()) {
 			return [
 				new RepositoryTreeItem(
-					'Sign in to view repositories',
+					'🔑 Sign in to view repositories',
 					RepositoryItemType.LOADING,
 					undefined,
 					vscode.TreeItemCollapsibleState.None

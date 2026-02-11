@@ -7,8 +7,9 @@
 import * as vscode from 'vscode';
 import { FirestoreService } from './firestore-service';
 import { AuthManager } from './auth-manager';
-import { JulesClient } from './jules-client';
+import { JulesClient, JulesSource } from './jules-client';
 import { JulesConfig } from './jules-config';
+import { GitHubService } from './github-service';
 import { JulesQueueItem, SingleQueueItem, BatchQueueItem, BatchSubtask, isSingleQueueItem, isBatchQueueItem } from './models';
 import { Timestamp } from 'firebase/firestore';
 import * as path from 'path';
@@ -20,6 +21,7 @@ export class QueueManager {
 		private authManager: AuthManager,
 		private julesClient: JulesClient,
 		private julesConfig: JulesConfig,
+		private githubService: GitHubService,
 		private outputChannel: vscode.OutputChannel
 	) {}
 
@@ -264,16 +266,30 @@ export class QueueManager {
 			throw new Error('Jules API key not configured. Please configure it first.');
 		}
 
-		// Get Jules sources to find available repositories
-		const sourcesResponse = await this.julesClient.listSources(apiKey);
-		if (!sourcesResponse.sources || sourcesResponse.sources.length === 0) {
+		// Get ALL Jules sources (with pagination support)
+		this.outputChannel.appendLine('Fetching all available Jules repositories...');
+		const allSources = await this.julesClient.listAllSources(apiKey);
+		if (!allSources || allSources.length === 0) {
 			throw new Error('No Jules sources available. Please connect a repository to Jules first.');
 		}
 
-		// For now, use the first available source
-		// TODO: Allow user to select specific source or configure default
-		const source = sourcesResponse.sources[0];
-		this.outputChannel.appendLine(`Using Jules source: ${source.displayName || source.name}`);
+		this.outputChannel.appendLine(`Found ${allSources.length} available repositories`);
+
+		// Let user select repository
+		const source = await this.selectJulesSource(allSources);
+		if (!source) {
+			return; // User cancelled
+		}
+
+		this.outputChannel.appendLine(`Selected Jules source: ${source.displayName || source.name}`);
+
+		// Let user select or confirm branch
+		const branch = await this.selectBranch(source, queueItem.branch);
+		if (!branch) {
+			return; // User cancelled
+		}
+
+		this.outputChannel.appendLine(`Selected branch: ${branch}`);
 
 		if (isSingleQueueItem(queueItem)) {
 			// Handle single queue item
@@ -284,7 +300,7 @@ export class QueueManager {
 				apiKey,
 				prompt,
 				source.name,
-				queueItem.branch,
+				branch,
 				title,
 				false, // autoCreatePR - could be made configurable
 				false  // requirePlanApproval - could be made configurable
@@ -483,6 +499,111 @@ export class QueueManager {
 		}
 
 		vscode.window.showInformationMessage(`Cleared ${failedItems.length} failed item(s)`);
+	}
+
+	/**
+	 * Let user select a Jules source (repository)
+	 */
+	private async selectJulesSource(sources: JulesSource[]): Promise<JulesSource | undefined> {
+		if (sources.length === 1) {
+			// If only one source, ask for confirmation
+			const confirm = await vscode.window.showQuickPick(['Yes', 'Cancel'], {
+				placeHolder: `Send to repository: ${sources[0].displayName || sources[0].name}?`
+			});
+			return confirm === 'Yes' ? sources[0] : undefined;
+		}
+
+		// Multiple sources - let user pick
+		const items = sources.map(source => ({
+			label: source.displayName || source.name,
+			description: source.name,
+			source
+		}));
+
+		const selected = await vscode.window.showQuickPick(items, {
+			placeHolder: 'Select repository to send task to',
+			matchOnDescription: true
+		});
+
+		return selected?.source;
+	}
+
+	/**
+	 * Let user select or confirm branch for the selected repository
+	 */
+	private async selectBranch(source: JulesSource, suggestedBranch: string): Promise<string | undefined> {
+		let defaultBranch = suggestedBranch;
+		let availableBranches: string[] = [];
+
+		// Try to detect repository info and get branches
+		try {
+			// Parse Jules source name: sources/github/owner/repo
+			const match = source.name.match(/sources\/github\/([^/]+)\/([^/]+)/);
+			if (match && this.githubService) {
+				const [, owner, repo] = match;
+				this.outputChannel.appendLine(`Fetching branches for ${owner}/${repo} from Jules source: ${source.name}`);
+
+				// Get repository info to find default branch
+				const repoInfo = await this.githubService.getRepository(owner, repo);
+				if (repoInfo?.default_branch) {
+					defaultBranch = repoInfo.default_branch;
+					this.outputChannel.appendLine(`Repository default branch: ${defaultBranch}`);
+				}
+
+				// Get available branches
+				const branches = await this.githubService.listBranches(owner, repo);
+				availableBranches = branches.map(b => b.name);
+				this.outputChannel.appendLine(`Found ${availableBranches.length} branches`);
+			}
+		} catch (error) {
+			this.outputChannel.appendLine(`Failed to fetch branch info: ${error}`);
+		}
+
+		// Create branch selection items
+		const branchItems: vscode.QuickPickItem[] = [];
+
+		// Always include the default/suggested branch first
+		branchItems.push({
+			label: defaultBranch,
+			description: '(default)',
+			picked: true
+		});
+
+		// Add other available branches (excluding the default to avoid duplicates)
+		for (const branch of availableBranches) {
+			if (branch !== defaultBranch) {
+				branchItems.push({
+					label: branch,
+					description: ''
+				});
+			}
+		}
+
+		// Add option to enter custom branch
+		branchItems.push({
+			label: '$(edit) Enter custom branch name...',
+			description: 'Type a custom branch name',
+		});
+
+		const selected = await vscode.window.showQuickPick(branchItems, {
+			placeHolder: `Select branch for ${source.displayName || source.name}`,
+			matchOnDescription: true
+		});
+
+		if (!selected) {
+			return undefined; // User cancelled
+		}
+
+		// Handle custom branch entry
+		if (selected.label.startsWith('$(edit)')) {
+			return await vscode.window.showInputBox({
+				prompt: 'Enter custom branch name',
+				value: defaultBranch,
+				placeHolder: 'branch-name'
+			});
+		}
+
+		return selected.label;
 	}
 
 	/**

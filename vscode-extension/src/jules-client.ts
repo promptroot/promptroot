@@ -127,7 +127,7 @@ export class JulesClient {
   }
 
   /**
-   * List all Jules sources (connected repositories).
+   * List all Jules sources (connected repositories) with pagination support.
    * @param apiKey - Jules API key
    * @param pageToken - Optional pagination token
    * @returns Promise with sources and next page token
@@ -162,6 +162,49 @@ export class JulesClient {
       this.outputChannel.appendLine(`Error fetching sources: ${error}`);
       throw error;
     }
+  }
+
+  /**
+   * List ALL Jules sources by following pagination.
+   * @param apiKey - Jules API key
+   * @param maxPages - Maximum number of pages to fetch (default: 10)
+   * @returns Promise with all sources
+   */
+  async listAllSources(
+    apiKey: string,
+    maxPages: number = 10
+  ): Promise<JulesSource[]> {
+    const allSources: JulesSource[] = [];
+    let pageToken: string | undefined = undefined;
+    let page = 1;
+
+    this.outputChannel.appendLine(`Fetching all Jules sources (max ${maxPages} pages)`);
+
+    while (page <= maxPages) {
+      try {
+        const response = await this.listSources(apiKey, pageToken);
+        
+        if (response.sources) {
+          allSources.push(...response.sources);
+          this.outputChannel.appendLine(`Page ${page}: Added ${response.sources.length} sources (total: ${allSources.length})`);
+        }
+
+        // Check if there are more pages
+        if (!response.nextPageToken) {
+          this.outputChannel.appendLine(`Reached end of sources after ${page} pages`);
+          break;
+        }
+
+        pageToken = response.nextPageToken;
+        page++;
+      } catch (error) {
+        this.outputChannel.appendLine(`Error fetching sources page ${page}: ${error}`);
+        throw error;
+      }
+    }
+
+    this.outputChannel.appendLine(`Fetched total of ${allSources.length} Jules sources`);
+    return allSources;
   }
 
   /**

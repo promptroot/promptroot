@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { COMMANDS, OUTPUT_CHANNEL_NAME, VIEWS } from './constants';
-import { PromptrootTreeProvider } from './tree-provider';
+import { PromptrootTreeProvider, PromptrootTreeItem } from './tree-provider';
 import { JulesConfig } from './jules-config';
 import { JulesClient } from './jules-client';
 import { createNewPromptAsset } from './asset-creator';
@@ -19,8 +19,9 @@ import { RepositoryTreeItem } from './repository-tree-provider';
 import { GitHubRepository, GitHubService } from './github-service';
 import { BranchSelector } from './branch-selector';
 import { ErrorHandler } from './error-handler';
-import { JulesSession, SessionStatus } from './models';
+import { JulesSession, SessionStatus, JulesQueueItem } from './models';
 import { User } from 'firebase/auth';
+import { Timestamp } from 'firebase/firestore';
 
 let outputChannel: vscode.OutputChannel;
 let treeProvider: PromptrootTreeProvider;
@@ -30,6 +31,7 @@ let repositoryTreeProvider: RepositoryTreeProvider | null = null;
 let branchSelector: BranchSelector | null = null;
 let julesConfig: JulesConfig;
 let julesClient: JulesClient;
+let githubService: GitHubService;
 let authManager: AuthManager | null = null;
 let firestoreService: FirestoreService | null = null;
 let queueManager: QueueManager | null = null;
@@ -69,13 +71,7 @@ export async function activate(context: vscode.ExtensionContext) {
   authManager = new AuthManager(context, outputChannel);
   firestoreService = new FirestoreService(outputChannel);
 
-  // Initialize queue manager
-  queueManager = new QueueManager(firestoreService, authManager, julesClient, julesConfig, outputChannel);
-
   // Initialize session details view  
-  sessionDetailsView = new SessionDetailsView(context);
-
-  // Initialize session details view
   sessionDetailsView = new SessionDetailsView(context);
 
   // Create status bar item for user display
@@ -103,6 +99,10 @@ export async function activate(context: vscode.ExtensionContext) {
   // Initialize Jules services
   julesConfig = new JulesConfig(context);
   julesClient = new JulesClient(outputChannel);
+  githubService = new GitHubService(authManager, outputChannel);
+  
+  // Initialize queue manager (after Jules services are ready)
+  queueManager = new QueueManager(firestoreService, authManager, julesClient, julesConfig, githubService, outputChannel);
 
   // Get workspace root
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
@@ -286,6 +286,22 @@ export async function activate(context: vscode.ExtensionContext) {
     async (uri?: vscode.Uri) => {
       outputChannel.appendLine('Add to queue command executed');
       await addToQueue(uri);
+    }
+  );
+
+  const addAssetToQueueCommand = vscode.commands.registerCommand(
+    COMMANDS.addAssetToQueue,
+    async (item?: PromptrootTreeItem) => {
+      outputChannel.appendLine('Add asset to queue command executed');
+      await addAssetToQueue(item);
+    }
+  );
+
+  const sendAssetToJulesCommand = vscode.commands.registerCommand(
+    COMMANDS.sendAssetToJules,
+    async (item?: PromptrootTreeItem) => {
+      outputChannel.appendLine('Send asset to Jules command executed');
+      await sendAssetToJules(item);
     }
   );
 
@@ -588,6 +604,8 @@ export async function activate(context: vscode.ExtensionContext) {
     viewProfileCommand,
     refreshQueueCommand,
     addToQueueCommand,
+    addAssetToQueueCommand,
+    sendAssetToJulesCommand,
     deleteQueueItemCommand,
     pauseQueueItemCommand,
     resumeQueueItemCommand,
@@ -975,6 +993,258 @@ async function showUserProfile(): Promise<void> {
 }
 
 /**
+ * Add prompt asset to Jules queue from assets tree view
+ */
+async function addAssetToQueue(item?: PromptrootTreeItem): Promise<void> {
+  if (!authManager?.isSignedIn()) {
+    const action = await vscode.window.showInformationMessage(
+      'You must be signed in to add items to the queue',
+      'Sign In'
+    );
+    if (action === 'Sign In') {
+      vscode.commands.executeCommand(COMMANDS.signIn);
+    }
+    return;
+  }
+
+  if (!item || !item.resourceUri || item.itemType !== 'prompt') {
+    vscode.window.showErrorMessage('Please select a prompt file to add to the queue');
+    return;
+  }
+
+  try {
+    const filePath = item.resourceUri.fsPath;
+    
+    // Verify it's a prompt file
+    if (!filePath.endsWith('.md')) {
+      vscode.window.showWarningMessage('Only markdown (.md) files can be added to the queue');
+      return;
+    }
+
+    // Get workspace-relative path
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+      vscode.window.showErrorMessage('No workspace folder open');
+      return;
+    }
+
+    const relativePath = filePath.replace(workspaceFolder.uri.fsPath, '').replace(/^[\\/]/, '');
+
+    // Get branch name - try to detect repository and use its default branch
+    let suggestedBranch = queueManager?.getSuggestedBranch();
+    
+    // Try to detect GitHub repository and get default branch
+    if (githubService && authManager?.isSignedIn()) {
+      try {
+        // Try to extract repo info from workspace
+        const workspaceUri = workspaceFolder.uri;
+        const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
+        
+        if (gitExtension) {
+          const repo = gitExtension.getRepository(workspaceUri);
+          if (repo && repo.state.remotes.length > 0) {
+            const origin = repo.state.remotes.find((r: any) => r.name === 'origin') || repo.state.remotes[0];
+            const remoteUrl = origin?.fetchUrl || origin?.pushUrl;
+            
+            if (remoteUrl) {
+              // Parse GitHub URL to get owner/repo
+              const match = remoteUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
+              if (match) {
+                const [, owner, repoName] = match;
+                const repoInfo = await githubService.getRepository(owner, repoName);
+                if (repoInfo?.default_branch) {
+                  suggestedBranch = repoInfo.default_branch;
+                  outputChannel.appendLine(`Detected repository ${owner}/${repoName} with default branch: ${repoInfo.default_branch}`);
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        outputChannel.appendLine(`Failed to detect repository default branch: ${error}`);
+      }
+    }
+
+    const branch = await vscode.window.showInputBox({
+      prompt: 'Enter branch name for this queue item',
+      value: suggestedBranch,
+      placeHolder: 'main'
+    });
+
+    if (!branch) {
+      return; // User cancelled
+    }
+
+    // Add to queue
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: 'Adding to queue...',
+      cancellable: false
+    }, async () => {
+      const id = await queueManager?.addToQueue(relativePath, branch);
+      vscode.window.showInformationMessage(`Added to queue: ${item.label} (${id})`);
+    });
+
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to add to queue: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Send prompt asset directly to Jules from assets tree view
+ */
+async function sendAssetToJules(item?: PromptrootTreeItem): Promise<void> {
+  if (!authManager?.isSignedIn()) {
+    const action = await vscode.window.showInformationMessage(
+      'You must be signed in to send to Jules',
+      'Sign In'
+    );
+    if (action === 'Sign In') {
+      vscode.commands.executeCommand(COMMANDS.signIn);
+    }
+    return;
+  }
+
+  if (!item || !item.resourceUri || item.itemType !== 'prompt') {
+    vscode.window.showErrorMessage('Please select a prompt file to send to Jules');
+    return;
+  }
+
+  try {
+    const filePath = item.resourceUri.fsPath;
+    
+    // Verify it's a prompt file
+    if (!filePath.endsWith('.md')) {
+      vscode.window.showWarningMessage('Only markdown (.md) files can be sent to Jules');
+      return;
+    }
+
+    // Read the file content
+    const document = await vscode.workspace.openTextDocument(item.resourceUri);
+    const content = document.getText();
+    
+    if (!content.trim()) {
+      vscode.window.showWarningMessage('Cannot send empty prompt to Jules');
+      return;
+    }
+
+    outputChannel.appendLine(`Preparing to send "${item.label}" directly to Jules`);
+
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: 'Sending to Jules...',
+      cancellable: false
+    }, async () => {
+      // Get Jules API key
+      if (!julesConfig) {
+        throw new Error('Jules configuration not available');
+      }
+
+      const apiKey = await julesConfig.getApiKey();
+      if (!apiKey) {
+        throw new Error('Jules API key not configured. Please configure it first.');
+      }
+
+      // Get Jules client
+      if (!julesClient) {
+        throw new Error('Jules client not available');
+      }
+
+      // Get ALL Jules sources
+      outputChannel.appendLine('Fetching all available Jules repositories...');
+      const allSources = await julesClient.listAllSources(apiKey);
+      if (!allSources || allSources.length === 0) {
+        throw new Error('No Jules sources available. Please connect a repository to Jules first.');
+      }
+
+      outputChannel.appendLine(`Found ${allSources.length} available repositories`);
+
+      // Let user select repository
+      const sourceOptions = allSources.map(source => ({
+        label: source.displayName || source.name,
+        detail: source.name,
+        source: source
+      }));
+
+      const selectedOption = await vscode.window.showQuickPick(sourceOptions, {
+        placeHolder: 'Select a repository to send prompt to',
+        matchOnDetail: true
+      });
+
+      if (!selectedOption) {
+        return; // User cancelled
+      }
+
+      const source = selectedOption.source;
+      outputChannel.appendLine(`Selected Jules source: ${source.displayName || source.name}`);
+
+      // Try to detect default branch from the selected Jules source repository
+      let suggestedBranch = queueManager?.getSuggestedBranch() || 'main';
+      
+      if (githubService && authManager?.isSignedIn()) {
+        try {
+          // Parse Jules source name to extract repository info
+          // Format is: sources/github/owner/repo
+          const match = source.name.match(/sources\/github\/([^/]+)\/([^/]+)/);
+          
+          if (match) {
+            const [, owner, repoName] = match;
+            outputChannel.appendLine(`Attempting to get default branch for ${owner}/${repoName} from Jules source: ${source.name}`);
+            
+            const repoInfo = await githubService.getRepository(owner, repoName);
+            if (repoInfo?.default_branch) {
+              suggestedBranch = repoInfo.default_branch;
+              outputChannel.appendLine(`Detected default branch for ${owner}/${repoName}: ${repoInfo.default_branch}`);
+            } else {
+              outputChannel.appendLine(`No default branch found in repository info for ${owner}/${repoName}`);
+            }
+          } else {
+            outputChannel.appendLine(`Could not parse repository info from Jules source: ${source.name} (expected format: sources/github/owner/repo)`);
+          }
+        } catch (error) {
+          outputChannel.appendLine(`Failed to detect default branch for Jules source: ${error}`);
+        }
+      }
+
+      // Let user select branch
+      const branch = await vscode.window.showInputBox({
+        prompt: 'Enter branch name',
+        value: suggestedBranch,
+        placeHolder: suggestedBranch
+      });
+
+      if (!branch) {
+        return; // User cancelled
+      }
+
+      outputChannel.appendLine(`Selected branch: ${branch}`);
+
+      // Create Jules session
+      const prompt = content.trim();
+      const title = `VS Code Direct Send - ${item.label} - ${new Date().toISOString()}`;
+
+      const session = await julesClient.createSession(
+        apiKey,
+        prompt,
+        source.name,
+        branch,
+        title
+      );
+
+      outputChannel.appendLine(`Created Jules session: ${session.name}`);
+      
+      vscode.window.showInformationMessage(
+        `Successfully sent "${item.label}" to Jules. Session: ${session.name}`
+      );
+    });
+
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to send to Jules: ${error instanceof Error ? error.message : String(error)}`);
+    outputChannel.appendLine(`Error sending to Jules: ${error}`);
+  }
+}
+
+/**
  * Add prompt(s) to Jules queue
  */
 async function addToQueue(uri?: vscode.Uri): Promise<void> {
@@ -1021,11 +1291,45 @@ async function addToQueue(uri?: vscode.Uri): Promise<void> {
 
     const relativePath = filePath.replace(workspaceFolder.uri.fsPath, '').replace(/^[\\/]/, '');
 
-    // Get branch name
+    // Get branch name - try to detect repository and use its default branch
+    let suggestedBranch = queueManager?.getSuggestedBranch();
+    
+    // Try to detect GitHub repository and get default branch
+    if (githubService && authManager?.isSignedIn()) {
+      try {
+        // Try to extract repo info from workspace
+        const workspaceUri = workspaceFolder.uri;
+        const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
+        
+        if (gitExtension) {
+          const repo = gitExtension.getRepository(workspaceUri);
+          if (repo && repo.state.remotes.length > 0) {
+            const origin = repo.state.remotes.find((r: any) => r.name === 'origin') || repo.state.remotes[0];
+            const remoteUrl = origin?.fetchUrl || origin?.pushUrl;
+            
+            if (remoteUrl) {
+              // Parse GitHub URL to get owner/repo
+              const match = remoteUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
+              if (match) {
+                const [, owner, repoName] = match;
+                const repoInfo = await githubService.getRepository(owner, repoName);
+                if (repoInfo?.default_branch) {
+                  suggestedBranch = repoInfo.default_branch;
+                  outputChannel.appendLine(`Detected repository ${owner}/${repoName} with default branch: ${repoInfo.default_branch}`);
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        outputChannel.appendLine(`Failed to detect repository default branch: ${error}`);
+      }
+    }
+
     const branch = await vscode.window.showInputBox({
       prompt: 'Enter branch name for this queue item',
-      value: queueManager?.getSuggestedBranch(),
-      placeHolder: 'jules-2024-01-01-12-00-00'
+      value: suggestedBranch,
+      placeHolder: 'main'
     });
 
     if (!branch) {

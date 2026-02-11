@@ -16,28 +16,46 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 
 	private queueItems: JulesQueueItem[] = [];
 	private unsubscribe: Unsubscribe | null = null;
+	private isLoading: boolean = true;  // Start in loading state
+	private isInitialized: boolean = false;
+	private authChecked: boolean = false;  // Track if auth status is verified
 
 	constructor(
 		private firestoreService: FirestoreService,
 		private authManager: AuthManager,
 		private outputChannel: vscode.OutputChannel
 	) {
+		// Start in loading state until auth is verified
+		this.isLoading = true;
+		this.authChecked = false;
+		
 		// Subscribe to auth changes
 		this.authManager.onAuthStateChanged((user) => {
+			this.authChecked = true;  // Auth status is now known
 			if (user) {
 				this.subscribeToQueue(user.uid);
 			} else {
 				this.unsubscribeFromQueue();
 				this.queueItems = [];
+				this.isLoading = false;
+				this.isInitialized = true;
 				this.refresh();
 			}
 		});
 
-		// Initial load if already signed in
-		const currentUser = this.authManager.getCurrentUser();
-		if (currentUser) {
-			this.subscribeToQueue(currentUser.uid);
-		}
+		// Check current auth state immediately
+		setTimeout(() => {
+			const currentUser = this.authManager.getCurrentUser();
+			this.authChecked = true;
+			if (currentUser) {
+				this.subscribeToQueue(currentUser.uid);
+			} else {
+				// Not signed in - show sign in message
+				this.isLoading = false;
+				this.isInitialized = true;
+				this.refresh();
+			}
+		}, 100); // Small delay to let auth initialize
 	}
 
 	/**
@@ -47,11 +65,17 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 		this.outputChannel.appendLine(`Subscribing to queue for user: ${uid}`);
 		this.outputChannel.appendLine(`Collection path will be: julesQueues/${uid}/items`);
 		
+		// Set loading state
+		this.isLoading = true;
+		this.refresh();
+		
 		this.unsubscribe = this.firestoreService.subscribeToQueue(
 			uid,
 			(items) => {
 				this.outputChannel.appendLine(`Firestore callback: Received ${items.length} items`);
 				this.queueItems = items;
+				this.isLoading = false;
+				this.isInitialized = true;
 				this.outputChannel.appendLine(`queueItems array updated: ${this.queueItems.length} items`);
 				this.refresh();
 				this.outputChannel.appendLine(`Queue updated: ${items.length} items`);
@@ -65,6 +89,7 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 			},
 			(error) => {
 				this.outputChannel.appendLine(`Queue subscription error: ${error.message}`);
+				this.isLoading = false;
 				vscode.window.showErrorMessage(`Queue sync error: ${error.message}`);
 			},
 			100 // Explicitly set limit to 100
@@ -124,19 +149,25 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 	async getChildren(element?: QueueTreeItem): Promise<QueueTreeItem[]> {
 		this.outputChannel.appendLine(`getChildren() called - queueItems.length: ${this.queueItems.length}`);
 		
-		// Check if user is signed in
+		// Check if auth is still being verified
+		if (!this.authChecked || this.isLoading) {
+			this.outputChannel.appendLine('getChildren: Still loading or checking auth');
+			return [new QueueTreeItem('⏳ Loading...', '', 'info')];
+		}
+		
+		// Check if user is signed in (only after auth is verified)
 		const user = this.authManager.getCurrentUser();
 		if (!user) {
 			this.outputChannel.appendLine('getChildren: No user signed in');
-			return [new QueueTreeItem('Sign in to view queue', '', 'info')];
+			return [new QueueTreeItem('🔑 Sign in to view queue', '', 'info')];
 		}
 
 		// If no element, return root items (queue items)
 		if (!element) {
 			this.outputChannel.appendLine(`getChildren: Root level - ${this.queueItems.length} items available`);
-			if (this.queueItems.length === 0) {
+			if (this.queueItems.length === 0 && this.isInitialized) {
 				this.outputChannel.appendLine('getChildren: Returning "No items in queue"');
-				return [new QueueTreeItem('No items in queue', '', 'info')];
+				return [new QueueTreeItem('📭 No items in queue', '', 'info')];
 			}
 
 			this.outputChannel.appendLine(`getChildren: Creating tree items for ${this.queueItems.length} queue items`);

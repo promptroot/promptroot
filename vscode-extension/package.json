@@ -73,6 +73,16 @@
         "icon": "$(add)"
       },
       {
+        "command": "promptroot.addAssetToQueue",
+        "title": "Add to Jules Queue",
+        "icon": "$(add)"
+      },
+      {
+        "command": "promptroot.sendAssetToJules",
+        "title": "Send to Jules",
+        "icon": "$(play)"
+      },
+      {
         "command": "promptroot.deleteQueueItem",
         "title": "Promptroot: Delete Queue Item",
         "icon": "$(trash)"
@@ -274,6 +284,11 @@
           "group": "inline"
         },
         {
+          "command": "promptroot.deleteQueueItem",
+          "when": "view == promptroot.queueView && viewItem != info",
+          "group": "inline"
+        },
+        {
           "command": "promptroot.pauseQueueItem",
           "when": "view == promptroot.queueView && viewItem != info",
           "group": "queue@1"
@@ -302,6 +317,26 @@
           "command": "promptroot.openPRInBrowser",
           "when": "view == promptroot.sessionsView && viewItem == session",
           "group": "session@2"
+        },
+        {
+          "command": "promptroot.sendAssetToJules",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "inline@1"
+        },
+        {
+          "command": "promptroot.addAssetToQueue",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "inline@2"
+        },
+        {
+          "command": "promptroot.sendAssetToJules",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "jules@1"
+        },
+        {
+          "command": "promptroot.addAssetToQueue",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "jules@2"
         },
         {
           "command": "promptroot.addFavoriteRepo",

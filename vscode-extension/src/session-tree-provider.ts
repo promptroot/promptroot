@@ -16,28 +16,46 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeI
 
 	private sessions: JulesSession[] = [];
 	private unsubscribe: Unsubscribe | null = null;
+	private isLoading: boolean = true;  // Start in loading state
+	private isInitialized: boolean = false;
+	private authChecked: boolean = false;  // Track if auth status is verified
 
 	constructor(
 		private firestoreService: FirestoreService,
 		private authManager: AuthManager,
 		private outputChannel: vscode.OutputChannel
 	) {
+		// Start in loading state until auth is verified
+		this.isLoading = true;
+		this.authChecked = false;
+		
 		// Subscribe to auth changes
 		this.authManager.onAuthStateChanged((user) => {
+			this.authChecked = true;  // Auth status is now known
 			if (user) {
 				this.subscribeToSessions(user.uid);
 			} else {
 				this.unsubscribeFromSessions();
 				this.sessions = [];
+				this.isLoading = false;
+				this.isInitialized = true;
 				this.refresh();
 			}
 		});
 
-		// Initial load if already signed in
-		const currentUser = this.authManager.getCurrentUser();
-		if (currentUser) {
-			this.subscribeToSessions(currentUser.uid);
-		}
+		// Check current auth state immediately
+		setTimeout(() => {
+			const currentUser = this.authManager.getCurrentUser();
+			this.authChecked = true;
+			if (currentUser) {
+				this.subscribeToSessions(currentUser.uid);
+			} else {
+				// Not signed in - show sign in message
+				this.isLoading = false;
+				this.isInitialized = true;
+				this.refresh();
+			}
+		}, 100); // Small delay to let auth initialize
 	}
 
 	/**
@@ -46,15 +64,21 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeI
 	private subscribeToSessions(uid: string): void {
 		this.outputChannel.appendLine(`Subscribing to sessions for user: ${uid}`);
 		
+		this.isLoading = true;
+		this.refresh();
+		
 		this.unsubscribe = this.firestoreService.subscribeToSessions(
 			uid,
 			(sessions) => {
 				this.sessions = sessions;
+				this.isLoading = false;
+				this.isInitialized = true;
 				this.refresh();
 				this.outputChannel.appendLine(`Sessions updated: ${sessions.length} total`);
 			},
 			(error) => {
 				this.outputChannel.appendLine(`Session subscription error: ${error.message}`);
+				this.isLoading = false;
 				vscode.window.showErrorMessage(`Session sync error: ${error.message}`);
 			}
 		);
@@ -89,8 +113,16 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeI
 	 * Get children for tree view
 	 */
 	getChildren(element?: SessionTreeItem): Thenable<SessionTreeItem[]> {
+		// Check if auth is still being verified
+		if (!this.authChecked || this.isLoading) {
+			const item = new vscode.TreeItem('⏳ Loading...', vscode.TreeItemCollapsibleState.None);
+			return Promise.resolve([item as any]);
+		}
+		
+		// Check if user is signed in (only after auth is verified)
 		if (!this.authManager.getCurrentUser()) {
-			return Promise.resolve([]);
+			const item = new vscode.TreeItem('🔑 Sign in to view sessions', vscode.TreeItemCollapsibleState.None);
+			return Promise.resolve([item as any]);
 		}
 
 		if (element) {
@@ -99,6 +131,11 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeI
 		}
 
 		// Root level - return all sessions sorted by date
+		if (this.sessions.length === 0 && this.isInitialized) {
+			const item = new vscode.TreeItem('📭 No sessions found', vscode.TreeItemCollapsibleState.None);
+			return Promise.resolve([item as any]);
+		}
+
 		const sortedSessions = [...this.sessions].sort((a, b) => {
 			const aTime = a.createdAt?.toMillis() || 0;
 			const bTime = b.createdAt?.toMillis() || 0;

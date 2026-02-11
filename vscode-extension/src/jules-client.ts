@@ -11,6 +11,38 @@ const JULES_API_BASE = 'https://jules.googleapis.com/v1alpha';
 const API_TIMEOUT = 10000;
 
 /**
+ * Request body for creating a Jules session
+ */
+interface CreateSessionRequest {
+  prompt: string;
+  title?: string;
+  sourceContext: {
+    source: string;
+    githubRepoContext: {
+      startingBranch: string;
+    };
+  };
+  automationMode?: 'AUTO_CREATE_PR';
+  requirePlanApproval?: boolean;
+}
+
+/**
+ * Request body for creating a Jules session
+ */
+interface CreateSessionRequest {
+  prompt: string;
+  title?: string;
+  sourceContext: {
+    source: string;
+    githubRepoContext: {
+      startingBranch: string;
+    };
+  };
+  automationMode?: 'AUTO_CREATE_PR';
+  requirePlanApproval?: boolean;
+}
+
+/**
  * Represents a Jules source (connected repository)
  */
 export interface JulesSource {
@@ -201,6 +233,72 @@ export class JulesClient {
       return data;
     } catch (error) {
       this.outputChannel.appendLine(`Error fetching session: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new Jules session (submit a task to Jules)
+   * @param apiKey - Jules API key
+   * @param prompt - The prompt/task description for Jules
+   * @param sourceId - Jules source name (e.g., 'sources/your-repo')
+   * @param branch - Git branch name
+   * @param title - Optional session title
+   * @param autoCreatePR - Whether to automatically create a pull request
+   * @param requirePlanApproval - Whether to require plan approval before execution
+   * @returns Promise with created session details
+   */
+  async createSession(
+    apiKey: string,
+    prompt: string,
+    sourceId: string,
+    branch: string,
+    title?: string,
+    autoCreatePR = false,
+    requirePlanApproval = false
+  ): Promise<JulesSession> {
+    const url = `${JULES_API_BASE}/sessions`;
+
+    const body: CreateSessionRequest = {
+      prompt,
+      title: title || '',
+      sourceContext: {
+        source: sourceId,
+        githubRepoContext: {
+          startingBranch: branch
+        }
+      }
+    };
+
+    if (autoCreatePR) {
+      body.automationMode = 'AUTO_CREATE_PR';
+    }
+
+    if (requirePlanApproval !== undefined) {
+      body.requirePlanApproval = requirePlanApproval;
+    }
+
+    this.outputChannel.appendLine(`Creating Jules session with prompt: ${prompt.substring(0, 100)}...`);
+    this.outputChannel.appendLine(`Source: ${sourceId}, Branch: ${branch}`);
+
+    try {
+      const response = await this.fetchWithTimeout(url, {
+        method: 'POST',
+        headers: this.createHeaders(apiKey),
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.outputChannel.appendLine(`Error response: ${response.status} ${errorText}`);
+        throw new Error(`Failed to create session: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json() as JulesSession;
+      this.outputChannel.appendLine(`Created session: ${data.name}`);
+      return data;
+    } catch (error) {
+      this.outputChannel.appendLine(`Error creating session: ${error}`);
       throw error;
     }
   }

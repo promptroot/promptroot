@@ -171,6 +171,18 @@
         "command": "promptroot.setDefaultBranch",
         "title": "Promptroot: Set Default Branch",
         "icon": "$(star)"
+      },
+      {
+        "command": "promptroot.debugAuth",
+        "title": "Promptroot: Debug Authentication"
+      },
+      {
+        "command": "promptroot.debugQueue",
+        "title": "Promptroot: Debug Queue"
+      },
+      {
+        "command": "promptroot.debugTreeView",
+        "title": "Promptroot: Debug Tree View"
       }
     ],
     "views": {

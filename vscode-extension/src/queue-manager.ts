@@ -7,7 +7,9 @@
 import * as vscode from 'vscode';
 import { FirestoreService } from './firestore-service';
 import { AuthManager } from './auth-manager';
-import { JulesQueueItem, SingleQueueItem, BatchQueueItem, BatchSubtask } from './models';
+import { JulesClient } from './jules-client';
+import { JulesConfig } from './jules-config';
+import { JulesQueueItem, SingleQueueItem, BatchQueueItem, BatchSubtask, isSingleQueueItem, isBatchQueueItem } from './models';
 import { Timestamp } from 'firebase/firestore';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -16,6 +18,8 @@ export class QueueManager {
 	constructor(
 		private firestoreService: FirestoreService,
 		private authManager: AuthManager,
+		private julesClient: JulesClient,
+		private julesConfig: JulesConfig,
 		private outputChannel: vscode.OutputChannel
 	) {}
 
@@ -159,15 +163,21 @@ export class QueueManager {
 		this.outputChannel.appendLine(`Running queue item: ${itemId}`);
 
 		try {
+			// Get queue item details
+			const queueItems = await this.firestoreService.getQueueItems(user.uid);
+			const queueItem = queueItems.find(item => item.id === itemId);
+			if (!queueItem) {
+				throw new Error(`Queue item not found: ${itemId}`);
+			}
+
 			// Update status to running
 			await this.firestoreService.updateQueueItem(user.uid, itemId, {
 				status: 'running',
 				updatedAt: Timestamp.now()
 			});
 
-			// TODO: Integrate with Jules API execution
-			// For now, simulate execution
-			await this.simulateExecution(itemId);
+			// Execute with Jules API
+			await this.executeWithJules(queueItem);
 
 			// Update status to completed
 			await this.firestoreService.updateQueueItem(user.uid, itemId, {
@@ -245,14 +255,71 @@ export class QueueManager {
 	}
 
 	/**
-	 * Simulate execution (placeholder for Jules API integration)
+	 * Execute queue item with Jules API
 	 */
-	private async simulateExecution(itemId: string): Promise<void> {
-		// Simulate processing time
-		await new Promise(resolve => setTimeout(resolve, 2000));
-		
-		// For testing purposes
-		this.outputChannel.appendLine(`[SIMULATED] Executed queue item: ${itemId}`);
+	private async executeWithJules(queueItem: JulesQueueItem): Promise<void> {
+		// Get Jules API key
+		const apiKey = await this.julesConfig.getApiKey();
+		if (!apiKey) {
+			throw new Error('Jules API key not configured. Please configure it first.');
+		}
+
+		// Get Jules sources to find available repositories
+		const sourcesResponse = await this.julesClient.listSources(apiKey);
+		if (!sourcesResponse.sources || sourcesResponse.sources.length === 0) {
+			throw new Error('No Jules sources available. Please connect a repository to Jules first.');
+		}
+
+		// For now, use the first available source
+		// TODO: Allow user to select specific source or configure default
+		const source = sourcesResponse.sources[0];
+		this.outputChannel.appendLine(`Using Jules source: ${source.displayName || source.name}`);
+
+		if (isSingleQueueItem(queueItem)) {
+			// Handle single queue item
+			const prompt = queueItem.prompt;
+			const title = `VS Code Queue Item - ${new Date().toISOString()}`;
+
+			const session = await this.julesClient.createSession(
+				apiKey,
+				prompt,
+				source.name,
+				queueItem.branch,
+				title,
+				false, // autoCreatePR - could be made configurable
+				false  // requirePlanApproval - could be made configurable
+			);
+
+			this.outputChannel.appendLine(`Created Jules session: ${session.name}`);
+
+		} else if (isBatchQueueItem(queueItem)) {
+			// Handle batch queue item - create separate sessions for each subtask
+			if (!queueItem.remaining || queueItem.remaining.length === 0) {
+				throw new Error('Batch queue item has no remaining subtasks');
+			}
+
+			for (let i = 0; i < queueItem.remaining.length; i++) {
+				const subtask = queueItem.remaining[i];
+				const title = `VS Code Batch Item ${i + 1}/${queueItem.remaining.length} - ${new Date().toISOString()}`;
+
+				const session = await this.julesClient.createSession(
+					apiKey,
+					subtask.fullContent,
+					source.name,
+					queueItem.branch,
+					title,
+					false, // autoCreatePR
+					false  // requirePlanApproval
+				);
+
+				this.outputChannel.appendLine(`Created Jules session for subtask ${i + 1}: ${session.name}`);
+
+				// Small delay between requests to avoid rate limiting
+				if (i < queueItem.remaining.length - 1) {
+					await new Promise(resolve => setTimeout(resolve, 1000));
+				}
+			}
+		}
 	}
 
 	/**

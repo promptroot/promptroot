@@ -45,18 +45,29 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 	 */
 	private subscribeToQueue(uid: string): void {
 		this.outputChannel.appendLine(`Subscribing to queue for user: ${uid}`);
+		this.outputChannel.appendLine(`Collection path will be: julesQueues/${uid}/items`);
 		
 		this.unsubscribe = this.firestoreService.subscribeToQueue(
 			uid,
 			(items) => {
+				this.outputChannel.appendLine(`Firestore callback: Received ${items.length} items`);
 				this.queueItems = items;
+				this.outputChannel.appendLine(`queueItems array updated: ${this.queueItems.length} items`);
 				this.refresh();
 				this.outputChannel.appendLine(`Queue updated: ${items.length} items`);
+				// Log first few items for debugging
+				if (items.length > 0) {
+					this.outputChannel.appendLine(`Recent queue items:`);
+					items.slice(0, 3).forEach((item, index) => {
+						this.outputChannel.appendLine(`  ${index + 1}. ID: ${item.id}, Type: ${item.type}, Status: ${item.status}, Created: ${item.createdAt?.toDate?.()?.toISOString() || 'Unknown'}`);
+					});
+				}
 			},
 			(error) => {
 				this.outputChannel.appendLine(`Queue subscription error: ${error.message}`);
 				vscode.window.showErrorMessage(`Queue sync error: ${error.message}`);
-			}
+			},
+			100 // Explicitly set limit to 100
 		);
 	}
 
@@ -75,7 +86,29 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 	 * Refresh tree view
 	 */
 	refresh(): void {
+		this.outputChannel.appendLine(`refresh() called - firing tree change event`);
 		this._onDidChangeTreeData.fire();
+		this.outputChannel.appendLine(`tree change event fired`);
+		
+		// Also fire with undefined to refresh root
+		setTimeout(() => {
+			this.outputChannel.appendLine(`Firing secondary refresh event`);
+			this._onDidChangeTreeData.fire(undefined);
+		}, 100);
+	}
+
+	/**
+	 * Force refresh - reestablish subscription to get latest data
+	 */
+	forceRefresh(): void {
+		this.outputChannel.appendLine('Force refreshing queue...');
+		const currentUser = this.authManager.getCurrentUser();
+		if (currentUser) {
+			this.unsubscribeFromQueue();
+			this.subscribeToQueue(currentUser.uid);
+		} else {
+			this.outputChannel.appendLine('No user signed in for force refresh');
+		}
 	}
 
 	/**
@@ -89,19 +122,27 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 	 * Get children (queue items)
 	 */
 	async getChildren(element?: QueueTreeItem): Promise<QueueTreeItem[]> {
+		this.outputChannel.appendLine(`getChildren() called - queueItems.length: ${this.queueItems.length}`);
+		
 		// Check if user is signed in
 		const user = this.authManager.getCurrentUser();
 		if (!user) {
+			this.outputChannel.appendLine('getChildren: No user signed in');
 			return [new QueueTreeItem('Sign in to view queue', '', 'info')];
 		}
 
 		// If no element, return root items (queue items)
 		if (!element) {
+			this.outputChannel.appendLine(`getChildren: Root level - ${this.queueItems.length} items available`);
 			if (this.queueItems.length === 0) {
+				this.outputChannel.appendLine('getChildren: Returning "No items in queue"');
 				return [new QueueTreeItem('No items in queue', '', 'info')];
 			}
 
-			return this.queueItems.map(item => this.createQueueTreeItem(item));
+			this.outputChannel.appendLine(`getChildren: Creating tree items for ${this.queueItems.length} queue items`);
+			const treeItems = this.queueItems.map(item => this.createQueueTreeItem(item));
+			this.outputChannel.appendLine(`getChildren: Created ${treeItems.length} tree items`);
+			return treeItems;
 		}
 
 		// If element is a batch item, return subtasks
@@ -109,8 +150,16 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 			const batchItem = element.queueItem;
 			if (isBatchQueueItem(batchItem)) {
 				return batchItem.remaining.map((subtask) => {
-				const icon = this.getStatusIcon(subtask.status || 'pending');
-					const label = `${icon} ${subtask.fullContent}`;
+					const icon = this.getStatusIcon(subtask.status || 'pending');
+					
+					// Create descriptive label from subtask content
+					let subtaskName = 'Subtask';
+					if (subtask.fullContent) {
+						const firstLine = subtask.fullContent.split('\n')[0].trim();
+						subtaskName = firstLine.length > 60 ? firstLine.substring(0, 57) + '...' : firstLine;
+					}
+					
+					const label = `${icon} ${subtaskName}`;
 					const item = new QueueTreeItem(label, subtask.status || 'pending', 'subtask');
 					item.tooltip = `Status: ${subtask.status || 'pending'}\nContent: ${subtask.fullContent}`;
 					if (subtask.sessionId) {
@@ -131,6 +180,8 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 	 * Create tree item from queue item
 	 */
 	private createQueueTreeItem(queueItem: JulesQueueItem): QueueTreeItem {
+		this.outputChannel.appendLine(`createQueueTreeItem: Creating item for ${queueItem.id}, type: ${queueItem.type}`);
+		
 		const icon = this.getStatusIcon(queueItem.status);
 		
 		let label: string;
@@ -138,15 +189,61 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 		let collapsibleState: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.None;
 
 		if (isSingleQueueItem(queueItem)) {
-			// Single item
-			const promptName = queueItem.promptPath?.split('/').pop() || 'Untitled';
+			this.outputChannel.appendLine(`createQueueTreeItem: Processing as single item`);
+			this.outputChannel.appendLine(`createQueueTreeItem: queueItem.prompt = ${queueItem.prompt}`);
+			this.outputChannel.appendLine(`createQueueTreeItem: queueItem.promptPath = ${queueItem.promptPath}`);
+			
+			// Single item - use prompt content or path
+			let promptName = 'Untitled';
+			
+			if (queueItem.prompt && queueItem.prompt.trim()) {
+				// Use first line of prompt, truncated
+				const firstLine = queueItem.prompt.split('\n')[0].trim();
+				promptName = firstLine.length > 50 ? firstLine.substring(0, 47) + '...' : firstLine;
+				this.outputChannel.appendLine(`createQueueTreeItem: Using prompt content: ${promptName}`);
+			} else if (queueItem.promptPath) {
+				// Fallback to filename
+				promptName = queueItem.promptPath.split('/').pop() || 'Untitled';
+				this.outputChannel.appendLine(`createQueueTreeItem: Using path filename: ${promptName}`);
+			} else {
+				this.outputChannel.appendLine(`createQueueTreeItem: No prompt or path available, using 'Untitled'`);
+			}
+
 			label = `${icon} ${promptName}`;
 			description = queueItem.status;
-		} else {
-			// Batch item
-			label = `${icon} Batch (${queueItem.remaining.length} items)`;
+		} else if (isBatchQueueItem(queueItem)) {
+			this.outputChannel.appendLine(`createQueueTreeItem: Processing as batch item with ${queueItem.remaining.length} remaining`);
+			this.outputChannel.appendLine(`createQueueTreeItem: batch queueItem.prompt = ${queueItem.prompt}`);
+			
+			// Batch item - create descriptive name
+			let batchName = 'Batch';
+			
+			if (queueItem.prompt && queueItem.prompt.trim()) {
+				// Use main prompt if available
+				const firstLine = queueItem.prompt.split('\n')[0].trim();
+				batchName = firstLine.length > 30 ? firstLine.substring(0, 27) + '...' : firstLine;
+				this.outputChannel.appendLine(`createQueueTreeItem: Using batch prompt content: ${batchName}`);
+			} else if (queueItem.remaining && queueItem.remaining.length > 0) {
+				// Use first subtask content as batch name
+				const firstSubtask = queueItem.remaining[0];
+				if (firstSubtask.fullContent) {
+					const firstLine = firstSubtask.fullContent.split('\n')[0].trim();
+					batchName = firstLine.length > 30 ? firstLine.substring(0, 27) + '...' : firstLine;
+					this.outputChannel.appendLine(`createQueueTreeItem: Using first subtask content: ${batchName}`);
+				}
+			} else {
+				this.outputChannel.appendLine(`createQueueTreeItem: No prompt or subtask content available for batch, using 'Batch'`);
+			}
+
+			label = `${icon} ${batchName} (${queueItem.remaining.length} items)`;
 			description = queueItem.status;
 			collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+		} else {
+			// Fallback for unknown types - cast to any to access properties
+			const unknownItem = queueItem as any;
+			this.outputChannel.appendLine(`createQueueTreeItem: Unknown item type: ${unknownItem.type}`);
+			label = `${icon} Unknown Type (${unknownItem.type})`;
+			description = unknownItem.status || 'unknown';
 		}
 
 		const item = new QueueTreeItem(
@@ -187,6 +284,7 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 			item.iconPath = new vscode.ThemeIcon('watch', new vscode.ThemeColor('charts.blue'));
 		}
 
+		this.outputChannel.appendLine(`createQueueTreeItem: Successfully created tree item for ${queueItem.id} - Label: "${label}"`);
 		return item;
 	}
 

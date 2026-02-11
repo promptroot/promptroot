@@ -37,6 +37,7 @@ let sessionDetailsView: SessionDetailsView | null = null;
 let errorHandler: ErrorHandler | null = null;
 let statusBarItem: vscode.StatusBarItem;
 let connectionStatusItem: vscode.StatusBarItem;
+let queueTreeView: vscode.TreeView<QueueTreeItem> | null = null;
 
 /**
  * Extension activation entry point.
@@ -69,7 +70,7 @@ export async function activate(context: vscode.ExtensionContext) {
   firestoreService = new FirestoreService(outputChannel);
 
   // Initialize queue manager
-  queueManager = new QueueManager(firestoreService, authManager, outputChannel);
+  queueManager = new QueueManager(firestoreService, authManager, julesClient, julesConfig, outputChannel);
 
   // Initialize session details view  
   sessionDetailsView = new SessionDetailsView(context);
@@ -114,9 +115,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Initialize queue tree view provider
   queueTreeProvider = new QueueTreeProvider(firestoreService, authManager, outputChannel);
-  const queueTreeView = vscode.window.createTreeView(VIEWS.queue, {
+  queueTreeView = vscode.window.createTreeView(VIEWS.queue, {
     treeDataProvider: queueTreeProvider,
     showCollapseAll: true
+  });
+  
+  // Add debug logging for tree view events
+  queueTreeView.onDidChangeVisibility((e: vscode.TreeViewVisibilityChangeEvent) => {
+    outputChannel.appendLine(`Queue tree view visibility changed: visible=${e.visible}`);
+  });
+  
+  queueTreeView.onDidChangeSelection((e: vscode.TreeViewSelectionChangeEvent<QueueTreeItem>) => {
+    outputChannel.appendLine(`Queue tree view selection changed: ${e.selection.length} selected`);
   });
 
   // Initialize session tree view provider
@@ -266,7 +276,8 @@ export async function activate(context: vscode.ExtensionContext) {
     COMMANDS.refreshQueue,
     () => {
       outputChannel.appendLine('Refresh queue command executed');
-      queueTreeProvider?.refresh();
+      // Force resubscription to get latest data
+      queueTreeProvider?.forceRefresh();
     }
   );
 
@@ -484,6 +495,84 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // Debug commands
+  const debugAuthCommand = vscode.commands.registerCommand(
+    COMMANDS.debugAuth,
+    async () => {
+      outputChannel.appendLine('=== AUTH DEBUG ===');
+      if (!authManager) {
+        outputChannel.appendLine('AuthManager not initialized');
+        return;
+      }
+      const currentUser = authManager.getCurrentUser();
+      if (currentUser) {
+        outputChannel.appendLine(`Signed in as: ${currentUser.displayName || currentUser.email} (${currentUser.uid})`);
+        outputChannel.appendLine(`User ID: ${currentUser.uid}`);
+        outputChannel.appendLine(`Email verified: ${currentUser.emailVerified}`);
+      } else {
+        outputChannel.appendLine('No user signed in');
+      }
+      outputChannel.appendLine('===============');
+    }
+  );
+
+  const debugQueueCommand = vscode.commands.registerCommand(
+    COMMANDS.debugQueue,
+    async () => {
+      outputChannel.appendLine('=== QUEUE DEBUG ===');
+      if (!authManager || !firestoreService) {
+        outputChannel.appendLine('Services not initialized');
+        return;
+      }
+      const currentUser = authManager.getCurrentUser();
+      if (currentUser) {
+        outputChannel.appendLine(`User ID: ${currentUser.uid}`);
+        outputChannel.appendLine(`Collection path: julesQueues/${currentUser.uid}/items`);
+        
+        try {
+          // Try to fetch queue items directly
+          const queueItems = await firestoreService.getQueueItems(currentUser.uid);
+          outputChannel.appendLine(`Direct fetch found ${queueItems.length} items:`);
+          queueItems.slice(0, 5).forEach((item, index) => {
+            outputChannel.appendLine(`  ${index + 1}. ID: ${item.id}, Type: ${item.type}, Status: ${item.status}`);
+          });
+        } catch (error) {
+          outputChannel.appendLine(`Error fetching queue items: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      } else {
+        outputChannel.appendLine('No user signed in');
+      }
+      outputChannel.appendLine('================');
+    }
+  );
+
+  const debugTreeViewCommand = vscode.commands.registerCommand(
+    COMMANDS.debugTreeView,
+    async () => {
+      outputChannel.appendLine('=== TREE VIEW DEBUG ===');
+      if (queueTreeView) {
+        outputChannel.appendLine(`Tree view exists: true`);
+        outputChannel.appendLine(`Tree view visible: ${queueTreeView.visible}`);
+        outputChannel.appendLine(`Tree view title: ${queueTreeView.title || 'No title'}`);
+        outputChannel.appendLine(`Tree view description: ${queueTreeView.description || 'No description'}`);
+        
+        // Try to reveal the view
+        try {
+          outputChannel.appendLine('Attempting to reveal tree view...');
+          await vscode.commands.executeCommand('workbench.view.explorer');
+          // Force refresh
+          queueTreeProvider?.forceRefresh();
+          outputChannel.appendLine('Tree view reveal attempted');
+        } catch (error) {
+          outputChannel.appendLine(`Error revealing tree view: ${error}`);
+        }
+      } else {
+        outputChannel.appendLine('Tree view does not exist!');
+      }
+      outputChannel.appendLine('=====================');
+    }
+  );
+
   // Add commands to subscriptions for proper cleanup
   context.subscriptions.push(
     initializeCommand,
@@ -524,6 +613,9 @@ export async function activate(context: vscode.ExtensionContext) {
     setDefaultBranchCommand,
     reportErrorCommand,
     showConnectionStatusCommand,
+    debugAuthCommand,
+    debugQueueCommand,
+    debugTreeViewCommand,
     treeView,
     queueTreeView,
     sessionTreeView,

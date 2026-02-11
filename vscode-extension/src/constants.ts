@@ -41,7 +41,10 @@ export const COMMANDS = {
   selectBranch: 'promptroot.selectBranch',
   setDefaultBranch: 'promptroot.setDefaultBranch',
   reportError: 'promptroot.reportError',
-  showConnectionStatus: 'promptroot.showConnectionStatus'
+  showConnectionStatus: 'promptroot.showConnectionStatus',
+  debugAuth: 'promptroot.debugAuth',
+  debugQueue: 'promptroot.debugQueue',
+  debugTreeView: 'promptroot.debugTreeView'
 } as const;
 
 export const VIEWS = {

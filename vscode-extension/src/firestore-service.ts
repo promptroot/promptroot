@@ -237,6 +237,7 @@ export class FirestoreService {
 				snapshot.forEach((doc) => {
 					items.push({ id: doc.id, ...doc.data() } as JulesQueueItem);
 				});
+				this.outputChannel.appendLine(`Firestore snapshot received: ${items.length} items from ${collectionPath}`);
 				onUpdate(items);
 			},
 			(error) => {

@@ -44,6 +44,11 @@
         "icon": "$(copy)"
       },
       {
+        "command": "promptroot.deleteAsset",
+        "title": "Delete Asset",
+        "icon": "$(trash)"
+      },
+      {
         "command": "promptroot.configureJulesApi",
         "title": "Promptroot: Configure Jules API"
       },
@@ -337,6 +342,11 @@
           "command": "promptroot.cloneAsset",
           "when": "view == promptroot.assetsView && viewItem == prompt",
           "group": "inline@3"
+        },
+        {
+          "command": "promptroot.deleteAsset",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "inline@4"
         },
         {
           "command": "promptroot.sendAssetToJules",

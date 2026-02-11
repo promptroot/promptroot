@@ -10,6 +10,7 @@ export const COMMANDS = {
   refreshAssets: 'promptroot.refreshAssets',
   createAsset: 'promptroot.createAsset',
   cloneAsset: 'promptroot.cloneAsset',
+  deleteAsset: 'promptroot.deleteAsset',
   addAssetToQueue: 'promptroot.addAssetToQueue',
   sendAssetToJules: 'promptroot.sendAssetToJules',
   configureJulesApi: 'promptroot.configureJulesApi',

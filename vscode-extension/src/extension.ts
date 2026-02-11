@@ -313,6 +313,14 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  const deleteAssetCommand = vscode.commands.registerCommand(
+    COMMANDS.deleteAsset,
+    async (item?: PromptrootTreeItem) => {
+      outputChannel.appendLine('Delete asset command executed');
+      await deleteAsset(item);
+    }
+  );
+
   const deleteQueueItemCommand = vscode.commands.registerCommand(
     COMMANDS.deleteQueueItem,
     async (item) => {
@@ -615,6 +623,7 @@ export async function activate(context: vscode.ExtensionContext) {
     addAssetToQueueCommand,
     sendAssetToJulesCommand,
     cloneAssetCommand,
+    deleteAssetCommand,
     deleteQueueItemCommand,
     pauseQueueItemCommand,
     resumeQueueItemCommand,
@@ -1343,6 +1352,44 @@ async function cloneAsset(item?: PromptrootTreeItem): Promise<void> {
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to clone asset: ${error instanceof Error ? error.message : String(error)}`);
     outputChannel.appendLine(`Error cloning asset: ${error}`);
+  }
+}
+
+/**
+ * Delete a prompt asset
+ */
+async function deleteAsset(item?: PromptrootTreeItem): Promise<void> {
+  if (!item || !item.resourceUri || item.itemType !== 'prompt') {
+    vscode.window.showErrorMessage('Please select a prompt file to delete');
+    return;
+  }
+
+  try {
+    const filePath = item.resourceUri.fsPath;
+    const fileName = path.basename(filePath);
+
+    // Confirm deletion
+    const confirmation = await vscode.window.showWarningMessage(
+      `Are you sure you want to delete "${fileName}"? This cannot be undone.`,
+      { modal: true },
+      'Delete'
+    );
+
+    if (confirmation !== 'Delete') {
+      return; // User cancelled
+    }
+
+    // Delete the file
+    await vscode.workspace.fs.delete(item.resourceUri);
+
+    outputChannel.appendLine(`Deleted ${fileName}`);
+    vscode.window.showInformationMessage(`Deleted ${fileName}`);
+
+    // Tree will auto-refresh via file watcher
+
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to delete asset: ${error instanceof Error ? error.message : String(error)}`);
+    outputChannel.appendLine(`Error deleting asset: ${error}`);
   }
 }
 

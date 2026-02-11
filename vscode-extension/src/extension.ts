@@ -1151,24 +1151,36 @@ async function sendAssetToJules(item?: PromptrootTreeItem): Promise<void> {
       }
 
       // Get ALL Jules sources
-      outputChannel.appendLine('Fetching all available Jules repositories...');
       const allSources = await julesClient.listAllSources(apiKey);
       if (!allSources || allSources.length === 0) {
         throw new Error('No Jules sources available. Please connect a repository to Jules first.');
       }
 
-      outputChannel.appendLine(`Found ${allSources.length} available repositories`);
+      // Deduplicate sources by name (in case API returns duplicates)
+      const uniqueSources = allSources.filter((source, index, arr) => 
+        arr.findIndex(s => s.name === source.name) === index
+      );
+
+      outputChannel.appendLine(`Found ${uniqueSources.length} Jules repositories`);
 
       // Let user select repository
-      const sourceOptions = allSources.map(source => ({
-        label: source.displayName || source.name,
-        detail: source.name,
-        source: source
-      }));
+      const sourceOptions = uniqueSources.map(source => {
+        // Extract a friendly display name from the source name
+        // Format: sources/github/owner/repo -> owner/repo
+        let displayLabel = source.displayName;
+        if (!displayLabel || displayLabel === 'undefined') {
+          const match = source.name.match(/sources\/github\/([^/]+\/[^/]+)/);
+          displayLabel = match ? match[1] : source.name;
+        }
+        
+        return {
+          label: displayLabel,
+          source: source
+        };
+      });
 
       const selectedOption = await vscode.window.showQuickPick(sourceOptions, {
-        placeHolder: 'Select a repository to send prompt to',
-        matchOnDetail: true
+        placeHolder: 'Select a repository to send prompt to'
       });
 
       if (!selectedOption) {

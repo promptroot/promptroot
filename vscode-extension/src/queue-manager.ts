@@ -267,16 +267,20 @@ export class QueueManager {
 		}
 
 		// Get ALL Jules sources (with pagination support)
-		this.outputChannel.appendLine('Fetching all available Jules repositories...');
 		const allSources = await this.julesClient.listAllSources(apiKey);
 		if (!allSources || allSources.length === 0) {
 			throw new Error('No Jules sources available. Please connect a repository to Jules first.');
 		}
 
-		this.outputChannel.appendLine(`Found ${allSources.length} available repositories`);
+		// Deduplicate sources by name (in case API returns duplicates)
+		const uniqueSources = allSources.filter((source, index, arr) => 
+			arr.findIndex(s => s.name === source.name) === index
+		);
+
+		this.outputChannel.appendLine(`Found ${uniqueSources.length} Jules repositories`);
 
 		// Let user select repository
-		const source = await this.selectJulesSource(allSources);
+		const source = await this.selectJulesSource(uniqueSources);
 		if (!source) {
 			return; // User cancelled
 		}
@@ -507,22 +511,37 @@ export class QueueManager {
 	private async selectJulesSource(sources: JulesSource[]): Promise<JulesSource | undefined> {
 		if (sources.length === 1) {
 			// If only one source, ask for confirmation
+			// Extract a friendly display name
+			let displayLabel = sources[0].displayName;
+			if (!displayLabel || displayLabel === 'undefined') {
+				const match = sources[0].name.match(/sources\/github\/([^/]+\/[^/]+)/);
+				displayLabel = match ? match[1] : sources[0].name;
+			}
+			
 			const confirm = await vscode.window.showQuickPick(['Yes', 'Cancel'], {
-				placeHolder: `Send to repository: ${sources[0].displayName || sources[0].name}?`
+				placeHolder: `Send to repository: ${displayLabel}?`
 			});
 			return confirm === 'Yes' ? sources[0] : undefined;
 		}
 
 		// Multiple sources - let user pick
-		const items = sources.map(source => ({
-			label: source.displayName || source.name,
-			description: source.name,
-			source
-		}));
+		const items = sources.map(source => {
+			// Extract a friendly display name from the source name
+			// Format: sources/github/owner/repo -> owner/repo
+			let displayLabel = source.displayName;
+			if (!displayLabel || displayLabel === 'undefined') {
+				const match = source.name.match(/sources\/github\/([^/]+\/[^/]+)/);
+				displayLabel = match ? match[1] : source.name;
+			}
+			
+			return {
+				label: displayLabel,
+				source
+			};
+		});
 
 		const selected = await vscode.window.showQuickPick(items, {
-			placeHolder: 'Select repository to send task to',
-			matchOnDescription: true
+			placeHolder: 'Select repository to send task to'
 		});
 
 		return selected?.source;

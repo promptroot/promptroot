@@ -305,6 +305,14 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  const cloneAssetCommand = vscode.commands.registerCommand(
+    COMMANDS.cloneAsset,
+    async (item?: PromptrootTreeItem) => {
+      outputChannel.appendLine('Clone asset command executed');
+      await cloneAsset(item);
+    }
+  );
+
   const deleteQueueItemCommand = vscode.commands.registerCommand(
     COMMANDS.deleteQueueItem,
     async (item) => {
@@ -606,6 +614,7 @@ export async function activate(context: vscode.ExtensionContext) {
     addToQueueCommand,
     addAssetToQueueCommand,
     sendAssetToJulesCommand,
+    cloneAssetCommand,
     deleteQueueItemCommand,
     pauseQueueItemCommand,
     resumeQueueItemCommand,
@@ -656,6 +665,9 @@ export async function activate(context: vscode.ExtensionContext) {
   }
   if (repositoryTreeProvider) {
     context.subscriptions.push(repositoryTreeProvider);
+  }
+  if (treeProvider) {
+    context.subscriptions.push(treeProvider);
   }
 
   outputChannel.appendLine('All commands registered successfully');
@@ -1253,6 +1265,84 @@ async function sendAssetToJules(item?: PromptrootTreeItem): Promise<void> {
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to send to Jules: ${error instanceof Error ? error.message : String(error)}`);
     outputChannel.appendLine(`Error sending to Jules: ${error}`);
+  }
+}
+
+/**
+ * Clone a prompt asset (template) with a new name
+ */
+async function cloneAsset(item?: PromptrootTreeItem): Promise<void> {
+  if (!item || !item.resourceUri || item.itemType !== 'prompt') {
+    vscode.window.showErrorMessage('Please select a prompt file to clone');
+    return;
+  }
+
+  try {
+    const sourcePath = item.resourceUri.fsPath;
+    
+    // Verify it's a markdown file
+    if (!sourcePath.endsWith('.md')) {
+      vscode.window.showWarningMessage('Only markdown (.md) files can be cloned');
+      return;
+    }
+
+    // Get the source directory and filename
+    const sourceDir = path.dirname(sourcePath);
+    const sourceFilename = path.basename(sourcePath, '.md');
+
+    // Prompt for new filename
+    const newFilename = await vscode.window.showInputBox({
+      prompt: 'Enter a name for the cloned prompt',
+      placeHolder: `${sourceFilename}-copy`,
+      value: `${sourceFilename}-copy`,
+      validateInput: (value) => {
+        if (!value || value.trim() === '') {
+          return 'Filename cannot be empty';
+        }
+        if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+          return 'Filename can only contain letters, numbers, hyphens, and underscores';
+        }
+        return null;
+      }
+    });
+
+    if (!newFilename) {
+      return; // User cancelled
+    }
+
+    // Create the new file path
+    const newPath = path.join(sourceDir, `${newFilename}.md`);
+
+    // Check if file already exists
+    if (await vscode.workspace.fs.stat(vscode.Uri.file(newPath)).then(() => true, () => false)) {
+      vscode.window.showErrorMessage(`File ${newFilename}.md already exists`);
+      return;
+    }
+
+    // Read the source file content
+    const document = await vscode.workspace.openTextDocument(item.resourceUri);
+    const content = document.getText();
+
+    // Write to the new file
+    await vscode.workspace.fs.writeFile(
+      vscode.Uri.file(newPath),
+      Buffer.from(content, 'utf8')
+    );
+
+    outputChannel.appendLine(`Cloned ${sourceFilename}.md to ${newFilename}.md`);
+
+    // Refresh the assets tree
+    treeProvider.refresh();
+
+    // Open the new file for editing
+    const newDoc = await vscode.workspace.openTextDocument(newPath);
+    await vscode.window.showTextDocument(newDoc);
+
+    vscode.window.showInformationMessage(`Cloned to ${newFilename}.md`);
+
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to clone asset: ${error instanceof Error ? error.message : String(error)}`);
+    outputChannel.appendLine(`Error cloning asset: ${error}`);
   }
 }
 

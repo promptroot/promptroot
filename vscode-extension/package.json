@@ -39,6 +39,11 @@
         "icon": "$(add)"
       },
       {
+        "command": "promptroot.cloneAsset",
+        "title": "Clone Asset",
+        "icon": "$(copy)"
+      },
+      {
         "command": "promptroot.configureJulesApi",
         "title": "Promptroot: Configure Jules API"
       },
@@ -327,6 +332,11 @@
           "command": "promptroot.addAssetToQueue",
           "when": "view == promptroot.assetsView && viewItem == prompt",
           "group": "inline@2"
+        },
+        {
+          "command": "promptroot.cloneAsset",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "inline@3"
         },
         {
           "command": "promptroot.sendAssetToJules",

@@ -87,9 +87,48 @@ export class PromptrootTreeProvider implements vscode.TreeDataProvider<Promptroo
     this._onDidChangeTreeData.event;
 
   private assetsPath: string | undefined;
+  private fileWatcher: vscode.FileSystemWatcher | undefined;
 
   constructor(private workspaceRoot: string | undefined) {
     this.detectPromptrootStructure();
+    this.setupFileWatcher();
+  }
+
+  /**
+   * Set up file system watcher to auto-refresh on file changes
+   */
+  private setupFileWatcher(): void {
+    if (!this.workspaceRoot) {
+      return;
+    }
+
+    // Watch for changes in the prompts directory
+    const promptsPattern = new vscode.RelativePattern(this.workspaceRoot, 'prompts/**/*.md');
+    this.fileWatcher = vscode.workspace.createFileSystemWatcher(promptsPattern);
+
+    // Refresh on file creation
+    this.fileWatcher.onDidCreate(() => {
+      this.refresh();
+    });
+
+    // Refresh on file deletion
+    this.fileWatcher.onDidDelete(() => {
+      this.refresh();
+    });
+
+    // Refresh on file change
+    this.fileWatcher.onDidChange(() => {
+      this.refresh();
+    });
+  }
+
+  /**
+   * Dispose of resources
+   */
+  dispose(): void {
+    if (this.fileWatcher) {
+      this.fileWatcher.dispose();
+    }
   }
 
   /**

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { syncActiveSessions } from '../../modules/session-tracking.js';
 import * as firebaseService from '../../modules/firebase-service.js';
 import * as julesApi from '../../modules/jules-api.js';

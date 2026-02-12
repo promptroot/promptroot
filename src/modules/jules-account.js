@@ -180,7 +180,6 @@ export function showUserProfileModal() {
     };
   }
   
-  attachViewAllSessionsHandler();
   attachViewQueueHandler();
   
   const closeSessionsHistoryBtn = document.getElementById('closeSessionsHistoryBtn');
@@ -209,18 +208,6 @@ export function showUserProfileModal() {
 }
 
 let profileHandlersAttached = false;
-
-function attachViewAllSessionsHandler() {
-  if (profileHandlersAttached) return;
-  
-  const viewAllSessionsLink = document.getElementById('viewAllSessionsLink');
-  if (viewAllSessionsLink) {
-    viewAllSessionsLink.onclick = (e) => {
-      e.preventDefault();
-      showJulesSessionsHistoryModal();
-    };
-  }
-}
 
 function attachViewQueueHandler() {
   const viewQueueLink = document.getElementById('viewQueueLink');
@@ -556,19 +543,6 @@ async function loadAndDisplayJulesProfile(uid) {
 export function hideUserProfileModal() {
   const modal = document.getElementById('userProfileModal');
   modal.classList.remove('show');
-}
-
-export function showJulesSessionsHistoryModal() {
-  const modal = document.getElementById('julesSessionsHistoryModal');
-  const searchInput = document.getElementById('sessionSearchInput');
-  
-  modal.classList.add('show');
-  
-  allSessionsCache = [];
-  sessionNextPageToken = null;
-  searchInput.value = '';
-  
-  loadSessionsPage();
 }
 
 export function hideJulesSessionsHistoryModal() {

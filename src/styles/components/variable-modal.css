@@ -79,7 +79,6 @@
 
 .variable-modal__input::placeholder {
   color: var(--text-muted);
-  opacity: 0.6;
 }
 
 .variable-modal__input:focus {

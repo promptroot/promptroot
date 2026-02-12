@@ -60,7 +60,7 @@ import {
   cleanIdForDOM
 } from '../utils/jules-queue-helpers.js';
 
-function getSelectedQueueIds() {
+export function getSelectedQueueIds() {
   const queueSelections = [];
   const subtaskSelections = {};
 
@@ -2091,4 +2091,98 @@ async function runSelectedQueueItems() {
   document.removeEventListener('click', clickHandler, true);
   statusBar.clearAction();
   await loadQueuePage();
+}
+
+export function exportQueueToMarkdown() {
+  const { queueSelections, subtaskSelections } = getSelectedQueueIds();
+  
+  // Check if any items are selected
+  if (queueSelections.length === 0 && Object.keys(subtaskSelections).length === 0) {
+    showToast('No items selected to export', 'warn');
+    return;
+  }
+  
+  const queueItems = getQueueCache() || [];
+  const selectedItems = queueItems.filter(item => queueSelections.includes(item.id));
+  
+  if (selectedItems.length === 0) {
+    showToast('No items selected to export', 'warn');
+    return;
+  }
+  
+  // Generate markdown content
+  let markdown = '# Queue Export (Selected Items)\n\n';
+  markdown += `Exported: ${new Date().toISOString()}\n\n`;
+  markdown += '---\n\n';
+  
+  selectedItems.forEach((item, index) => {
+    markdown += '<!-- QUEUE_ITEM_START -->\n\n';
+    markdown += `## Item ${index + 1}\n\n`;
+    markdown += `**ID:** ${item.id}\n`;
+    markdown += `**Type:** ${item.type || 'single'}\n`;
+    markdown += `**Status:** ${item.status || 'pending'}\n`;
+    
+    if (item.createdAt) {
+      const date = item.createdAt.seconds 
+        ? new Date(item.createdAt.seconds * 1000).toISOString()
+        : new Date(item.createdAt).toISOString();
+      markdown += `**Created:** ${date}\n`;
+    }
+    
+    if (item.sourceId) {
+      markdown += `**Source:** ${item.sourceId}\n`;
+    }
+    
+    if (item.branch) {
+      markdown += `**Branch:** ${item.branch}\n`;
+    }
+    
+    if (item.scheduledAt) {
+      const scheduledDate = item.scheduledAt.seconds 
+        ? new Date(item.scheduledAt.seconds * 1000).toISOString()
+        : new Date(item.scheduledAt).toISOString();
+      markdown += `**Scheduled:** ${scheduledDate}`;
+      if (item.scheduledTimeZone) {
+        markdown += ` (${item.scheduledTimeZone})`;
+      }
+      markdown += '\n';
+    }
+    
+    if (item.error) {
+      markdown += `**Error:** ${item.error}\n`;
+    }
+    
+    markdown += '\n';
+    
+    if (item.type === 'subtasks' && item.remaining) {
+      markdown += `**Subtasks:** ${item.remaining.length}\n\n`;
+      item.remaining.forEach((subtask, subIndex) => {
+        markdown += '<!-- SUBTASK_START -->\n\n';
+        markdown += `### Subtask ${subIndex + 1}\n\n`;
+        markdown += `${subtask.fullContent || subtask.prompt || ''}\n\n`;
+        markdown += '<!-- SUBTASK_END -->\n\n';
+      });
+    } else if (item.prompt) {
+      markdown += '### Prompt\n\n';
+      markdown += `${item.prompt}\n\n`;
+    }
+    
+    markdown += '<!-- QUEUE_ITEM_END -->\n\n';
+    markdown += '---\n\n';
+  });
+  
+  // Create download link
+  const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `queue-export-${Date.now()}.md`;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  const itemCount = selectedItems.length;
+  showToast(`Exported ${itemCount} selected item${itemCount > 1 ? 's' : ''} to markdown`, 'success');
 }

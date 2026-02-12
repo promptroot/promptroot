@@ -23,7 +23,7 @@
 .subtask-modal__empty-message {
   padding: 16px;
   text-align: center;
-  color: var(--muted);
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -43,7 +43,7 @@
 
 .subtask-modal__char-count {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .subtask-modal__preview-btn {

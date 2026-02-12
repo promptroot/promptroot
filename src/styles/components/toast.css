@@ -15,7 +15,7 @@
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
@@ -61,7 +61,7 @@
   flex-shrink: 0;
   background: none;
   border: none;
-  color: var(--muted);
+  color: var(--text-muted);
   font-size: 24px;
   line-height: 1;
   cursor: pointer;
@@ -94,36 +94,36 @@
 .toast--success {
   border-color: var(--success);
   background: linear-gradient(135deg, 
-    rgba(39, 174, 96, 1) 0%, 
-    var(--card) 100%);
+    rgba(74, 222, 128, 1) 0%, 
+    var(--surface) 100%);
 }
 
 .toast--success .toast__icon {
   color: var(--success);
-  background: rgba(39, 174, 96, 0.2);
+  background: rgba(74, 222, 128, 0.2);
 }
 
 .toast--error {
-  border-color: var(--error);
+  border-color: var(--danger);
   background: linear-gradient(135deg, 
     rgba(255, 107, 107, 1) 0%, 
-    var(--card) 100%);
+    var(--surface) 100%);
 }
 
 .toast--error .toast__icon {
-  color: var(--error);
+  color: var(--danger);
   background: rgba(255, 107, 107, 0.2);
 }
 
 .toast--warn {
-  border-color: var(--warn);
+  border-color: var(--warning);
   background: linear-gradient(135deg, 
     rgba(243, 156, 18, 1) 0%, 
-    var(--card) 100%);
+    var(--surface) 100%);
 }
 
 .toast--warn .toast__icon {
-  color: var(--warn);
+  color: var(--warning);
   background: rgba(243, 156, 18, 0.2);
 }
 
@@ -131,7 +131,7 @@
   border-color: var(--info);
   background: linear-gradient(135deg, 
     rgba(41, 128, 185, 1) 0%, 
-    var(--card) 100%);
+    var(--surface) 100%);
 }
 
 .toast--info .toast__icon {

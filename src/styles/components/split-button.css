@@ -73,7 +73,7 @@
   top: calc(100% + 4px);
   right: 0;
   min-width: 180px;
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0;
@@ -110,7 +110,7 @@
 
 .split-btn__menu-item .icon {
   font-size: 18px;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .split-btn__menu-item:hover .icon {

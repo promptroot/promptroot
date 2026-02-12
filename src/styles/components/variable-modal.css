@@ -34,7 +34,7 @@
 
 /* Modal description */
 .variable-modal__description {
-  color: var(--muted);
+  color: var(--text-muted);
   font-size: 13px;
   margin: 0 0 16px 0;
   line-height: 1.5;
@@ -68,7 +68,7 @@
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #12162a;
+  background: var(--surface);
   color: var(--text);
   outline: none;
   box-sizing: border-box;
@@ -78,33 +78,32 @@
 }
 
 .variable-modal__input::placeholder {
-  color: var(--muted);
-  opacity: 0.6;
+  color: var(--text-muted);
 }
 
 .variable-modal__input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(77, 217, 255, 0.1);
+  box-shadow: 0 0 0 2px var(--accent-bg-medium);
 }
 
 /* Error state */
 .variable-modal__input--error {
-  border-color: #ff4d6a;
-  background: rgba(255, 77, 106, 0.05);
+  border-color: var(--danger);
+  background: rgba(255, 107, 107, 0.05);
 }
 
 .variable-modal__input--error:focus {
-  border-color: #ff4d6a;
-  box-shadow: 0 0 0 2px rgba(255, 77, 106, 0.15);
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.15);
 }
 
 /* Error message */
 .variable-modal__error {
-  color: #ff4d6a;
+  color: var(--danger);
   font-size: 13px;
   padding: 8px 12px;
-  background: rgba(255, 77, 106, 0.1);
-  border: 1px solid rgba(255, 77, 106, 0.3);
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
   border-radius: 6px;
   margin-top: 8px;
   display: block;

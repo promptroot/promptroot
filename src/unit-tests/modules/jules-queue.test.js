@@ -81,6 +81,11 @@ vi.mock('../../utils/constants.js', () => ({
   CACHE_KEYS: {
     QUEUE_ITEMS: 'queue-items',
     USER_PROFILE: 'user-profile'
+  },
+  PAGE_SIZES: {
+    julesSessions: 10,
+    branches: 100,
+    queueItems: 100
   }
 }));
 
@@ -560,7 +565,9 @@ describe('jules-queue', () => {
           doc: vi.fn(() => ({
             collection: vi.fn(() => ({
               orderBy: vi.fn(() => ({
-                get: vi.fn().mockResolvedValue({ docs: mockDocs })
+                limit: vi.fn(() => ({
+                  get: vi.fn().mockResolvedValue({ docs: mockDocs })
+                }))
               }))
             }))
           }))
@@ -583,7 +590,9 @@ describe('jules-queue', () => {
           doc: vi.fn(() => ({
             collection: vi.fn(() => ({
               orderBy: vi.fn(() => ({
-                get: vi.fn().mockResolvedValue({ docs: [] })
+                limit: vi.fn(() => ({
+                  get: vi.fn().mockResolvedValue({ docs: [] })
+                }))
               }))
             }))
           }))
@@ -604,7 +613,9 @@ describe('jules-queue', () => {
           doc: vi.fn(() => ({
             collection: vi.fn(() => ({
               orderBy: vi.fn(() => ({
-                get: vi.fn().mockRejectedValue(new Error('Permission denied'))
+                limit: vi.fn(() => ({
+                  get: vi.fn().mockRejectedValue(new Error('Permission denied'))
+                }))
               }))
             }))
           }))

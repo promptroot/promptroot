@@ -1,6 +1,6 @@
 import { getDb } from './firebase-service.js';
 import { addDoc, updateDoc, deleteDoc, queryCollection, setDoc, getDoc, getServerTimestamp, getFieldDelete } from '../utils/firestore-helpers.js';
-import { CACHE_KEYS } from '../utils/constants.js';
+import { CACHE_KEYS, PAGE_SIZES } from '../utils/constants.js';
 
 export async function addToJulesQueue(uid, queueItem) {
   const db = getDb();
@@ -47,14 +47,15 @@ export async function deleteFromJulesQueue(uid, docId) {
   }
 }
 
-export async function listJulesQueue(uid) {
+export async function listJulesQueue(uid, limitCount = PAGE_SIZES.queueItems) {
   const db = getDb();
   if (!db) throw new Error('Firestore not initialized');
   
   try {
     const collectionRef = db.collection('julesQueues').doc(uid).collection('items');
     const results = await queryCollection(collectionRef, {
-      orderBy: { field: 'createdAt', direction: 'desc' }
+      orderBy: { field: 'createdAt', direction: 'desc' },
+      limit: limitCount
     });
     return results;
   } catch (err) {
@@ -126,15 +127,18 @@ export async function deleteSelectedSubtasks(uid, docId, indices, remaining) {
   }
 }
 
-export function subscribeToQueueUpdates(uid, callback) {
+export function subscribeToQueueUpdates(uid, callback, limitCount = PAGE_SIZES.queueItems) {
   const db = getDb();
   if (!db) throw new Error('Firestore not initialized');
   
   const collectionRef = db.collection('julesQueues').doc(uid).collection('items');
-  return collectionRef.orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
-    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(items);
-  }, (error) => {
-    console.error('Queue subscription error:', error);
-  });
+  return collectionRef
+    .orderBy('createdAt', 'desc')
+    .limit(limitCount)
+    .onSnapshot((snapshot) => {
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(items);
+    }, (error) => {
+      console.error('Queue subscription error:', error);
+    });
 }

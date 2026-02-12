@@ -17,6 +17,8 @@ export const PLACEHOLDER_REGEX = /\{([A-Z0-9_-]+)\}/g;
 // Jules API
 export const JULES_API_BASE = "https://jules.googleapis.com/v1alpha";
 
+export const WEB_CAPTURE_EXTENSION_URL = "https://chromewebstore.google.com/detail/promptroot-web-capture/fbhilkiaigdedegnjgecdggbeknnbacg?utm_campaign=pmaxusbrand&utm_content=br3&utm_medium=ga&utm_source=bgads1";
+
 export const DEFAULT_FAVORITE_REPOS = [];
 
 export const STORAGE_KEY_FAVORITE_REPOS = "jules_favorite_repos";

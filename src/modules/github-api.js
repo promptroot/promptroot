@@ -1,12 +1,6 @@
 import { getAuth } from './firebase-service.js';
 import { GIST_POINTER_REGEX, GIST_URL_REGEX, CACHE_DURATIONS } from '../utils/constants.js';
 
-let viaProxy = (url) => url;
-
-export function setViaProxy(proxyFn) {
-  viaProxy = proxyFn;
-}
-
 let rateLimitInfo = {
   remaining: null,
   limit: null,
@@ -65,7 +59,7 @@ function checkRateLimitError(res) {
 }
 
 async function fetchWithHeaders(url, headers) {
-  const res = await fetch(viaProxy(url), {
+  const res = await fetch(url, {
     cache: 'no-store',
     headers
   });
@@ -310,7 +304,7 @@ export async function resolveGistRawUrl(gistUrl) {
     return `https://gist.githubusercontent.com/${user}/${gistId}/raw/${targetFile}`;
   } else {
     const apiUrl = `https://api.github.com/gists/${gistId}`;
-    const res = await fetch(viaProxy(apiUrl));
+    const res = await fetch(apiUrl);
     if (!res.ok) {
       throw new Error(`Failed to fetch gist metadata: ${res.status}`);
     }
@@ -367,7 +361,7 @@ export async function getBranches(owner, repo) {
 
       for (let page = 1; page <= maxPages; page++) {
         const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/branches?per_page=${perPage}&page=${page}&ts=${Date.now()}`;
-        const batch = await fetchJSON(viaProxy(url));
+        const batch = await fetchJSON(url);
 
         if (!Array.isArray(batch) || batch.length === 0) {
           break;

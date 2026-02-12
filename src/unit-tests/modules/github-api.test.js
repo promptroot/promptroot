@@ -13,7 +13,6 @@ vi.mock('../../modules/firebase-service.js', () => ({
 }));
 
 import {
-  setViaProxy,
   fetchJSON,
   fetchJSONWithETag,
   listPromptsViaContents,
@@ -76,9 +75,6 @@ describe('github-api', () => {
     // Clear module caches
     clearCaches();
     
-    // Reset proxy function to default (identity function)
-    setViaProxy((url) => url);
-    
     // Mock Date.now for consistent testing
     vi.useFakeTimers();
     vi.setSystemTime(1000000);
@@ -86,41 +82,6 @@ describe('github-api', () => {
 
   afterEach(() => {
     vi.useRealTimers();
-  });
-
-  describe('setViaProxy', () => {
-    it('should set proxy function', async () => {
-      const proxyFn = vi.fn((url) => `proxied:${url}`);
-      setViaProxy(proxyFn);
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: 'test' })
-      });
-
-      await fetchJSON('https://api.github.com/test');
-
-      expect(proxyFn).toHaveBeenCalledWith('https://api.github.com/test');
-      expect(mockFetch).toHaveBeenCalledWith('proxied:https://api.github.com/test', expect.any(Object));
-      
-      // Reset to default for other tests
-      setViaProxy((url) => url);
-    });
-
-    it('should handle multiple proxy function changes', () => {
-      const proxy1 = (url) => `proxy1:${url}`;
-      const proxy2 = (url) => `proxy2:${url}`;
-
-      setViaProxy(proxy1);
-      setViaProxy(proxy2);
-
-      // The last one should be active - we can't directly test this without making a request
-      // so this test just verifies the function doesn't throw
-      expect(() => setViaProxy(proxy2)).not.toThrow();
-      
-      // Reset to default for other tests
-      setViaProxy((url) => url);
-    });
   });
 
   describe('fetchJSON', () => {
@@ -995,24 +956,6 @@ describe('github-api', () => {
       await expect(fetchRawFile('user', 'repo', 'main', 'file.md')).rejects.toThrow();
       await expect(fetchGistContent('https://gist.githubusercontent.com/user/abc/raw/file.md')).rejects.toThrow();
       expect(await getBranches('user', 'repo')).toEqual([]);
-    });
-
-    it('should maintain proxy settings across different API calls', async () => {
-      const proxyFn = vi.fn((url) => `proxy:${url}`);
-      setViaProxy(proxyFn);
-
-      // Mock successful responses for different API calls
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve([]),
-        headers: { get: () => null }
-      });
-
-      await fetchJSON('https://api.github.com/test1');
-      await getBranches('user', 'repo');
-
-      expect(proxyFn).toHaveBeenCalledWith('https://api.github.com/test1');
-      expect(proxyFn).toHaveBeenCalledWith('https://api.github.com/repos/user/repo/branches?per_page=100&page=1&ts=1000000');
     });
   });
 });

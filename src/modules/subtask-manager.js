@@ -81,7 +81,7 @@ export function extractNumberedTasks(text) {
   return tasks;
 }
 
-export function breakIntoParagraphs(text) {
+function breakIntoParagraphs(text) {
   const sections = [];
   const lines = text.split('\n');
   let currentSection = [];

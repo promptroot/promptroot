@@ -47,6 +47,7 @@ a:hover { text-decoration: underline; }
 .form-row { display: flex; gap: 12px; align-items: start; }
 .form-col { flex: 1; }
 .form-label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+#freeInputSection .form-label { color: var(--text-muted); }
 .text-input { width: 100%; min-height: 250px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); outline: none; margin-bottom: 16px; box-sizing: border-box; resize: vertical; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, Noto Sans, Liberation Sans, Helvetica Neue, sans-serif; font-size: 14px; }
 .text-input::placeholder { color: var(--text-muted); }
 .options-box { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; padding: 8px; background: var(--overlay-subtle); border-radius: 8px; }

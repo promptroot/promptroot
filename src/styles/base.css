@@ -188,7 +188,10 @@ html, body {
 /* Color utilities */
 .color-accent {
   color: var(--accent);
-}text-muted);
+}
+
+.color-muted {
+  color: var(--text-muted);
 }
 
 .color-danger {
@@ -209,7 +212,8 @@ html, body {
 
 /* Legacy aliases (deprecated) */
 .color-error {
-  color: var(--danger
+  color: var(--danger);
+}
 
 .color-success {
   color: var(--success);

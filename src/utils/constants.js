@@ -24,8 +24,6 @@ export const STORAGE_KEY_FAVORITE_REPOS = "jules_favorite_repos";
 // Hardcoded favorite branches (always favorites for all users)
 export const HARDCODED_FAVORITE_BRANCHES = ["main", "web-captures"];
 
-export const STORAGE_KEY_FAVORITE_BRANCHES = "favorite_branches";
-
 // Tag definitions
 export const TAG_DEFINITIONS = {
   review: {

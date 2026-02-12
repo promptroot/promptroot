@@ -208,11 +208,7 @@ export function showUserProfileModal() {
   }
 }
 
-let profileHandlersAttached = false;
-
 function attachViewAllSessionsHandler() {
-  if (profileHandlersAttached) return;
-  
   const viewAllSessionsLink = document.getElementById('viewAllSessionsLink');
   if (viewAllSessionsLink) {
     viewAllSessionsLink.onclick = (e) => {
@@ -230,8 +226,6 @@ function attachViewQueueHandler() {
       showJulesQueueModal();
     };
   }
-  
-  profileHandlersAttached = true;
 }
 
 async function loadAndDisplayJulesProfile(uid) {
@@ -558,7 +552,7 @@ export function hideUserProfileModal() {
   modal.classList.remove('show');
 }
 
-export function showJulesSessionsHistoryModal() {
+function showJulesSessionsHistoryModal() {
   const modal = document.getElementById('julesSessionsHistoryModal');
   const searchInput = document.getElementById('sessionSearchInput');
   

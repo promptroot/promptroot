@@ -1,6 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { showUserProfileModal, loadProfileDirectly } from '../../modules/jules-account.js';
+import * as julesApi from '../../modules/jules-api.js';
 import * as firebaseService from '../../modules/firebase-service.js';
 import * as julesKeys from '../../modules/jules-keys.js';
 import * as statusRenderer from '../../modules/status-renderer.js';
@@ -234,6 +235,33 @@ describe('jules-account.js', () => {
         }),
         expect.objectContaining({ category: 'AUTH' })
       );
+    });
+  });
+
+  describe('Sessions History Modal', () => {
+    it('should open modal and load sessions when View All link is clicked', async () => {
+      const mockSessions = { sessions: [{ name: 'sessions/123', prompt: 'test' }], nextPageToken: null };
+
+      // Use the mocked functions directly since they are from the mocked module
+      julesApi.getDecryptedJulesKey.mockResolvedValue('test-key');
+      julesApi.listJulesSessions.mockResolvedValue(mockSessions);
+      julesKeys.checkJulesKey.mockResolvedValue(true);
+
+      // Initialize the profile modal which attaches handlers
+      showUserProfileModal();
+
+      const viewAllLink = document.getElementById('viewAllSessionsLink');
+      const historyModal = document.getElementById('julesSessionsHistoryModal');
+
+      // Click the link
+      if (viewAllLink) viewAllLink.click();
+
+      // Check modal is shown
+      expect(historyModal.classList.contains('show')).toBe(true);
+
+      // Check sessions are loaded
+      await new Promise(resolve => setTimeout(resolve, 0)); // wait for async
+      expect(julesApi.listJulesSessions).toHaveBeenCalled();
     });
   });
 });

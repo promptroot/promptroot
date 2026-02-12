@@ -209,7 +209,8 @@ html, body {
 
 /* Legacy aliases (deprecated) */
 .color-error {
-  color: var(--danger
+  color: var(--danger);
+}
 
 .color-success {
   color: var(--success);

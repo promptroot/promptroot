@@ -49,7 +49,7 @@ export function showFreeInputModal() {
   handleFreeInputAfterAuth();
 }
 
-export async function handleFreeInputAfterAuth() {
+async function handleFreeInputAfterAuth() {
   const user = getAuth()?.currentUser || null;
   if (!user) {
     showToast('Not logged in.', 'error');

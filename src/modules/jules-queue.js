@@ -166,7 +166,60 @@ export function hideJulesQueueModal() {
 
 export function renderQueueListDirectly(items) {
   setQueueCache(items);
+  populateRepoFilter(items);
   renderQueueList(items);
+}
+
+// Repository filtering functionality
+function populateRepoFilter(items) {
+  const repoFilter = document.getElementById('queueRepoFilter');
+  if (!repoFilter || !items) return;
+  
+  // Get unique repositories from items
+  const repos = new Set();
+  items.forEach(item => {
+    if (item.sourceId) {
+      repos.add(item.sourceId);
+    }
+  });
+  
+  // Clear existing options except the first (All Repositories)
+  while (repoFilter.children.length > 1) {
+    repoFilter.removeChild(repoFilter.lastChild);
+  }
+  
+  // Add repository options
+  Array.from(repos).sort().forEach(repo => {
+    const option = document.createElement('option');
+    option.value = repo;
+    option.textContent = repo;
+    repoFilter.appendChild(option);
+  });
+}
+
+function getFilteredItems() {
+  const allItems = getQueueCache();
+  if (!allItems) return [];
+  
+  const repoFilter = document.getElementById('queueRepoFilter');
+  const selectedRepo = repoFilter?.value || '';
+  
+  if (!selectedRepo) {
+    return allItems;
+  }
+  
+  return allItems.filter(item => item.sourceId === selectedRepo);
+}
+
+function applyRepoFilter() {
+  const filteredItems = getFilteredItems();
+  renderQueueList(filteredItems);
+  
+  // Clear selections since they may no longer apply
+  const selectAllCheck = document.getElementById('queueSelectAll');
+  if (selectAllCheck) {
+    selectAllCheck.checked = false;
+  }
 }
 
 export function attachQueueHandlers() {
@@ -811,6 +864,7 @@ async function loadQueuePage() {
     setCache(CACHE_KEYS.QUEUE_ITEMS, items, user.uid);
     
     setQueueCache(items);
+    populateRepoFilter(items);
     renderQueueList(items);
     setupQueueHandlers();
   } catch (err) {
@@ -1650,6 +1704,13 @@ function setupQueueHandlers() {
       document.querySelectorAll('.subtask-checkbox').forEach(cb => cb.checked = checked);
       updateScheduleButton();
     });
+  }
+
+  // Repository filter handler
+  const repoFilter = document.getElementById('queueRepoFilter');
+  if (repoFilter && !repoFilter.dataset.listenerAttached) {
+    repoFilter.dataset.listenerAttached = 'true';
+    repoFilter.addEventListener('change', applyRepoFilter);
   }
 
   const runHandler = async () => { await runSelectedQueueItems(); };

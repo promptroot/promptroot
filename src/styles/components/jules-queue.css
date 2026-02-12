@@ -245,3 +245,43 @@
 #scheduleQueueModal .form-error.hidden {
   display: none;
 }
+
+/* Repository Filter Styles */
+.queue-repo-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.queue-repo-filter .form-label {
+  margin: 0;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.queue-repo-filter .form-control {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #12162a;
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234dd9ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.queue-repo-filter .form-control:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(77, 217, 255, 0.1);
+  outline: none;
+}
+
+.queue-repo-filter .form-control option {
+  background: #12162a;
+  color: var(--text);
+  padding: 8px;
+}

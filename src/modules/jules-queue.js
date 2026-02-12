@@ -58,7 +58,7 @@ import {
 } from '../utils/jules-queue-helpers.js';
 import { getHandler } from '../utils/handler-registry.js';
 
-export function getSelectedQueueIds() {
+function _getSelectedQueueIds() {
   const queueSelections = [];
   const subtaskSelections = {};
 
@@ -924,7 +924,7 @@ async function showScheduleModal() {
     return;
   }
   
-  const { queueSelections, subtaskSelections } = getSelectedQueueIds();
+  const { queueSelections, subtaskSelections } = _getSelectedQueueIds();
   
   if (queueSelections.length === 0 && Object.keys(subtaskSelections).length > 0) {
     handleError('Individual subtasks cannot be scheduled separately. Please select the parent batch to schedule all subtasks together.', { source: 'showScheduleModal' }, { category: ErrorCategory.VALIDATION, toastType: 'warn' });
@@ -1192,7 +1192,7 @@ async function confirmScheduleItems() {
   
   await serviceSaveUserTimeZone(user.uid, selectedTimeZone);
   
-  const { queueSelections } = getSelectedQueueIds();
+  const { queueSelections } = _getSelectedQueueIds();
   
   try {
     const scheduledAt = firebase.firestore.Timestamp.fromDate(scheduledDate);
@@ -1756,7 +1756,7 @@ function updateScheduleButton() {
   const scheduleBtn = document.getElementById('queueScheduleBtn');
   if (!scheduleBtn) return;
   
-  const { queueSelections } = getSelectedQueueIds();
+  const { queueSelections } = _getSelectedQueueIds();
   const hasSelections = queueSelections.length > 0;
   
   if (!hasSelections) {
@@ -1808,7 +1808,7 @@ async function unscheduleSelectedQueueItems() {
     return;
   }
   
-  const { queueSelections } = getSelectedQueueIds();
+  const { queueSelections } = _getSelectedQueueIds();
   
   if (queueSelections.length === 0) {
     showToast('No items selected', 'warn');
@@ -1840,7 +1840,7 @@ async function deleteSelectedQueueItems() {
   const user = getAuth()?.currentUser;
   if (!user) { handleError(JULES_MESSAGES.NOT_SIGNED_IN, { source: 'deleteSelectedQueueItems' }, { category: ErrorCategory.AUTH }); return; }
   
-  const { queueSelections, subtaskSelections } = getSelectedQueueIds();
+  const { queueSelections, subtaskSelections } = _getSelectedQueueIds();
   
   if (queueSelections.length === 0 && Object.keys(subtaskSelections).length === 0) {
     showToast('No items selected', 'warn');
@@ -1877,7 +1877,7 @@ async function runSelectedQueueItems() {
   const user = getAuth()?.currentUser;
   if (!user) { handleError(JULES_MESSAGES.NOT_SIGNED_IN, { source: 'runSelectedQueueItems' }, { category: ErrorCategory.AUTH }); return; }
   
-  const { queueSelections, subtaskSelections } = getSelectedQueueIds();
+  const { queueSelections, subtaskSelections } = _getSelectedQueueIds();
   
   if (queueSelections.length === 0 && Object.keys(subtaskSelections).length === 0) {
     showToast('No items selected', 'warn');
@@ -2160,7 +2160,7 @@ async function runSelectedQueueItems() {
 }
 
 export function exportQueueToMarkdown() {
-  const { queueSelections, subtaskSelections } = getSelectedQueueIds();
+  const { queueSelections, subtaskSelections } = _getSelectedQueueIds();
   const queueCache = getQueueCache();
   
   if (queueSelections.length === 0 && Object.keys(subtaskSelections).length === 0) {

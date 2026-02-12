@@ -27,8 +27,7 @@ import {
   hideJulesQueueModal,
   renderQueueListDirectly,
   attachQueueHandlers,
-  exportQueueToMarkdown,
-  getSelectedQueueIds
+  exportQueueToMarkdown
 } from '../../modules/jules-queue.js';
 import { getCache } from '../../utils/session-cache.js';
 

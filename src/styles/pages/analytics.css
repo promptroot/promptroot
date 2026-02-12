@@ -8,7 +8,7 @@
 }
 
 .metric-card {
-  background: linear-gradient(135deg, rgba(20,24,41,0.6), rgba(20,24,41,0.3));
+  background: linear-gradient(135deg, var(--surface), var(--accent-bg-subtle));
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px;
@@ -28,7 +28,7 @@
 
 .metric-card__label {
   font-size: 13px;
-  color: var(--muted);
+  color: var(--text-muted);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -61,7 +61,7 @@
 }
 
 .analytics-chart-panel {
-  background: linear-gradient(135deg, rgba(20,24,41,0.4), rgba(20,24,41,0.2));
+  background: linear-gradient(135deg, var(--overlay-medium), var(--accent-bg-subtle));
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px;
@@ -77,7 +77,7 @@
 
 /* Analytics Panels */
 .analytics-panel {
-  background: linear-gradient(135deg, rgba(20,24,41,0.3), rgba(20,24,41,0.15));
+  background: linear-gradient(135deg, var(--accent-bg-subtle), var(--overlay-subtle));
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px;
@@ -85,7 +85,7 @@
 
 /* List Items in Analytics */
 .analytics-panel .item {
-  background: linear-gradient(135deg, rgba(20,24,41,0.5), rgba(20,24,41,0.3));
+  background: linear-gradient(135deg, var(--surface), var(--accent-bg-subtle));
   margin-bottom: 8px;
 }
 
@@ -127,15 +127,15 @@
 }
 
 .failure-item {
-  background: linear-gradient(135deg, rgba(192,80,77,0.1), rgba(192,80,77,0.05));
-  border: 1px solid rgba(192,80,77,0.3);
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
   border-radius: 10px;
   padding: 16px;
 }
 
 .failure-item__label {
   font-size: 13px;
-  color: var(--muted);
+  color: var(--text-muted);
   margin-bottom: 8px;
 }
 
@@ -147,7 +147,7 @@
 
 .failure-item__desc {
   font-size: 12px;
-  color: var(--muted);
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
@@ -165,25 +165,25 @@
 }
 
 .status-badge--success {
-  background: rgba(39, 174, 96, 0.15);
+  background: rgba(74, 222, 128, 0.15);
   color: var(--success);
-  border: 1px solid rgba(39, 174, 96, 0.3);
+  border: 1px solid rgba(74, 222, 128, 0.3);
 }
 
 .status-badge--danger {
-  background: rgba(192, 80, 77, 0.15);
+  background: rgba(255, 107, 107, 0.15);
   color: var(--danger);
-  border: 1px solid rgba(192, 80, 77, 0.3);
+  border: 1px solid rgba(255, 107, 107, 0.3);
 }
 
 .status-badge--warn {
   background: rgba(243, 156, 18, 0.15);
-  color: var(--warn);
+  color: var(--warning);
   border: 1px solid rgba(243, 156, 18, 0.3);
 }
 
 .status-badge--info {
-  background: rgba(77, 217, 255, 0.15);
+  background: var(--accent-bg-strong);
   color: var(--accent);
   border: 1px solid rgba(77, 217, 255, 0.3);
 }
@@ -211,7 +211,7 @@
 }
 
 .pr-link--disabled {
-  color: var(--muted);
+  color: var(--text-muted);
   cursor: not-allowed;
   font-weight: 400;
 }

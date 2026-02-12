@@ -89,7 +89,7 @@
 #statusBar .status-close {
   background: none;
   border: none;
-  color: var(--muted);
+  color: var(--text-muted);
   font-size: 18px;
   cursor: pointer;
   padding: 4px;

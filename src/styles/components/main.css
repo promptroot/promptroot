@@ -1,8 +1,8 @@
 /* Main Content */
 #main { padding: 14px; display: flex; flex-direction: column; }
-#empty { color: var(--muted); font-size: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; }
+#empty { color: var(--text-muted); font-size: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; }
 #title { margin: 0 0 6px; font-size: 22px; }
-#meta { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+#meta { color: var(--text-muted); font-size: 13px; margin-bottom: 10px; }
 #actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 
 /* Ensure Free Input section stacks vertically when shown */

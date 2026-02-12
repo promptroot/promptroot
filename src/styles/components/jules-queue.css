@@ -22,12 +22,12 @@
 
 .queue-status--pending {
   background: rgba(255, 193, 7, 0.15);
-  color: #ffc107;
+  color: var(--warning);
 }
 
 .queue-status--completed {
   background: rgba(76, 175, 80, 0.15);
-  color: #4caf50;
+  color: var(--success);
 }
 
 .queue-status--failed {
@@ -157,7 +157,7 @@
 
 .schedule-status__timezone {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 /* Timezone Dropdown */
@@ -183,7 +183,7 @@
 .queue-loading {
   text-align: center;
   padding: 40px 20px;
-  color: var(--muted);
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -194,7 +194,7 @@
 .queue-empty {
   text-align: center;
   padding: 40px 20px;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .queue-empty__icon {
@@ -212,7 +212,7 @@
 .queue-subtasks__header {
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text-muted);
   margin-bottom: 8px;
 }
 
@@ -223,13 +223,13 @@
 
 .queue-subtask__status {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 /* Schedule Queue Modal form helpers */
 #scheduleQueueModal .form-help-text {
   font-size: 13px;
-  color: var(--muted);
+  color: var(--text-muted);
   margin-bottom: 16px;
 }
 

@@ -103,6 +103,9 @@ export const JULES_UI_TEXT = {
   LOAD_QUEUE_ERROR: 'Failed to load queue',
   LOAD_PROFILE_ERROR: 'Failed to load Jules profile',
   
+  // Error visibility configuration
+  ERROR_VISIBILITY_WINDOW_MINUTES: 60, // Show error badges/notifications for errors within this window
+  
   // State labels (for session/queue status display)
   STATE_LABELS: {
     COMPLETED: 'COMPLETED',

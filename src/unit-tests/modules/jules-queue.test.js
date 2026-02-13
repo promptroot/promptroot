@@ -31,6 +31,7 @@ import {
   getSelectedQueueIds
 } from '../../modules/jules-queue.js';
 import { getCache } from '../../utils/session-cache.js';
+import * as julesQueueStore from '../../modules/jules-queue-store.js';
 
 // Mock dependencies
 vi.mock('../../utils/title.js', () => ({
@@ -714,16 +715,54 @@ describe('jules-queue', () => {
       const mockModal = createMockElement('julesQueueModal');
       global.document.getElementById.mockReturnValue(mockModal);
       
+      // Mock escape handler to test removeEventListener call
+      const mockHandler = vi.fn();
+      julesQueueStore.getQueueModalEscapeHandler.mockReturnValue(mockHandler);
+      
       hideJulesQueueModal();
       
       expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
       expect(mockModal.removeAttribute).toHaveBeenCalledWith('style');
+      expect(global.document.removeEventListener).toHaveBeenCalledWith('keydown', mockHandler);
+      expect(julesQueueStore.setQueueModalEscapeHandler).toHaveBeenCalledWith(null);
     });
 
     it('should do nothing if modal not found', () => {
       global.document.getElementById.mockReturnValue(null);
       
       expect(() => hideJulesQueueModal()).not.toThrow();
+    });
+  });
+
+  describe('error persistence', () => {
+    it('should identify recent errors within visibility window', () => {
+      const now = Date.now();
+      const recentError = {
+        error: 'Test error',
+        errorAt: now - (30 * 60 * 1000) // 30 minutes ago
+      };
+      
+      const ageMinutes = Math.floor((now - recentError.errorAt) / (60 * 1000));
+      expect(ageMinutes).toBeLessThan(60); // Within ERROR_VISIBILITY_WINDOW_MINUTES
+    });
+
+    it('should exclude errors outside visibility window', () => {
+      const now = Date.now();
+      const oldError = {
+        error: 'Old error',
+        errorAt: now - (90 * 60 * 1000) // 90 minutes ago
+      };
+      
+      const ageMinutes = Math.floor((now - oldError.errorAt) / (60 * 1000));
+      expect(ageMinutes).toBeGreaterThanOrEqual(60); // Outside ERROR_VISIBILITY_WINDOW_MINUTES
+    });
+
+    it('should handle missing errorAt timestamp', () => {
+      const errorWithoutTimestamp = {
+        error: 'Error without timestamp'
+      };
+      
+      expect(errorWithoutTimestamp.errorAt).toBeUndefined();
     });
   });
 

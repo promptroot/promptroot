@@ -35,6 +35,28 @@
   color: var(--danger);
 }
 
+/* Queue Error Badge */
+
+.queue-error-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 14px;
+  margin-left: 6px;
+  cursor: help;
+  vertical-align: middle;
+}
+
+.queue-error-badge .icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
 /* Queue Card State Classes */
 
 .queue-card--scheduled {

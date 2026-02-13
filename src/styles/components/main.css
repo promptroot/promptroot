@@ -7,3 +7,8 @@
 
 /* Ensure Free Input section stacks vertically when shown */
 #freeInputSection { flex-direction: column; }
+
+/* Mobile Responsive Styles */
+@media (max-width: 640px) {
+  #main { padding: 8px; }
+}

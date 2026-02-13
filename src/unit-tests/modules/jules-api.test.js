@@ -218,9 +218,19 @@ describe('jules-api', () => {
       // Mock button element
       const mockButton = {
         disabled: false,
-        textContent: 'Original Text'
+        textContent: 'Original Text',
+        replaceChildren: vi.fn(),
+        appendChild: vi.fn()
       };
       global.document.getElementById = vi.fn().mockReturnValue(mockButton);
+      
+      // Mock document methods
+      global.document.createElement = vi.fn((tagName) => ({
+        className: '',
+        textContent: '',
+        setAttribute: vi.fn()
+      }));
+      global.document.createTextNode = vi.fn((text) => text);
       
       mockFetch.mockResolvedValue({
         ok: true,
@@ -229,7 +239,7 @@ describe('jules-api', () => {
         })
       });
       
-      const result = await callRunJulesFunction('test prompt', 'source1', 'main', 'Test Title');
+      const result = await callRunJulesFunction('test prompt', 'owner/repo', 'main', 'Test Title');
       
       expect(result).toBe('https://jules.example.com/session/123');
     });

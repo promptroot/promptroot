@@ -25,7 +25,8 @@ export async function checkJulesKey(uid) {
       return false;
     }
     const doc = await getDoc('julesKeys', uid, CACHE_KEY);
-    return !!doc;
+    // Check if doc exists AND has a valid key field
+    return !!(doc && doc.key);
   } catch (error) {
     return false;
   }

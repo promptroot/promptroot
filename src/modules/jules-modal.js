@@ -7,7 +7,7 @@ import { RepoSelector, BranchSelector } from './repo-branch-selector.js';
 import { addToJulesQueue } from './jules-queue.js';
 import { toggleVisibility } from '../utils/dom-helpers.js';
 import { extractTitleFromPrompt } from '../utils/title.js';
-import { RETRY_CONFIG, TIMEOUTS, JULES_MESSAGES } from '../utils/constants.js';
+import { RETRY_CONFIG, TIMEOUTS, JULES_MESSAGES, JULES_MODAL_TEXT } from '../utils/constants.js';
 import { showToast } from './toast.js';
 
 let lastSelectedSourceId = 'sources/github/promptroot/promptroot';
@@ -43,39 +43,43 @@ export function showJulesKeyModal(onSave) {
   const saveBtn = document.getElementById('julesSaveBtn');
   const cancelBtn = document.getElementById('julesCancelBtn');
 
+  // Initialize button text
+  saveBtn.textContent = JULES_MODAL_TEXT.SAVE_BUTTON;
+  cancelBtn.textContent = JULES_MODAL_TEXT.CANCEL_BUTTON;
+
   // Clean up any existing listeners
   if (keyModalCleanup) keyModalCleanup();
 
   const handleSave = async () => {
     const apiKey = input.value.trim();
     if (!apiKey) {
-      showToast('Please enter your Jules API key.', 'warn');
+      showToast(JULES_MODAL_TEXT.ENTER_KEY_WARNING, 'warn');
       return;
     }
 
     try {
-      saveBtn.textContent = 'Saving...';
+      saveBtn.textContent = JULES_MODAL_TEXT.SAVING;
       saveBtn.disabled = true;
 
       const user = getAuth()?.currentUser || null;
       if (!user) {
-        showToast('Not logged in.', 'error');
-        saveBtn.textContent = 'Save & Continue';
+        showToast(JULES_MODAL_TEXT.NOT_LOGGED_IN, 'error');
+        saveBtn.textContent = JULES_MODAL_TEXT.SAVE_BUTTON;
         saveBtn.disabled = false;
         return;
       }
 
       await encryptAndStoreKey(apiKey, user.uid);
 
-      showToast('Jules API key saved successfully', 'success');
+      showToast(JULES_MODAL_TEXT.KEY_SAVED_SUCCESS, 'success');
       hideJulesKeyModal();
-      saveBtn.textContent = 'Save & Continue';
+      saveBtn.textContent = JULES_MODAL_TEXT.SAVE_BUTTON;
       saveBtn.disabled = false;
 
       if (onSave) onSave();
     } catch (error) {
-      showToast('Failed to save API key: ' + error.message, 'error');
-      saveBtn.textContent = 'Save & Continue';
+      showToast(JULES_MODAL_TEXT.KEY_SAVE_ERROR_PREFIX + error.message, 'error');
+      saveBtn.textContent = JULES_MODAL_TEXT.SAVE_BUTTON;
       saveBtn.disabled = false;
     }
   };
@@ -103,17 +107,30 @@ export function hideJulesKeyModal() {
 
 let envModalCleanup = null;
 
-export async function showJulesEnvModal(promptText) {
+export async function showJulesEnvModal(promptText, mode = 'submit') {
   const modal = document.getElementById('julesEnvModal');
   modal.classList.add('show');
 
   const submitBtn = document.getElementById('julesEnvSubmitBtn');
   const queueBtn = document.getElementById('julesEnvQueueBtn');
+  const scheduleBtn = document.getElementById('julesEnvScheduleBtn');
   const cancelBtn = document.getElementById('julesEnvCancelBtn');
   
-  // Initialize buttons
+  // Initialize buttons based on mode
   submitBtn.disabled = true;
   queueBtn.disabled = true;
+  scheduleBtn.disabled = true;
+  
+  // Show/hide buttons based on mode
+  if (mode === 'schedule') {
+    toggleVisibility(submitBtn, false);
+    toggleVisibility(queueBtn, false);
+    toggleVisibility(scheduleBtn, true);
+  } else {
+    toggleVisibility(submitBtn, true);
+    toggleVisibility(queueBtn, true);
+    toggleVisibility(scheduleBtn, false);
+  }
   
   let selectedSourceId = null;
   let selectedBranch = null;
@@ -139,6 +156,7 @@ export async function showJulesEnvModal(promptText) {
       selectedBranch = branch;
       submitBtn.disabled = false;
       queueBtn.disabled = false;
+      scheduleBtn.disabled = false;
       branchSelector.initialize(sourceId, branch);
     }
   });
@@ -173,12 +191,44 @@ export async function showJulesEnvModal(promptText) {
         prompt: promptText,
         sourceId: selectedSourceId,
         branch: selectedBranch,
-        note: 'Queued from Try in Jules modal'
+        note: JULES_MODAL_TEXT.NOTE_QUEUED_TRY
       });
       showToast(JULES_MESSAGES.QUEUED, 'success');
       hideJulesEnvModal();
     } catch (err) {
       showToast(JULES_MESSAGES.QUEUE_FAILED(err.message), 'error');
+    }
+  };
+  
+  const handleSchedule = async () => {
+    if (!selectedSourceId || !selectedBranch) return;
+    
+    const user = getAuth()?.currentUser;
+    if (!user) {
+      showToast(JULES_MESSAGES.SIGN_IN_REQUIRED, 'warn');
+      return;
+    }
+    
+    try {
+      const { handleQueueAction, showScheduleModalForPrompt } = await import('./jules-queue.js');
+      
+      const title = extractTitleFromPrompt(promptText) || 'Scheduled Prompt';
+      const success = await handleQueueAction({
+        type: 'single',
+        prompt: promptText,
+        sourceId: selectedSourceId,
+        branch: selectedBranch,
+        note: 'Scheduled from prompt toolbar',
+        title: title
+      }, true); // silent mode
+      
+      if (success) {
+        hideJulesEnvModal();
+        // Show schedule modal for the newly added item
+        await showScheduleModalForPrompt(title);
+      }
+    } catch (err) {
+      showToast('Failed to schedule prompt: ' + err.message, 'error');
     }
   };
   
@@ -188,12 +238,14 @@ export async function showJulesEnvModal(promptText) {
 
   submitBtn.addEventListener('click', handleSubmit);
   queueBtn.addEventListener('click', handleQueue);
+  scheduleBtn.addEventListener('click', handleSchedule);
   cancelBtn.addEventListener('click', handleCancel);
 
   // Store cleanup function
   envModalCleanup = () => {
     submitBtn.removeEventListener('click', handleSubmit);
     queueBtn.removeEventListener('click', handleQueue);
+    scheduleBtn.removeEventListener('click', handleSchedule);
     cancelBtn.removeEventListener('click', handleCancel);
     envModalCleanup = null;
   };
@@ -246,7 +298,7 @@ async function handleRepoSelect(sourceId, branch, promptText, suppressPopups = f
               prompt: promptText,
               sourceId: sourceId,
               branch: lastSelectedBranch,
-              note: 'Queued from Try in Jules flow (partial retries)'
+              note: JULES_MODAL_TEXT.NOTE_QUEUED_PARTIAL_RETRY
             });
             showToast(JULES_MESSAGES.QUEUED, 'success');
           } catch (err) {
@@ -279,7 +331,7 @@ async function handleRepoSelect(sourceId, branch, promptText, suppressPopups = f
               prompt: promptText,
               sourceId: sourceId,
               branch: lastSelectedBranch,
-              note: 'Queued from Try in Jules flow (final failure)'
+              note: JULES_MODAL_TEXT.NOTE_QUEUED_FINAL_FAILURE
             });
             showToast(JULES_MESSAGES.QUEUED, 'success');
           } catch (err) {
@@ -345,7 +397,7 @@ export async function showSubtaskErrorModal(subtaskNumber, totalSubtasks, error,
   }
 
   return new Promise((resolve) => {
-    subtaskNumDiv.textContent = `Task ${subtaskNumber} of ${totalSubtasks}`;
+    subtaskNumDiv.textContent = JULES_MODAL_TEXT.SUBTASK_PROGRESS(subtaskNumber, totalSubtasks);
     messageDiv.textContent = error.message || String(error);
     detailsDiv.textContent = error.toString();
 

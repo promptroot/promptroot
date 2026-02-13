@@ -1,7 +1,14 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { showPromptViewer, attachPromptViewerHandlers } from '../../modules/prompt-viewer.js';
+import { registerHandler, clearHandlers } from '../../utils/handler-registry.js';
 
 // Mock dependencies
+vi.mock('../../utils/handler-registry.js', () => ({
+  registerHandler: vi.fn(),
+  clearHandlers: vi.fn(),
+  getHandler: vi.fn()
+}));
+
 vi.mock('../../utils/dom-helpers.js', () => ({
   createElement: vi.fn((tag, className, text) => {
     const elem = document.createElement(tag);
@@ -126,13 +133,6 @@ function mockReset() {
   global.document.removeEventListener.mockClear();
   global.navigator.clipboard.writeText.mockResolvedValue();
   global.console.error.mockClear();
-  
-  // Clear window handlers
-  Object.keys(global.window).forEach(key => {
-    if (key.startsWith('viewPrompt_')) {
-      delete global.window[key];
-    }
-  });
 }
 
 describe('prompt-viewer', () => {
@@ -169,7 +169,7 @@ describe('prompt-viewer', () => {
       
       showPromptViewer('Test prompt', 'session123');
       
-      expect(createElement).toHaveBeenCalledWith('div', 'modal');
+      expect(createElement).toHaveBeenCalledWith('div', 'modal modal--prompt-viewer');
       expect(global.document.body.appendChild).toHaveBeenCalled();
     });
 
@@ -601,8 +601,6 @@ describe('prompt-viewer', () => {
     });
 
     it('should call setTimeout to reset button text after copying', async () => {
-      // Note: Button state changes happen on the old (detached) button due to closure
-      // This test verifies setTimeout is called for the reset logic
       const mockModal = createMockElement('promptViewerModal');
       const mockText = createMockElement('promptViewerText');
       
@@ -632,13 +630,10 @@ describe('prompt-viewer', () => {
       
       await copyHandler();
       
-      // Verify setTimeout was called for button reset
       expect(global.setTimeout).toHaveBeenCalledTimes(setTimeoutCalls + 1);
     });
 
     it('should attempt to update button state after copying', async () => {
-      // Note: Due to closure over old button reference, innerHTML/disabled
-      // are set on detached button node. This test just verifies no errors occur.
       const mockModal = createMockElement('promptViewerModal');
       const mockText = createMockElement('promptViewerText');
       const mockCopy = createMockElement('promptViewerCopy');
@@ -662,7 +657,6 @@ describe('prompt-viewer', () => {
         call => call[0] === 'click'
       )[1];
       
-      // Should complete without throwing errors
       await expect(copyHandler()).resolves.toBeUndefined();
     });
 
@@ -764,25 +758,16 @@ describe('prompt-viewer', () => {
   });
 
   describe('attachPromptViewerHandlers', () => {
-    it('should clear previous handlers from map', () => {
-      // First call to populate handlers
+    it('should clear previous handlers via registry', () => {
       const sessions = [
-        { name: 'sessions/old1', prompt: 'Old 1' },
-        { name: 'sessions/old2', prompt: 'Old 2' }
+        { name: 'sessions/old1', prompt: 'Old 1' }
       ];
       attachPromptViewerHandlers(sessions);
       
-      expect(global.window.viewPrompt_old1).toBeDefined();
-      expect(global.window.viewPrompt_old2).toBeDefined();
-      
-      // Second call should clear them
-      attachPromptViewerHandlers([]);
-      
-      expect(global.window.viewPrompt_old1).toBeUndefined();
-      expect(global.window.viewPrompt_old2).toBeUndefined();
+      expect(clearHandlers).toHaveBeenCalledWith('promptViewer');
     });
 
-    it('should create handler for each session', () => {
+    it('should register handler for each session', () => {
       const sessions = [
         { name: 'sessions/abc123', prompt: 'Test 1' },
         { name: 'sessions/def456', prompt: 'Test 2' }
@@ -790,8 +775,8 @@ describe('prompt-viewer', () => {
       
       attachPromptViewerHandlers(sessions);
       
-      expect(global.window.viewPrompt_abc123).toBeDefined();
-      expect(global.window.viewPrompt_def456).toBeDefined();
+      expect(registerHandler).toHaveBeenCalledWith('promptViewer', 'abc123', expect.any(Function));
+      expect(registerHandler).toHaveBeenCalledWith('promptViewer', 'def456', expect.any(Function));
     });
 
     it('should handle session id from id field with sessions prefix', () => {
@@ -801,7 +786,7 @@ describe('prompt-viewer', () => {
       
       attachPromptViewerHandlers(sessions);
       
-      expect(global.window.viewPrompt_xyz789).toBeDefined();
+      expect(registerHandler).toHaveBeenCalledWith('promptViewer', 'xyz789', expect.any(Function));
     });
 
     it('should handle session id from id field without sessions prefix', () => {
@@ -811,7 +796,7 @@ describe('prompt-viewer', () => {
       
       attachPromptViewerHandlers(sessions);
       
-      expect(global.window.viewPrompt_abc999).toBeDefined();
+      expect(registerHandler).toHaveBeenCalledWith('promptViewer', 'abc999', expect.any(Function));
     });
 
     it('should clean session id characters', () => {
@@ -821,14 +806,15 @@ describe('prompt-viewer', () => {
       
       attachPromptViewerHandlers(sessions);
       
-      expect(global.window.viewPrompt_test_123_456).toBeDefined();
+      expect(registerHandler).toHaveBeenCalledWith('promptViewer', 'test_123_456', expect.any(Function));
     });
 
     it('should handle empty sessions array', () => {
       expect(() => attachPromptViewerHandlers([])).not.toThrow();
+      expect(clearHandlers).toHaveBeenCalledWith('promptViewer');
     });
 
-    it('should use default prompt text for missing prompt', () => {
+    it('should register handler that calls showPromptViewer with default text', () => {
       const mockModal = createMockElement('promptViewerModal');
       const mockText = createMockElement('promptViewerText');
       const mockCopy = createMockElement('promptViewerCopy');
@@ -850,12 +836,14 @@ describe('prompt-viewer', () => {
       
       attachPromptViewerHandlers(sessions);
       
-      global.window.viewPrompt_test1();
+      // Capture the registered handler
+      const handler = registerHandler.mock.calls[0][2];
+      handler();
       
       expect(mockText.textContent).toBe('No prompt text available');
     });
 
-    it('should create working handler that calls showPromptViewer', () => {
+    it('should register handler that calls showPromptViewer with session text', () => {
       const mockModal = createMockElement('promptViewerModal');
       const mockText = createMockElement('promptViewerText');
       const mockCopy = createMockElement('promptViewerCopy');
@@ -877,7 +865,8 @@ describe('prompt-viewer', () => {
       
       attachPromptViewerHandlers(sessions);
       
-      global.window.viewPrompt_func123();
+      const handler = registerHandler.mock.calls[0][2];
+      handler();
       
       expect(mockText.textContent).toBe('My prompt text');
       expect(mockModal.classList.add).toHaveBeenCalledWith('show');

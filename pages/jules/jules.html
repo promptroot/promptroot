@@ -39,30 +39,18 @@
         <div class="muted-text font-16">Please sign in to view Jules account information.</div>
       </div>
 
-      <!-- Jules Profile Info Section -->
-      <div id="julesProfileInfoSection" class="hidden">
-        <!-- Jules API Key Section -->
-        <div id="julesKeyStatusDiv" class="panel mb-md">
-          <div class="small-text muted-text mb-sm">Jules API Key</div>
-          <div id="julesKeyStatus" class="muted-text fw-600 font-16">Loading...</div>
-        </div>
-        
-        <!-- No Jules Key Message -->
-        <div id="noJulesKeySection" class="panel pad-xl text-center mb-md hidden">
-          <div class="font-48 mb-sm"><span class="icon icon-xl" aria-hidden="true">key</span></div>
-          <h3 class="small-text fw-600 mb-sm font-18">Jules API Key Required</h3>
-          <p class="muted-text small-text centered-content">
-            To use Jules AI coding agent, you need to add your Jules API key. Get your API key from the 
-            <a href="https://jules.google.com/settings/api" target="_blank" rel="noopener">Jules API settings</a> 
-            and add it below to get started.
-          </p>
-          <button id="addJulesKeyBtnProminent" class="btn primary xl fw-600">
-            <span class="icon icon-inline" aria-hidden="true">add</span> Add Jules API Key
-          </button>
-        </div>
-        
-        <!-- Jules Content (only visible when key exists) -->
-        <div id="julesContentSection" class="hidden">
+      <!-- No Jules Key Message -->
+      <div id="noJulesKeySection" class="panel pad-xl text-center mb-md hidden">
+        <div class="font-48 mb-sm"><span class="icon icon-xl" aria-hidden="true">key</span></div>
+        <h3 class="small-text fw-600 mb-sm font-18">Jules API Key Required</h3>
+        <p class="muted-text small-text centered-content">
+          To use Jules AI coding agent, add your Jules API key in 
+          <a href="../profile/profile.html" class="fw-600">Profile Settings</a>.
+        </p>
+      </div>
+
+      <!-- Jules Content (only visible when key exists) -->
+      <div id="julesContentSection" class="hidden">
         
         <!-- Recent Sessions -->
         <div class="mb-md">
@@ -90,16 +78,8 @@
             <div class="muted-text small-text">Loading sources...</div>
           </div>
         </div>
-        </div>
-        <!-- End Jules Content Section -->
-        
-        <!-- Danger Zone -->
-        <div id="dangerZoneSection" class="danger-panel mt-md hidden">
-          <div class="small-text fw-600 danger-text mb-sm"><span class="icon icon-inline" aria-hidden="true">warning</span> Danger Zone</div>
-          <div class="small-text muted-text mb-sm">This action will delete your stored Jules API key. You'll need to enter a new one next time.</div>
-          <button id="resetJulesKeyBtn" class="btn danger w-full fw-600"><span class="icon icon-inline" aria-hidden="true">delete</span> Delete Jules API Key</button>
-        </div>
       </div>
+      <!-- End Jules Content Section -->
     </main>
   </div>
 
@@ -114,19 +94,6 @@
       <a href="https://github.com/promptroot/promptroot" target="_blank" rel="noopener" class="footer-nav__item">GitHub</a>
     </div>
   </footer>
-
-  <!-- Jules API Key Modal -->
-  <div id="julesKeyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="julesKeyModalTitle">
-    <div class="modal-content">
-      <h2 id="julesKeyModalTitle">Save Jules API Key</h2>
-      <p>Enter your Jules API key. This will be encrypted and stored securely.</p>
-      <input id="julesKeyInput" type="password" placeholder="Paste your Jules API key..." />
-      <div class="modal-buttons">
-        <button id="julesCancelBtn" class="btn">Cancel</button>
-        <button id="julesSaveBtn" class="btn primary">Save & Continue</button>
-      </div>
-    </div>
-  </div>
 
   <script type="module" src="../../src/shared-init.js"></script>
   <script type="module" src="../../src/pages/jules-page.js"></script>

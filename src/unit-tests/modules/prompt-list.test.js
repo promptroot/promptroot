@@ -78,7 +78,6 @@ vi.mock('../../utils/dom-helpers.js', () => {
   return {
     clearElement: vi.fn(),
     stopPropagation: vi.fn(),
-    setElementDisplay: vi.fn(),
     toggleClass: vi.fn(),
     createElement: createElementFn
   };

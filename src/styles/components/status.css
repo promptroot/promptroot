@@ -5,15 +5,15 @@
 }
 
 .status-not-saved {
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .status-outdated {
-  color: var(--warn);
+  color: var(--warning);
 }
 
 .status-error {
-  color: var(--error);
+  color: var(--danger);
 }
 
 .status-success {
@@ -21,9 +21,9 @@
 }
 
 .status-info {
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .status-loading {
-  color: var(--muted);
+  color: var(--text-muted);
 }

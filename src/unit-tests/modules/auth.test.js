@@ -550,22 +550,22 @@ describe('auth', () => {
       expect(authCallback).toBeDefined();
     });
 
-    it('should handle missing auth service', () => {
+    it('should handle missing auth service', async () => {
       getAuth.mockReturnValue(null);
 
-      initAuthStateListener();
+      await expect(initAuthStateListener()).rejects.toThrow('Auth not initialized');
       
       expect(global.console.error).toHaveBeenCalledWith('Auth not initialized yet');
     });
 
-    it('should handle listener initialization errors', () => {
+    it('should handle listener initialization errors', async () => {
       mockFirebaseAuth.onAuthStateChanged.mockImplementation(() => {
         throw new Error('Listener error');
       });
 
-      initAuthStateListener();
-      
-      expect(global.console.error).toHaveBeenCalled();
+      // The error is thrown inside the Promise constructor, so it becomes a rejection
+      // but doesn't get caught by the outer try-catch
+      await expect(initAuthStateListener()).rejects.toThrow('Listener error');
     });
   });
 
@@ -602,18 +602,22 @@ describe('auth', () => {
       expect(global.localStorage.removeItem).toHaveBeenCalled();
     });
 
-    it('should handle auth state listener with user changes', () => {
+    it('should handle auth state listener with user changes', async () => {
       let authCallback;
+      const mockUnsubscribe = vi.fn();
       mockFirebaseAuth.onAuthStateChanged.mockImplementation((callback) => {
         authCallback = callback;
+        return mockUnsubscribe;
       });
 
-      initAuthStateListener();
+      const promise = initAuthStateListener();
       
       const mockUser = { uid: 'user-123', displayName: 'Test' };
       authCallback(mockUser);
       
+      await promise;
       expect(getCurrentUser()).toBe(mockUser);
+      expect(mockUnsubscribe).toHaveBeenCalled();
     });
   });
 });

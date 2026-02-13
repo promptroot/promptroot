@@ -29,10 +29,6 @@ export function toggleVisibility(element, shouldShow = true) {
   element.style.display = '';
 }
 
-export function setElementDisplay(el, show = true) {
-  toggleVisibility(el, show);
-}
-
 export function toggleClass(el, className, force) {
   if (force === undefined) {
     el.classList.toggle(className);

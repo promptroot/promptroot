@@ -17,6 +17,9 @@ class StatusBar {
       return;
     }
     
+    this.element.setAttribute('role', 'status');
+    this.element.setAttribute('aria-live', 'polite');
+
     this.msgElement = this.element.querySelector('.status-msg');
     this.progressElement = this.element.querySelector('.status-progress');
     this.actionElement = this.element.querySelector('.status-action');
@@ -24,6 +27,7 @@ class StatusBar {
     
     // Ensure status bar is hidden initially
     this.element.classList.remove('status-visible');
+    this.element.classList.add('hidden');
     
     // Add close button handler
     if (this.closeElement) {
@@ -38,6 +42,7 @@ class StatusBar {
 
     const { timeout = TIMEOUTS.statusBar } = options;
 
+    this.element.setAttribute('aria-atomic', 'true');
     this.msgElement.textContent = message;
     this.element.classList.add('status-visible');
     this.element.classList.remove('hidden');

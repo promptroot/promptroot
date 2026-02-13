@@ -32,6 +32,8 @@ describe('toast', () => {
       const container = document.querySelector('.toast-container');
       expect(container).toBeTruthy();
       expect(container.parentElement).toBe(document.body);
+      expect(container.getAttribute('role')).toBe('status');
+      expect(container.getAttribute('aria-live')).toBe('polite');
     });
 
     it('should reuse existing container for multiple toasts', () => {
@@ -98,6 +100,7 @@ describe('toast', () => {
       const toast = showToast('Success!', 'success');
       
       expect(toast.className).toBe('toast toast--success toast--show');
+      expect(toast.getAttribute('role')).toBe('status');
       
       const icon = toast.querySelector('.toast__icon');
       expect(icon.textContent).toBe('✓');
@@ -107,6 +110,7 @@ describe('toast', () => {
       const toast = showToast('Error!', 'error');
       
       expect(toast.className).toBe('toast toast--error toast--show');
+      expect(toast.getAttribute('role')).toBe('alert');
       
       const icon = toast.querySelector('.toast__icon');
       expect(icon.textContent).toBe('✗');
@@ -116,6 +120,7 @@ describe('toast', () => {
       const toast = showToast('Warning!', 'warn');
       
       expect(toast.className).toBe('toast toast--warn toast--show');
+      expect(toast.getAttribute('role')).toBe('status');
       
       const icon = toast.querySelector('.toast__icon');
       expect(icon.textContent).toBe('⚠');
@@ -125,6 +130,7 @@ describe('toast', () => {
       const toast = showToast('Info!', 'info');
       
       expect(toast.className).toBe('toast toast--info toast--show');
+      expect(toast.getAttribute('role')).toBe('status');
       
       const icon = toast.querySelector('.toast__icon');
       expect(icon.textContent).toBe('ⓘ');

@@ -13,12 +13,21 @@
 
 .btn:hover {
   border-color: var(--accent);
-  background: linear-gradient(135deg, rgba(77,217,255,0.15), rgba(77,217,255,0.08));
-  box-shadow: 0 0 10px rgba(77, 217, 255, 0.12);
+  background: linear-gradient(135deg, var(--accent-bg-strong), var(--accent-bg-subtle));
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .btn:active {
   transform: translateY(1px);
+}
+
+.btn:disabled,
+.btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  border-color: var(--border);
+  background: linear-gradient(135deg, rgba(20,24,41,0.3), rgba(20,24,41,0.2));
 }
 
 /* Icon-only button variant - inherits from .btn */
@@ -39,12 +48,21 @@
 
 .btn-icon:hover {
   border-color: var(--accent);
-  background: linear-gradient(135deg, rgba(77,217,255,0.15), rgba(77,217,255,0.08));
-  box-shadow: 0 0 10px rgba(77, 217, 255, 0.12);
+  background: linear-gradient(135deg, var(--accent-bg-strong), var(--accent-bg-subtle));
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .btn-icon:active {
   transform: translateY(1px);
+}
+
+.btn-icon:disabled,
+.btn-icon.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  border-color: var(--border);
+  background: linear-gradient(135deg, rgba(20,24,41,0.3), rgba(20,24,41,0.2));
 }
 
 /* Primary emphasis variant */
@@ -54,9 +72,12 @@
 .btn.danger { border-color: var(--danger); color: var(--danger); }
 
 /* Warning, Info, Success variants */
-.btn.warn { border-color: var(--warn); color: var(--warn); }
+.btn.warning { border-color: var(--warning); color: var(--warning); }
 .btn.info { border-color: var(--info); color: var(--info); }
 .btn.success { border-color: var(--success); color: var(--success); }
+
+/* Legacy aliases */
+.btn.warn { border-color: var(--warning); color: var(--warning); }
 
 /* Size variants */
 .btn.lg { padding: 12px 20px; font-size: 14px; }
@@ -64,5 +85,5 @@
 .btn.sm { padding: 6px 8px; font-size: 12px; }
 .btn-xs { font-size: 12px; padding: 4px 12px; }
 
-.help-link { text-decoration: none; color: var(--muted); font-size: 13px; cursor: pointer; padding: 6px 10px; display: inline-block; transition: color 0.2s, background 0.2s, border-color 0.2s; border-radius: 8px; border: 1px solid transparent; }
-.help-link:hover { color: var(--accent); border-color: var(--accent); background: rgba(77, 217, 255, 0.1); }
+.help-link { text-decoration: none; color: var(--text-muted); font-size: 13px; cursor: pointer; padding: 6px 10px; display: inline-block; transition: color 0.2s, background 0.2s, border-color 0.2s; border-radius: 8px; border: 1px solid transparent; }
+.help-link:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-bg-medium); }

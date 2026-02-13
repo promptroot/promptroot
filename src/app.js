@@ -15,9 +15,28 @@ let currentBranch = BRANCH;
 
 // Lazy Jules module loaders
 async function lazyHandleTryInJules(promptText) {
+  // Check for variables in prompt text
+  const { detectPlaceholders, showVariableModal } = await import('./modules/variable-substitution.js');
+  const placeholders = detectPlaceholders(promptText);
+  
+  let textToSend = promptText;
+  
+  // If placeholders exist, show variable modal first
+  if (placeholders.length > 0) {
+    const substitutedText = await showVariableModal(placeholders, promptText);
+    
+    // If user cancelled, don't proceed
+    if (substitutedText === null) {
+      return;
+    }
+    
+    textToSend = substitutedText;
+  }
+  
+  // Proceed with Jules flow
   await ensureJulesModalInit();
   const { handleTryInJules } = await import('./modules/jules-api.js');
-  return handleTryInJules(promptText);
+  return handleTryInJules(textToSend);
 }
 
 let julesModalInitialized = false;
@@ -64,7 +83,7 @@ async function loadPrompts() {
   const cacheKey = STORAGE_KEYS.promptsCache(currentOwner, currentRepo, currentBranch);
   const files = await loadList(currentOwner, currentRepo, currentBranch, cacheKey);
 
-  const hashSlug = getHashParam('p');
+  const hashSlug = parseParams().p;
   if (hashSlug) {
     await selectBySlug(hashSlug, files, currentOwner, currentRepo, currentBranch);
   } else {
@@ -76,14 +95,14 @@ async function loadPrompts() {
 function setupEventListeners() {
   window.addEventListener('hashchange', async () => {
     try {
-      const p = parseParams();
+      const params = parseParams();
       const prevOwner = currentOwner;
       const prevRepo = currentRepo;
       const prevBranch = currentBranch;
 
-      if (p.owner) currentOwner = p.owner;
-      if (p.repo) currentRepo = p.repo;
-      if (p.branch) currentBranch = p.branch;
+      if (params.owner) currentOwner = params.owner;
+      if (params.repo) currentRepo = params.repo;
+      if (params.branch) currentBranch = params.branch;
 
       const repoChanged = currentOwner !== prevOwner || currentRepo !== prevRepo;
       const branchChanged = currentBranch !== prevBranch;
@@ -97,7 +116,7 @@ function setupEventListeners() {
         await loadBranches();
       } else {
         // Just switching prompt
-        const hashSlug = getHashParam('p');
+        const hashSlug = params.p;
         if (hashSlug) {
           const { getFiles } = await import('./modules/prompt-list.js');
           await selectBySlug(hashSlug, getFiles(), currentOwner, currentRepo, currentBranch);
@@ -114,16 +133,16 @@ function setupEventListeners() {
   // Handle back/forward buttons
   window.addEventListener('popstate', async () => {
     try {
-      const p = parseParams();
+      const params = parseParams();
       const changed =
-        (p.owner && p.owner !== currentOwner) ||
-        (p.repo && p.repo !== currentRepo) ||
-        (p.branch && p.branch !== currentBranch);
+        (params.owner && params.owner !== currentOwner) ||
+        (params.repo && params.repo !== currentRepo) ||
+        (params.branch && params.branch !== currentBranch);
 
       if (changed) {
-        currentOwner = p.owner || currentOwner;
-        currentRepo = p.repo || currentRepo;
-        currentBranch = p.branch || currentBranch;
+        currentOwner = params.owner || currentOwner;
+        currentRepo = params.repo || currentRepo;
+        currentBranch = params.branch || currentBranch;
         setCurrentRepo(currentOwner, currentRepo);
         setCurrentBranch(currentBranch);
         const cacheKey = STORAGE_KEYS.promptsCache(currentOwner, currentRepo, currentBranch);

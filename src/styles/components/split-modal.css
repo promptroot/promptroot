@@ -1,12 +1,16 @@
 /* Subtask Split Modal */
 #splitModeSendAll, #splitModeSplitTasks { transition: background 0.2s ease; }
-#splitModeSendAll:hover, #splitModeSplitTasks:hover { background: rgba(255,255,255,0.05); }
+#splitModeSendAll:hover, #splitModeSplitTasks:hover { background: var(--accent-bg-subtle); }
 .split-panel { font-size: 12px; line-height: 1.5; word-break: break-word; }
 .split-panel::-webkit-scrollbar { width: 6px; }
 .split-panel::-webkit-scrollbar-track { background: transparent; }
 .split-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-.split-panel::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+.split-panel::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* Split editor container styles extracted from inline */
-#splitEditPanel { margin-bottom: 16px; border: 1px solid var(--border); border-radius: 8px; max-height: 400px; overflow-y: auto; background: rgba(255,255,255,0.02); }
+#splitEditPanel { margin-bottom: 16px; border: 1px solid var(--border); border-radius: 8px; max-height: 400px; overflow-y: auto; background: var(--overlay-subtle); }
+#splitEditPanel::-webkit-scrollbar { width: 6px; }
+#splitEditPanel::-webkit-scrollbar-track { background: transparent; }
+#splitEditPanel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+#splitEditPanel::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 #splitEditList { padding: 8px; }

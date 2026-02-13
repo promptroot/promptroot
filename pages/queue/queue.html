@@ -47,8 +47,20 @@
             <label class="form-label small-text"><input id="queueOpenInBackgroundCheckbox" type="checkbox" /> Open in Background</label>
             <button id="queuePauseBtn" class="btn"><span class="icon icon-inline" aria-hidden="true">pause</span> Pause</button>
             <button id="queueScheduleBtn" class="btn" aria-label="Schedule selected items"><span class="icon icon-inline" aria-hidden="true">schedule</span> Schedule</button>
+            <button id="queueExportBtn" class="btn"><span class="icon icon-inline" aria-hidden="true">download</span> Export Selected</button>
             <button id="queueRunBtn" class="btn primary"><span class="icon icon-inline" aria-hidden="true">play_arrow</span> Run Selected</button>
             <button id="queueDeleteBtn" class="btn danger"><span class="icon icon-inline" aria-hidden="true">delete</span> Delete Selected</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="toolbar-actions">
+            <div class="queue-repo-filter">
+              <label for="queueRepoFilter" class="form-label small-text">Repository:</label>
+              <select id="queueRepoFilter" class="form-control" style="width: auto; min-width: 150px;">
+                <option value="">All Repositories</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -79,7 +91,7 @@
   <!-- Status Bar -->
   <div id="statusBar" class="hidden" aria-live="polite">
     <div class="status-inner">
-      <div class="status-msg flex-1">Ready</div>
+      <div class="status-msg">Ready</div>
       <div class="status-progress hidden"></div>
       <button class="status-action btn hidden">Action</button>
     </div>

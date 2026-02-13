@@ -1,14 +1,34 @@
 import { showToast } from './toast.js';
+import { getUserCopens } from './copen-manager.js';
+import { getAuth } from './firebase-service.js';
+import { clearCopenOptionsCache } from '../utils/copen-config.js';
 
-// URL Mappings
-const TARGET_URLS = {
-  claude: 'https://claude.ai/code',
-  codex: 'https://chatgpt.com/codex',
-  copilot: 'https://github.com/copilot/agents',
-  gemini: 'https://gemini.google.com/app',
-  chatgpt: 'https://chatgpt.com/',
-  blank: 'about:blank'
-};
+// Cache for user copens
+let copenCache = null;
+
+/**
+ * Get URL for a copen target
+ * @param {string} target - The copen ID
+ * @returns {Promise<string>} - The URL
+ */
+async function getCopenUrl(target) {
+  if (!copenCache) {
+    const auth = getAuth();
+    const user = auth?.currentUser;
+    const copens = await getUserCopens(user?.uid);
+    copenCache = Object.fromEntries(copens.map(c => [c.id, c.url]));
+  }
+
+  return copenCache[target] || 'about:blank';
+}
+
+/**
+ * Clear the copen cache (call when user signs out or copens are updated)
+ */
+export function clearCopenCache() {
+  copenCache = null;
+  clearCopenOptionsCache(); // Also clear the memory cache
+}
 
 /**
  * Copies the prompt text to clipboard and opens the target URL in a new tab.
@@ -25,7 +45,7 @@ export async function copyAndOpen(target, promptText) {
   try {
     await navigator.clipboard.writeText(promptText);
 
-    const url = TARGET_URLS[target] || TARGET_URLS.blank;
+    const url = await getCopenUrl(target);
     window.open(url, '_blank', 'noopener,noreferrer');
 
     return true;

@@ -13,9 +13,6 @@ import { openUrlInBackground, showSubtaskErrorModal } from './jules-modal.js';
 import { getServerTimestamp, getFieldDelete } from '../utils/firestore-helpers.js';
 import { showPromptViewer } from './prompt-viewer.js';
 
-// Global processing state
-let isProcessingQueue = false;
-
 // Service layer imports
 import {
   addToJulesQueue as serviceAddToQueue,
@@ -59,6 +56,7 @@ import {
   validateSchedule,
   cleanIdForDOM
 } from '../utils/jules-queue-helpers.js';
+import { getHandler } from '../utils/handler-registry.js';
 
 export function getSelectedQueueIds() {
   const queueSelections = [];
@@ -80,7 +78,7 @@ export function getSelectedQueueIds() {
   return { queueSelections, subtaskSelections };
 }
 
-export async function handleQueueAction(queueItemData) {
+export async function handleQueueAction(queueItemData, silent = false) {
   const user = getAuth()?.currentUser;
   if (!user) {
     handleError(JULES_MESSAGES.SIGN_IN_REQUIRED, { source: 'handleQueueAction' }, { category: ErrorCategory.AUTH, toastType: 'warn' });
@@ -88,7 +86,9 @@ export async function handleQueueAction(queueItemData) {
   }
   try {
     await addToJulesQueue(user.uid, queueItemData);
-    showToast(JULES_MESSAGES.QUEUED, 'success');
+    if (!silent) {
+      showToast(JULES_MESSAGES.QUEUED, 'success');
+    }
     return true;
   } catch (err) {
     handleError(err, { source: 'handleQueueAction' });
@@ -98,28 +98,6 @@ export async function handleQueueAction(queueItemData) {
 
 export async function addToJulesQueue(uid, queueItem) {
   return await serviceAddToQueue(uid, queueItem);
-}
-
-export async function checkAndNotifyRecentErrors() {
-  const user = getAuth()?.currentUser;
-  if (!user) return;
-  
-  try {
-    const items = await listJulesQueue(user.uid);
-    const recentErrors = items.filter(item => {
-      if (!item.lastError || !item.lastError.timestamp) return false;
-      const errorTime = item.lastError.timestamp.seconds ? item.lastError.timestamp.seconds * 1000 : item.lastError.timestamp;
-      const ageMinutes = (Date.now() - errorTime) / 60000;
-      return ageMinutes < JULES_MESSAGES.ERROR_VISIBILITY_WINDOW_MINUTES;
-    });
-    
-    // TODO: Implement notification logic for recent errors
-    if (recentErrors.length > 0) {
-      console.log(`Found ${recentErrors.length} recent errors`);
-    }
-  } catch (error) {
-    console.error('Error checking for recent errors:', error);
-  }
 }
 
 export async function updateJulesQueueItem(uid, docId, updates) {
@@ -188,7 +166,60 @@ export function hideJulesQueueModal() {
 
 export function renderQueueListDirectly(items) {
   setQueueCache(items);
+  populateRepoFilter(items);
   renderQueueList(items);
+}
+
+// Repository filtering functionality
+function populateRepoFilter(items) {
+  const repoFilter = document.getElementById('queueRepoFilter');
+  if (!repoFilter || !items) return;
+  
+  // Get unique repositories from items
+  const repos = new Set();
+  items.forEach(item => {
+    if (item.sourceId) {
+      repos.add(item.sourceId);
+    }
+  });
+  
+  // Clear existing options except the first (All Repositories)
+  while (repoFilter.children.length > 1) {
+    repoFilter.removeChild(repoFilter.lastChild);
+  }
+  
+  // Add repository options
+  Array.from(repos).sort().forEach(repo => {
+    const option = document.createElement('option');
+    option.value = repo;
+    option.textContent = repo;
+    repoFilter.appendChild(option);
+  });
+}
+
+function getFilteredItems() {
+  const allItems = getQueueCache();
+  if (!allItems) return [];
+  
+  const repoFilter = document.getElementById('queueRepoFilter');
+  const selectedRepo = repoFilter?.value || '';
+  
+  if (!selectedRepo) {
+    return allItems;
+  }
+  
+  return allItems.filter(item => item.sourceId === selectedRepo);
+}
+
+function applyRepoFilter() {
+  const filteredItems = getFilteredItems();
+  renderQueueList(filteredItems);
+  
+  // Clear selections since they may no longer apply
+  const selectAllCheck = document.getElementById('queueSelectAll');
+  if (selectAllCheck) {
+    selectAllCheck.checked = false;
+  }
 }
 
 export function attachQueueHandlers() {
@@ -316,7 +347,7 @@ async function openEditQueueModal(docId) {
 
   const modal = document.createElement('div');
   modal.id = 'editQueueItemModal';
-  modal.className = 'modal-overlay';
+  modal.className = 'modal-overlay modal--edit-queue';
 
   modal.setAttribute('role', 'dialog');
   modal.setAttribute('aria-modal', 'true');
@@ -350,7 +381,7 @@ async function openEditQueueModal(docId) {
 
   // Type field
   const typeGroup = document.createElement('div');
-  typeGroup.className = 'form-group';
+  typeGroup.className = 'modal__form-group';
   const typeLabel = document.createElement('label');
   typeLabel.className = 'form-section-label';
   typeLabel.textContent = 'Type:';
@@ -361,7 +392,7 @@ async function openEditQueueModal(docId) {
 
   // Schedule info
   const scheduleGroup = document.createElement('div');
-  scheduleGroup.className = 'form-group hidden';
+  scheduleGroup.className = 'modal__form-group hidden';
   scheduleGroup.id = 'editQueueStatusGroup';
   const scheduleLabel = document.createElement('label');
   scheduleLabel.className = 'form-section-label';
@@ -381,7 +412,7 @@ async function openEditQueueModal(docId) {
 
   // Prompt field
   const promptGroup = document.createElement('div');
-  promptGroup.className = 'form-group';
+  promptGroup.className = 'modal__form-group';
   promptGroup.id = 'editPromptGroup';
   const promptHeader = document.createElement('div');
   promptHeader.className = 'form-group-header';
@@ -402,7 +433,7 @@ async function openEditQueueModal(docId) {
 
   // Subtasks field
   const subtasksGroup = document.createElement('div');
-  subtasksGroup.className = 'form-group hidden';
+  subtasksGroup.className = 'modal__form-group hidden';
   subtasksGroup.id = 'editSubtasksGroup';
   const subtasksHeader = document.createElement('div');
   subtasksHeader.className = 'form-group-header';
@@ -421,7 +452,7 @@ async function openEditQueueModal(docId) {
 
   // Repository field
   const repoGroup = document.createElement('div');
-  repoGroup.className = 'form-group';
+  repoGroup.className = 'modal__form-group';
   const repoLabel = document.createElement('label');
   repoLabel.className = 'form-section-label';
   repoLabel.textContent = 'Repository:';
@@ -449,7 +480,7 @@ async function openEditQueueModal(docId) {
 
   // Branch field
   const branchGroup = document.createElement('div');
-  branchGroup.className = 'form-group space-below';
+  branchGroup.className = 'modal__form-group space-below';
   const branchLabel = document.createElement('label');
   branchLabel.className = 'form-section-label';
   branchLabel.textContent = 'Branch:';
@@ -653,14 +684,14 @@ function renderSubtasksList(subtasks) {
   
   subtasks.forEach((subtask, index) => {
     const container = document.createElement('div');
-    container.className = 'form-group subtask-item';
+    container.className = 'modal__form-group subtask-item';
     container.dataset.index = index;
     
     const header = document.createElement('div');
     header.className = 'subtask-item-header';
     
     const label = document.createElement('label');
-    label.className = 'form-label';
+    label.className = 'modal__form-label';
     label.textContent = `Subtask ${index + 1}:`;
     
     const removeBtn = document.createElement('button');
@@ -833,6 +864,7 @@ async function loadQueuePage() {
     setCache(CACHE_KEYS.QUEUE_ITEMS, items, user.uid);
     
     setQueueCache(items);
+    populateRepoFilter(items);
     renderQueueList(items);
     setupQueueHandlers();
   } catch (err) {
@@ -867,6 +899,20 @@ function attachQueuePromptViewerHandlers(queueItems) {
       
       const handler = () => showPromptViewer(promptContent, item.id);
       registerPromptViewerHandler(handlerKey, handler);
+      
+      // Register individual subtask handlers
+      if (item.type === 'subtasks' && item.remaining && item.remaining.length > 0) {
+        item.remaining.forEach((subtask, index) => {
+          if (subtask.fullContent) {
+            const subtaskHandlerKey = `viewQueueSubtask_${cleanId}_${index}`;
+            const subtaskHandler = () => showPromptViewer(
+              subtask.fullContent || 'No subtask content', 
+              `${item.id} - Subtask ${index + 1}`
+            );
+            registerPromptViewerHandler(subtaskHandlerKey, subtaskHandler);
+          }
+        });
+      }
     }
   });
 }
@@ -917,6 +963,61 @@ async function showScheduleModal() {
   populateTimeZoneDropdown(userTimeZone);
   initializeScheduleModalInputs();
   attachScheduleModalHandlers();
+  
+  newModal.show();
+}
+
+export async function showScheduleModalForPrompt(promptTitle) {
+  const user = getAuth()?.currentUser;
+  if (!user) {
+    handleError(JULES_MESSAGES.SIGN_IN_REQUIRED, { source: 'showScheduleModalForPrompt' }, { category: ErrorCategory.AUTH, toastType: 'warn' });
+    return;
+  }
+  
+  // Find the most recently added queue item with matching title
+  const items = await listJulesQueue(user.uid);
+  const matchingItem = items
+    .filter(item => item.title === promptTitle)
+    .sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toMillis?.() || 0;
+      return bTime - aTime; // Most recent first
+    })[0];
+  
+  if (!matchingItem) {
+    handleError('Could not find queue item to schedule', { source: 'showScheduleModalForPrompt' }, { category: ErrorCategory.VALIDATION, toastType: 'error' });
+    return;
+  }
+  
+  const userTimeZone = await serviceGetUserTimeZone(user.uid);
+  
+  const existingModal = getActiveScheduleModal();
+  if (existingModal) {
+    existingModal.destroy();
+    setActiveScheduleModal(null);
+  }
+
+  await loadScheduleModal();
+
+  const modalElement = document.getElementById('scheduleQueueModal');
+  if (!modalElement) {
+    console.error('Failed to load schedule modal');
+    return;
+  }
+  
+  const newModal = createModal({
+    element: modalElement,
+    closeOnBackdropClick: false,
+    onDestroy: () => { 
+      setActiveScheduleModal(null);
+    }
+  });
+  
+  setActiveScheduleModal(newModal);
+
+  populateTimeZoneDropdown(userTimeZone);
+  initializeScheduleModalInputs();
+  attachScheduleModalHandlersForPrompt(matchingItem.id);
   
   newModal.show();
 }
@@ -1031,6 +1132,24 @@ function attachScheduleModalHandlers() {
   });
 }
 
+function attachScheduleModalHandlersForPrompt(itemId) {
+  const activeModal = getActiveScheduleModal();
+  if (!activeModal) return;
+  
+  const modal = activeModal.element;
+  const closeBtn = document.getElementById('closeScheduleModal');
+  const cancelBtn = document.getElementById('cancelSchedule');
+  const confirmBtn = document.getElementById('confirmSchedule');
+  
+  if (closeBtn) activeModal.addListener(closeBtn, 'click', hideScheduleModal);
+  if (cancelBtn) activeModal.addListener(cancelBtn, 'click', hideScheduleModal);
+  if (confirmBtn) activeModal.addListener(confirmBtn, 'click', () => confirmScheduleItemById(itemId));
+  
+  activeModal.addListener(modal, 'click', (e) => {
+    if (e.target === modal) hideScheduleModal();
+  });
+}
+
 function hideScheduleModal() {
   const activeModal = getActiveScheduleModal();
   if (activeModal) {
@@ -1113,6 +1232,73 @@ async function confirmScheduleItems() {
   }
 }
 
+async function confirmScheduleItemById(itemId) {
+  const user = getAuth()?.currentUser;
+  if (!user) return;
+  
+  const dateInput = document.getElementById('scheduleDate');
+  const timeInput = document.getElementById('scheduleTime');
+  const timeZoneSelect = document.getElementById('scheduleTimeZone');
+  const retryCheckbox = document.getElementById('scheduleRetryOnFailure');
+  const errorDiv = document.getElementById('scheduleError');
+  
+  errorDiv.classList.add('hidden');
+  errorDiv.textContent = '';
+  
+  if (!dateInput.value || !timeInput.value) {
+    errorDiv.textContent = 'Date and time are required';
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  const selectedDate = dateInput.value;
+  const selectedTime = timeInput.value;
+  const selectedTimeZone = timeZoneSelect.value;
+  
+  const dateTimeStr = `${selectedDate}T${selectedTime}:00`;
+  const scheduledDate = parseDateInTimeZone(dateTimeStr, selectedTimeZone);
+  
+  const validation = validateSchedule(scheduledDate);
+  if (!validation.valid) {
+    errorDiv.textContent = validation.error;
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  await serviceSaveUserTimeZone(user.uid, selectedTimeZone);
+  
+  try {
+    const scheduledAt = firebase.firestore.Timestamp.fromDate(scheduledDate);
+    const retryOnFailure = retryCheckbox ? retryCheckbox.checked : false;
+    
+    await updateJulesQueueItem(user.uid, itemId, {
+      status: 'scheduled',
+      scheduledAt: scheduledAt,
+      scheduledTimeZone: selectedTimeZone,
+      retryOnFailure: retryOnFailure,
+      retryCount: 0,
+      updatedAt: getServerTimestamp()
+    });
+    
+    const formattedScheduledAt = new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: selectedTimeZone,
+      timeZoneName: 'short'
+    }).format(scheduledDate);
+    
+    showToast(`Scheduled prompt for ${formattedScheduledAt}`, 'success');
+    hideScheduleModal();
+  } catch (err) {
+    const errorInfo = handleError(err, { source: 'confirmScheduleItemById' }, { showDisplay: false });
+    errorDiv.textContent = `Failed to schedule prompt: ${errorInfo.message}`;
+    errorDiv.classList.remove('hidden');
+  }
+}
+
 function renderQueueList(items) {
   const listDiv = document.getElementById('allQueueList');
   if (!listDiv) return;
@@ -1142,24 +1328,6 @@ function createCardHeader(item, status) {
   titleDiv.className = 'queue-title';
   const titleText = document.createTextNode(item.type === 'subtasks' ? JULES_UI_TEXT.SUBTASKS_BATCH : JULES_UI_TEXT.SINGLE_PROMPT);
   titleDiv.appendChild(titleText);
-  
-  // Error badge if item has recent errors
-  if (item.lastError && item.lastError.timestamp) {
-    const errorTime = item.lastError.timestamp.seconds ? item.lastError.timestamp.seconds * 1000 : item.lastError.timestamp;
-    const ageMinutes = (Date.now() - errorTime) / 60000;
-    if (ageMinutes < JULES_MESSAGES.ERROR_VISIBILITY_WINDOW_MINUTES) {
-      const errorBadge = document.createElement('span');
-      errorBadge.className = 'queue-error-badge';
-      errorBadge.title = `Error ${Math.round(ageMinutes)}m ago: ${item.lastError.message || 'Unknown error'}`;
-      const errorIcon = document.createElement('span');
-      errorIcon.className = 'icon';
-      errorIcon.setAttribute('aria-hidden', 'true');
-      errorIcon.textContent = 'error';
-      errorBadge.appendChild(errorIcon);
-      titleDiv.appendChild(document.createTextNode(' '));
-      titleDiv.appendChild(errorBadge);
-    }
-  }
   
   const statusSpan = document.createElement('span');
   statusSpan.className = 'queue-status';
@@ -1235,6 +1403,23 @@ function createSubtasksList(item) {
     const textDiv = document.createElement('div');
     textDiv.className = 'queue-subtask-text';
     textDiv.textContent = preview + (preview.length >= 150 ? '...' : '');
+    
+    // Add view button for subtask
+    if (subtask.fullContent) {
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'btn-icon queue-view-btn';
+      viewBtn.dataset.docid = item.id;
+      viewBtn.dataset.subtaskIndex = index;
+      viewBtn.dataset.action = 'view-subtask';
+      viewBtn.setAttribute('aria-label', `View subtask ${index + 1} full content`);
+      viewBtn.title = `View subtask ${index + 1} full content`;
+      const viewIcon = document.createElement('span');
+      viewIcon.className = 'icon';
+      viewIcon.setAttribute('aria-hidden', 'true');
+      viewIcon.textContent = 'visibility';
+      viewBtn.appendChild(viewIcon);
+      textDiv.appendChild(viewBtn);
+    }
 
     contentDiv.append(metaDiv, textDiv);
     subtaskDiv.append(indexDiv, contentDiv);
@@ -1372,7 +1557,7 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
   const user = getAuth()?.currentUser;
   if (!user) return;
 
-  const item = getQueueCache().find(i => i.id === docId);
+  const item = findQueueItem(docId);
   if (!item || !Array.isArray(item.remaining)) return;
 
   const sortedIndices = indices.sort((a, b) => a - b);
@@ -1380,9 +1565,6 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
 
   const successfulIndices = [];
   const skippedIndices = [];
-  
-  // Track the current state of remaining array locally to handle immediate deletions
-  let currentRemaining = item.remaining.slice();
 
   for (let i = 0; i < toRun.length; i++) {
     const subtask = toRun[i];
@@ -1401,66 +1583,38 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
           }
         }
         successfulIndices.push(originalIndex);
-        
-        // Delete each subtask immediately after successful submission to handle navigation interruptions
-        // Need to adjust index based on how many lower-indexed items we've already deleted
-        const adjustment = successfulIndices.filter(idx => idx < originalIndex).length;
-        const adjustedIndex = originalIndex - adjustment;
-        
-        // Delete from Firestore using current state of remaining array
-        await serviceDeleteSubtasks(user.uid, docId, [adjustedIndex], currentRemaining);
-        
-        // Update local remaining array to reflect the deletion
-        currentRemaining = currentRemaining.filter((_, idx) => idx !== adjustedIndex);
-        
         await new Promise(r => setTimeout(r, TIMEOUTS.queueDelay));
         retry = false;
       } catch (err) {
-        // Save error to Firestore first
-        const errorMessage = err.message || 'Unknown error';
-        try {
-          await updateJulesQueueItem(user.uid, docId, {
-            lastError: {
-              message: errorMessage,
-              timestamp: getServerTimestamp(),
-              itemIndex: originalIndex
-            },
-            updatedAt: getServerTimestamp()
-          });
-        } catch (saveErr) {
-          console.warn('Failed to save error to Firestore:', saveErr);
-        }
+        const result = await showSubtaskErrorModal(i + 1, toRun.length, err, true);
         
-        // Try to show modal, but if page is unloading, continue gracefully
-        try {
-          const result = await showSubtaskErrorModal(i + 1, toRun.length, err, true);
-          
-          if (result.action === 'retry') {
-            if (result.shouldDelay) await new Promise(r => setTimeout(r, TIMEOUTS.longDelay));
-            continue;
-          } else if (result.action === 'skip') {
-            skippedIndices.push(originalIndex);
-            retry = false;
-          } else if (result.action === 'queue') {
-            // Subtasks already deleted immediately after processing
-            return { successful: successfulIndices.length, skipped: skippedIndices.length };
-          } else {
-            // Subtasks already deleted immediately after processing
-            const err = new Error('User cancelled');
-            err.successfulCount = successfulIndices.length;
-            throw err;
-          }
-        } catch (modalErr) {
-          // If modal fails (user navigated away), skip this subtask and continue
-          console.warn('Modal failed, continuing processing:', modalErr);
+        if (result.action === 'retry') {
+          if (result.shouldDelay) await new Promise(r => setTimeout(r, TIMEOUTS.longDelay));
+          continue;
+        } else if (result.action === 'skip') {
           skippedIndices.push(originalIndex);
           retry = false;
+        } else if (result.action === 'queue') {
+          if (successfulIndices.length > 0) {
+            await deleteSelectedSubtasks(docId, successfulIndices);
+          }
+          return { successful: successfulIndices.length, skipped: skippedIndices.length };
+        } else {
+          if (successfulIndices.length > 0) {
+            await deleteSelectedSubtasks(docId, successfulIndices);
+          }
+          const err = new Error('User cancelled');
+          err.successfulCount = successfulIndices.length;
+          throw err;
         }
       }
     }
   }
 
-  // All successful subtasks were deleted immediately after processing
+  if (successfulIndices.length > 0) {
+    await deleteSelectedSubtasks(docId, successfulIndices);
+  }
+  
   return { successful: successfulIndices.length, skipped: skippedIndices.length };
 }
 
@@ -1487,8 +1641,23 @@ function setupQueueDelegation() {
         event.stopPropagation();
         const cleanId = cleanIdForDOM(docId);
         const handlerKey = `viewQueuePrompt_${cleanId}`;
-        if (window[handlerKey]) {
-          window[handlerKey]();
+        const handler = getHandler('queueViewer', handlerKey);
+        if (handler) {
+          handler();
+        }
+        return;
+      }
+
+      if (action === 'view-subtask' && docId) {
+        event.stopPropagation();
+        const subtaskIndex = actionBtn.dataset.subtaskIndex;
+        if (subtaskIndex !== undefined) {
+          const cleanId = cleanIdForDOM(docId);
+          const handlerKey = `viewQueueSubtask_${cleanId}_${subtaskIndex}`;
+          const handler = getHandler('queueViewer', handlerKey);
+          if (handler) {
+            handler();
+          }
         }
         return;
       }
@@ -1524,6 +1693,7 @@ function setupQueueHandlers() {
   const runBtn = document.getElementById('queueRunBtn');
   const deleteBtn = document.getElementById('queueDeleteBtn');
   const scheduleBtn = document.getElementById('queueScheduleBtn');
+  const exportBtn = document.getElementById('queueExportBtn');
   const closeBtn = document.getElementById('closeQueueBtn');
 
   if (selectAll && !selectAll.dataset.listenerAttached) {
@@ -1536,6 +1706,13 @@ function setupQueueHandlers() {
     });
   }
 
+  // Repository filter handler
+  const repoFilter = document.getElementById('queueRepoFilter');
+  if (repoFilter && !repoFilter.dataset.listenerAttached) {
+    repoFilter.dataset.listenerAttached = 'true';
+    repoFilter.addEventListener('change', applyRepoFilter);
+  }
+
   const runHandler = async () => { await runSelectedQueueItems(); };
   const deleteHandler = async () => { await deleteSelectedQueueItems(); };
   const scheduleHandler = async () => {
@@ -1545,6 +1722,7 @@ function setupQueueHandlers() {
       await showScheduleModal();
     }
   };
+  const exportHandler = () => { exportQueueToMarkdown(); };
 
   if (runBtn && !runBtn.dataset.listenerAttached) {
     runBtn.dataset.listenerAttached = 'true';
@@ -1559,6 +1737,11 @@ function setupQueueHandlers() {
   if (scheduleBtn && !scheduleBtn.dataset.listenerAttached) {
     scheduleBtn.dataset.listenerAttached = 'true';
     scheduleBtn.addEventListener('click', scheduleHandler);
+  }
+
+  if (exportBtn && !exportBtn.dataset.listenerAttached) {
+    exportBtn.dataset.listenerAttached = 'true';
+    exportBtn.addEventListener('click', exportHandler);
   }
 
   if (closeBtn && !closeBtn.dataset.listenerAttached) {
@@ -1701,45 +1884,6 @@ async function runSelectedQueueItems() {
     return;
   }
 
-  // Set processing flag and add navigation prevention
-  isProcessingQueue = true;
-  
-  // Prevent page unload/navigation
-  const beforeUnloadHandler = (e) => {
-    if (isProcessingQueue) {
-      e.preventDefault();
-      e.returnValue = 'Queue processing in progress. If you leave, processing will stop.';
-      return e.returnValue;
-    }
-  };
-  window.addEventListener('beforeunload', beforeUnloadHandler);
-  
-  // Intercept internal navigation clicks
-  const clickHandler = async (e) => {
-    if (!isProcessingQueue) return;
-    
-    const link = e.target.closest('a[href]');
-    if (link && !link.target && link.href.startsWith(window.location.origin)) {
-      e.preventDefault();
-      const confirmed = await showConfirm(
-        'Queue processing is in progress. If you navigate away, processing will stop and incomplete items will remain in the queue.',
-        {
-          title: 'Queue Processing',
-          confirmText: 'Leave Anyway',
-          confirmStyle: 'warn',
-          cancelText: 'Stay on Page'
-        }
-      );
-      if (confirmed) {
-        isProcessingQueue = false;
-        window.removeEventListener('beforeunload', beforeUnloadHandler);
-        document.removeEventListener('click', clickHandler, true);
-        window.location.href = link.href;
-      }
-    }
-  };
-  document.addEventListener('click', clickHandler, true);
-
   const suppressPopups = document.getElementById('queueSuppressPopupsCheckbox')?.checked || false;
   const openInBackground = document.getElementById('queueOpenInBackgroundCheckbox')?.checked || false;
   const pauseBtn = document.getElementById('queuePauseBtn');
@@ -1804,9 +1948,6 @@ async function runSelectedQueueItems() {
         if (err.successfulCount) {
           totalSuccessful += err.successfulCount;
         }
-        isProcessingQueue = false;
-        window.removeEventListener('beforeunload', beforeUnloadHandler);
-        document.removeEventListener('click', clickHandler, true);
         showToast(JULES_MESSAGES.cancelled(totalSuccessful, totalItems), 'warn');
         statusBar.clear();
         await loadQueuePage();
@@ -1840,45 +1981,20 @@ async function runSelectedQueueItems() {
             totalSuccessful++;
             retry = false;
           } catch (singleErr) {
-            // Save error to Firestore first
-            const errorMessage = singleErr.message || 'Unknown error';
-            try {
-              await updateJulesQueueItem(user.uid, id, {
-                lastError: {
-                  message: errorMessage,
-                  timestamp: getServerTimestamp()
-                },
-                updatedAt: getServerTimestamp()
-              });
-            } catch (saveErr) {
-              console.warn('Failed to save error to Firestore:', saveErr);
-            }
-            
-            // Try to show modal, but handle navigation gracefully
-            try {
-              const result = await showSubtaskErrorModal(currentItemNumber, totalItems, singleErr, true);
-              if (result.action === 'retry') {
-                if (result.shouldDelay) await new Promise(r => setTimeout(r, TIMEOUTS.longDelay));
-                continue;
-              } else if (result.action === 'skip') {
-                totalSkipped++;
-                retry = false;
-              } else if (result.action === 'queue') {
-                retry = false;
-              } else {
-                isProcessingQueue = false;
-                window.removeEventListener('beforeunload', beforeUnloadHandler);
-                document.removeEventListener('click', clickHandler, true);
-                showToast(JULES_MESSAGES.cancelled(totalSuccessful, totalItems), 'warn');
-                statusBar.clear();
-                await loadQueuePage();
-                return;
-              }
-            } catch (modalErr) {
-              // If modal fails (user navigated away), skip and continue
-              console.warn('Modal failed, skipping item:', modalErr);
+            const result = await showSubtaskErrorModal(currentItemNumber, totalItems, singleErr, true);
+            if (result.action === 'retry') {
+              if (result.shouldDelay) await new Promise(r => setTimeout(r, TIMEOUTS.longDelay));
+              continue;
+            } else if (result.action === 'skip') {
               totalSkipped++;
               retry = false;
+            } else if (result.action === 'queue') {
+              retry = false;
+            } else {
+              showToast(JULES_MESSAGES.cancelled(totalSuccessful, totalItems), 'warn');
+              statusBar.clear();
+              await loadQueuePage();
+              return;
             }
           }
         }
@@ -1902,9 +2018,6 @@ async function runSelectedQueueItems() {
             statusBar.showMessage('Paused — progress saved', { timeout: TIMEOUTS.statusBar });
             statusBar.clearProgress();
             statusBar.clearAction();
-            isProcessingQueue = false;
-            window.removeEventListener('beforeunload', beforeUnloadHandler);
-            document.removeEventListener('click', clickHandler, true);
             await loadQueuePage();
             return;
           }
@@ -1950,81 +2063,12 @@ async function runSelectedQueueItems() {
               await new Promise(r => setTimeout(r, TIMEOUTS.queueDelay));
               subtaskRetry = false;
             } catch (err) {
-              // Save error to Firestore first
-              const errorMessage = err.message || 'Unknown error';
-              try {
-                await updateJulesQueueItem(user.uid, id, {
-                  lastError: {
-                    message: errorMessage,
-                    timestamp: getServerTimestamp(),
-                    itemIndex: subtaskNumber - 1
-                  },
-                  updatedAt: getServerTimestamp()
-                });
-              } catch (saveErr) {
-                console.warn('Failed to save error to Firestore:', saveErr);
-              }
+              const result = await showSubtaskErrorModal(subtaskNumber, initialCount, err, true);
               
-              // Try to show modal, but handle navigation gracefully
-              try {
-                const result = await showSubtaskErrorModal(subtaskNumber, initialCount, err, true);
-                
-                if (result.action === 'retry') {
-                  if (result.shouldDelay) await new Promise(r => setTimeout(r, TIMEOUTS.longDelay));
-                  continue;
-                } else if (result.action === 'skip') {
-                  totalSkipped++;
-                  skippedSubtasks.push(remaining.shift());
-                  try {
-                    await updateJulesQueueItem(user.uid, id, {
-                      remaining: [...skippedSubtasks, ...remaining],
-                      status: 'pending',
-                      updatedAt: getServerTimestamp()
-                    });
-                  } catch (e) {
-                    console.warn('Failed to persist remaining after skip', e);
-                  }
-                  statusBar.showMessage(JULES_MESSAGES.SKIPPED_SUBTASK, { timeout: TIMEOUTS.actionFeedback });
-                  subtaskRetry = false;
-                } else if (result.action === 'queue') {
-                  try {
-                    await updateJulesQueueItem(user.uid, id, {
-                      remaining,
-                      status: 'pending',
-                      updatedAt: getServerTimestamp()
-                    });
-                  } catch (e) {
-                    console.warn('Failed to persist queue state', e);
-                  }
-                  statusBar.showMessage('Remainder queued for later', { timeout: TIMEOUTS.statusBar });
-                  statusBar.clearProgress();
-                  statusBar.clearAction();
-                  isProcessingQueue = false;
-                  window.removeEventListener('beforeunload', beforeUnloadHandler);
-                  document.removeEventListener('click', clickHandler, true);
-                  await loadQueuePage();
-                  return;
-                } else {
-                  try {
-                    await updateJulesQueueItem(user.uid, id, {
-                      remaining,
-                      status: 'error',
-                      updatedAt: getServerTimestamp()
-                    });
-                  } catch (e) {
-                    console.warn('Failed to persist error state', e);
-                  }
-                  isProcessingQueue = false;
-                  window.removeEventListener('beforeunload', beforeUnloadHandler);
-                  document.removeEventListener('click', clickHandler, true);
-                  showToast(JULES_MESSAGES.cancelled(totalSuccessful, totalItems), 'warn');
-                  statusBar.clear();
-                  await loadQueuePage();
-                  return;
-                }
-              } catch (modalErr) {
-                // If modal fails (user navigated away), skip and continue
-                console.warn('Modal failed, skipping subtask:', modalErr);
+              if (result.action === 'retry') {
+                if (result.shouldDelay) await new Promise(r => setTimeout(r, TIMEOUTS.longDelay));
+                continue;
+              } else if (result.action === 'skip') {
                 totalSkipped++;
                 skippedSubtasks.push(remaining.shift());
                 try {
@@ -2036,7 +2080,37 @@ async function runSelectedQueueItems() {
                 } catch (e) {
                   console.warn('Failed to persist remaining after skip', e);
                 }
+                statusBar.showMessage(JULES_MESSAGES.SKIPPED_SUBTASK, { timeout: TIMEOUTS.actionFeedback });
                 subtaskRetry = false;
+              } else if (result.action === 'queue') {
+                try {
+                  await updateJulesQueueItem(user.uid, id, {
+                    remaining,
+                    status: 'pending',
+                    updatedAt: getServerTimestamp()
+                  });
+                } catch (e) {
+                  console.warn('Failed to persist queue state', e);
+                }
+                statusBar.showMessage('Remainder queued for later', { timeout: TIMEOUTS.statusBar });
+                statusBar.clearProgress();
+                statusBar.clearAction();
+                await loadQueuePage();
+                return;
+              } else {
+                try {
+                  await updateJulesQueueItem(user.uid, id, {
+                    remaining,
+                    status: 'error',
+                    updatedAt: getServerTimestamp()
+                  });
+                } catch (e) {
+                  console.warn('Failed to persist error state', e);
+                }
+                showToast(JULES_MESSAGES.cancelled(totalSuccessful, totalItems), 'warn');
+                statusBar.clear();
+                await loadQueuePage();
+                return;
               }
             }
           }
@@ -2065,9 +2139,6 @@ async function runSelectedQueueItems() {
         await loadQueuePage();
         return;
       }
-      isProcessingQueue = false;
-      window.removeEventListener('beforeunload', beforeUnloadHandler);
-      document.removeEventListener('click', clickHandler, true);
       handleError(err, { source: 'runSelectedQueueItems' }, { category: ErrorCategory.UNEXPECTED });
       statusBar.clearProgress();
       statusBar.clearAction();
@@ -2084,105 +2155,132 @@ async function runSelectedQueueItems() {
     showToast(JULES_MESSAGES.COMPLETED_RUNNING, 'success');
   }
   statusBar.clear();
-  
-  // Clear processing flag and remove navigation listeners
-  isProcessingQueue = false;
-  window.removeEventListener('beforeunload', beforeUnloadHandler);
-  document.removeEventListener('click', clickHandler, true);
   statusBar.clearAction();
   await loadQueuePage();
 }
 
 export function exportQueueToMarkdown() {
   const { queueSelections, subtaskSelections } = getSelectedQueueIds();
+  const queueCache = getQueueCache();
   
-  // Check if any items are selected
   if (queueSelections.length === 0 && Object.keys(subtaskSelections).length === 0) {
     showToast('No items selected to export', 'warn');
     return;
   }
   
-  const queueItems = getQueueCache() || [];
-  const selectedItems = queueItems.filter(item => queueSelections.includes(item.id));
+  // Get selected items and subtasks
+  const selectedItems = [];
+  
+  // Add fully selected queue items
+  queueSelections.forEach(docId => {
+    const item = queueCache.find(i => i.id === docId);
+    if (item) {
+      selectedItems.push(item);
+    }
+  });
+  
+  // Add items with selected subtasks (create partial items)
+  Object.entries(subtaskSelections).forEach(([docId, indices]) => {
+    if (!queueSelections.includes(docId)) {
+      const originalItem = queueCache.find(i => i.id === docId);
+      if (originalItem && originalItem.type === 'subtasks' && Array.isArray(originalItem.remaining)) {
+        const selectedSubtasks = indices.map(index => originalItem.remaining[index]).filter(Boolean);
+        if (selectedSubtasks.length > 0) {
+          const partialItem = {
+            ...originalItem,
+            remaining: selectedSubtasks,
+            _isPartialExport: true
+          };
+          selectedItems.push(partialItem);
+        }
+      }
+    }
+  });
   
   if (selectedItems.length === 0) {
-    showToast('No items selected to export', 'warn');
+    showToast('No valid items selected to export', 'warn');
     return;
   }
-  
-  // Generate markdown content
-  let markdown = '# Queue Export (Selected Items)\n\n';
-  markdown += `Exported: ${new Date().toISOString()}\n\n`;
-  markdown += '---\n\n';
-  
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+  let markdown = `# Queue Export (Selected Items)\n\n`;
+  markdown += `**Exported:** ${new Date().toLocaleString()}\n`;
+  markdown += `**Selected Items:** ${selectedItems.length}\n\n`;
+  markdown += `---\n\n`;
+
   selectedItems.forEach((item, index) => {
-    markdown += '<!-- QUEUE_ITEM_START -->\n\n';
-    markdown += `## Item ${index + 1}\n\n`;
+    // Task header with metadata
+    markdown += `## Task ${index + 1}\n\n`;
+    markdown += `<!-- QUEUE_ITEM_START -->\n`;
     markdown += `**ID:** ${item.id}\n`;
     markdown += `**Type:** ${item.type || 'single'}\n`;
     markdown += `**Status:** ${item.status || 'pending'}\n`;
     
-    if (item.createdAt) {
-      const date = item.createdAt.seconds 
-        ? new Date(item.createdAt.seconds * 1000).toISOString()
-        : new Date(item.createdAt).toISOString();
-      markdown += `**Created:** ${date}\n`;
-    }
-    
     if (item.sourceId) {
-      markdown += `**Source:** ${item.sourceId}\n`;
+      markdown += `**Repository:** ${item.sourceId}\n`;
+      markdown += `**Branch:** ${item.branch || 'master'}\n`;
     }
     
-    if (item.branch) {
-      markdown += `**Branch:** ${item.branch}\n`;
+    if (item.createdAt) {
+      const createdDate = item.createdAt.seconds 
+        ? new Date(item.createdAt.seconds * 1000) 
+        : new Date(item.createdAt);
+      markdown += `**Created:** ${createdDate.toLocaleString()}\n`;
     }
     
-    if (item.scheduledAt) {
+    if (item.status === 'scheduled' && item.scheduledAt) {
       const scheduledDate = item.scheduledAt.seconds 
-        ? new Date(item.scheduledAt.seconds * 1000).toISOString()
-        : new Date(item.scheduledAt).toISOString();
-      markdown += `**Scheduled:** ${scheduledDate}`;
-      if (item.scheduledTimeZone) {
-        markdown += ` (${item.scheduledTimeZone})`;
-      }
-      markdown += '\n';
+        ? new Date(item.scheduledAt.seconds * 1000)
+        : new Date(item.scheduledAt);
+      markdown += `**Scheduled:** ${scheduledDate.toLocaleString()} (${item.scheduledTimeZone || 'Unknown timezone'})\n`;
     }
     
     if (item.error) {
       markdown += `**Error:** ${item.error}\n`;
     }
-    
-    markdown += '\n';
-    
-    if (item.type === 'subtasks' && item.remaining) {
+
+    markdown += `\n`;
+
+    // Add partial export note if applicable
+    if (item._isPartialExport) {
+      markdown += `**Note:** Partial export (selected subtasks only)\n`;
+    }
+
+    // Content based on type
+    if (item.type === 'subtasks' && Array.isArray(item.remaining)) {
       markdown += `**Subtasks:** ${item.remaining.length}\n\n`;
-      item.remaining.forEach((subtask, subIndex) => {
-        markdown += '<!-- SUBTASK_START -->\n\n';
-        markdown += `### Subtask ${subIndex + 1}\n\n`;
-        markdown += `${subtask.fullContent || subtask.prompt || ''}\n\n`;
-        markdown += '<!-- SUBTASK_END -->\n\n';
+      
+      item.remaining.forEach((subtask, subtaskIndex) => {
+        markdown += `### Subtask ${subtaskIndex + 1}\n\n`;
+        markdown += `<!-- SUBTASK_START -->\n`;
+        markdown += `${(subtask.fullContent || subtask.prompt || '').trim()}\n`;
+        markdown += `<!-- SUBTASK_END -->\n\n`;
       });
-    } else if (item.prompt) {
-      markdown += '### Prompt\n\n';
-      markdown += `${item.prompt}\n\n`;
+    } else {
+      markdown += `### Prompt\n\n`;
+      markdown += `<!-- PROMPT_START -->\n`;
+      markdown += `${(item.prompt || '').trim()}\n`;
+      markdown += `<!-- PROMPT_END -->\n\n`;
     }
     
-    markdown += '<!-- QUEUE_ITEM_END -->\n\n';
-    markdown += '---\n\n';
+    markdown += `<!-- QUEUE_ITEM_END -->\n\n`;
+    markdown += `---\n\n`;
   });
-  
-  // Create download link
+
+  // Create and download the file
   const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `queue-export-${Date.now()}.md`;
+  a.download = `queue-export-${timestamp}.md`;
   a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   
-  const itemCount = selectedItems.length;
-  showToast(`Exported ${itemCount} selected item${itemCount > 1 ? 's' : ''} to markdown`, 'success');
+  const totalSubtasks = Object.values(subtaskSelections).reduce((sum, arr) => sum + arr.length, 0);
+  const exportedCount = queueSelections.length + (totalSubtasks > 0 && queueSelections.length === 0 ? 1 : 0);
+  const itemText = exportedCount === 1 ? 'item' : 'items';
+  showToast(`Exported ${exportedCount} selected ${itemText} to markdown`, 'success');
 }

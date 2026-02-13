@@ -23,7 +23,7 @@
 /* Modal Content Containers */
 #julesEnvModal > div,
 #subtaskErrorModal > div {
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 24px;
@@ -33,6 +33,11 @@
   overflow-y: auto;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
+
+#subtaskErrorModal > div::-webkit-scrollbar { width: 6px; }
+#subtaskErrorModal > div::-webkit-scrollbar-track { background: transparent; }
+#subtaskErrorModal > div::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+#subtaskErrorModal > div::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 #subtaskErrorModal > div {
   max-width: 500px;

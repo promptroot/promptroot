@@ -1,66 +1,14 @@
 // ===== Jules API Client Module =====
 // Provides access to the Jules API for managing sources, sessions, and activities
 
-import { getAuth, getDb } from './firebase-service.js';
+import { getAuth } from './firebase-service.js';
 import { JULES_API_BASE, ERRORS, PAGE_SIZES, JULES_MESSAGES, TIMEOUTS } from '../utils/constants.js';
 import { showToast } from './toast.js';
 import { handleError, ErrorCategory } from '../utils/error-handler.js';
 import { clearCache, CACHE_KEYS } from '../utils/session-cache.js';
+import { getDecryptedJulesKey, clearJulesKeyCache } from './jules-keys.js';
 
-// API key cache for memoization
-const keyCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-export function clearJulesKeyCache(uid = null) {
-  if (uid) {
-    keyCache.delete(uid);
-  } else {
-    keyCache.clear();
-  }
-}
-
-export async function getDecryptedJulesKey(uid) {
-  const cached = keyCache.get(uid);
-  if (cached) {
-    if (Date.now() - cached.timestamp < CACHE_TTL) {
-      return cached.key;
-    }
-    // Remove expired cache entry to avoid unbounded memory growth
-    keyCache.delete(uid);
-  }
-
-  try {
-    const db = getDb();
-    if (!db) {
-      return null;
-    }
-
-    const doc = await db.collection('julesKeys').doc(uid).get();
-    if (!doc.exists) {
-      return null;
-    }
-
-    const { key: encrypted } = doc.data();
-    if (!encrypted) return null;
-
-    // Decrypt using same method as encryption
-    const paddedUid = (uid + '\0'.repeat(32)).slice(0, 32);
-    const keyData = new TextEncoder().encode(paddedUid);
-    const key = await window.crypto.subtle.importKey('raw', keyData, { name: 'AES-GCM' }, false, ['decrypt']);
-
-    const ivString = uid.slice(0, 12).padEnd(12, '0');
-    const iv = new TextEncoder().encode(ivString).slice(0, 12);
-
-    const ciphertextData = Uint8Array.from(atob(encrypted), c => c.charCodeAt(0));
-    const plaintext = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertextData);
-
-    const decryptedKey = new TextDecoder().decode(plaintext);
-    keyCache.set(uid, { key: decryptedKey, timestamp: Date.now() });
-    return decryptedKey;
-  } catch (error) {
-    return null;
-  }
-}
+export { getDecryptedJulesKey, clearJulesKeyCache };
 
 function createJulesHeaders(apiKey) {
   return {

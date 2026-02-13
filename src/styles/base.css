@@ -5,26 +5,76 @@ body {
   visibility: hidden;
 }
 
+/* Global scrollbar styling for Chromium browsers */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Base variables, reset, and global styles */
 :root {
+  /* ===== BASE STRUCTURE ===== */
   --bg: #0a0e1a;
-  --card: #141829;
-  --muted: #8b94a8;
-  --text: #f0f3f8;
-  --accent: #4dd9ff;
-  --accent-glow: #4dd9ff1a;
+  --surface: #141829;              /* Unified surface: cards, inputs, code blocks */
+  --surface-elevated: #1a1f35;     /* Hover/elevated states */
   --border: #222438;
-  --gradient-primary: linear-gradient(135deg, #4dd9ff 0%, #5ad1ff 100%);
-  --gradient-bg: linear-gradient(180deg, #0d1424 0%, #0a0e1a 100%);
   
-  /* Semantic colors */
-  --danger: #c0504d;
-  --warn: #f39c12;
+  /* Legacy aliases (deprecated - remove in future) */
+  --card: var(--surface);
+  
+  /* ===== TEXT ===== */
+  --text: #f0f3f8;
+  --text-muted: #8b94a8;
+  
+  /* Legacy alias (deprecated - remove in future) */
+  --muted: var(--text-muted);
+  
+  /* ===== ACCENT (CYAN) ===== */
+  --accent: #4dd9ff;
+  --accent-hover: #5ad1ff;
+  --accent-glow: rgba(77, 217, 255, 0.12);
+  --accent-bg-strong: rgba(77, 217, 255, 0.15);
+  --accent-bg-medium: rgba(77, 217, 255, 0.10);
+  --accent-bg-subtle: rgba(77, 217, 255, 0.05);
+  
+  /* ===== SEMANTIC COLORS ===== */
+  --danger: #ff6b6b;               /* Consolidated error/danger color */
+  --success: #4ade80;              /* Brighter green for better contrast */
+  --warning: #f39c12;
   --info: #2980b9;
-  --success: #27ae60;
-  --error: #ff6b6b;
   
-  /* Typography */
+  /* ===== OVERLAYS ===== */
+  --overlay-subtle: rgba(255, 255, 255, 0.03);
+  --overlay-medium: rgba(255, 255, 255, 0.10);
+  --overlay-hover: rgba(255, 255, 255, 0.06);
+  
+  /* ===== GRADIENTS ===== */
+  --gradient-primary: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  --gradient-bg: linear-gradient(180deg, #0d1424 0%, var(--bg) 100%);
+  
+  /* ===== TYPOGRAPHY ===== */
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
@@ -85,12 +135,15 @@ body {
 
 /* Icon color variants */
 .icon-danger { color: var(--danger); }
-.icon-warn { color: var(--warn); }
+.icon-warning { color: var(--warning); }
 .icon-info { color: var(--info); }
 .icon-success { color: var(--success); }
-.icon-error { color: var(--error); }
-.icon-muted { color: var(--muted); }
+.icon-muted { color: var(--text-muted); }
 .icon-accent { color: var(--accent); }
+
+/* Legacy aliases (deprecated) */
+.icon-warn { color: var(--warning); }
+.icon-error { color: var(--danger); }
 
 /* Icon animations */
 .icon-spin {
@@ -138,11 +191,28 @@ html, body {
 }
 
 .color-muted {
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
+.color-danger {
+  color: var(--danger);
+}
+
+.color-success {
+  color: var(--success);
+}
+
+.color-warning {
+  color: var(--warning);
+}
+
+.color-info {
+  color: var(--info);
+}
+
+/* Legacy aliases (deprecated) */
 .color-error {
-  color: var(--error);
+  color: var(--danger);
 }
 
 .color-success {
@@ -150,10 +220,6 @@ html, body {
 }
 
 /* Display utilities */
-.d-block {
-  display: block !important;
-}
-
 .d-none {
   display: none !important;
 }
@@ -163,14 +229,6 @@ html, body {
 }
 
 /* Modal utilities */
-.modal-show {
-  display: flex !important;
-}
-
-.modal-hide {
-  display: none !important;
-}
-
 .mobile-menu-open {
   overflow: hidden;
 }

@@ -11,8 +11,13 @@ export const GIST_POINTER_REGEX = /^https:\/\/gist\.githubusercontent\.com\/\S+\
 export const GIST_URL_REGEX = /^https:\/\/gist\.github\.com\/[\w-]+\/[a-f0-9]+\/?(?:#file-[\w.-]+)?(?:\?file=[\w.-]+)?$/i;
 export const CODEX_URL_REGEX = /^https:\/\/chatgpt\.com\/s\/[a-f0-9_]+$/i;
 
+// Variable Substitution
+export const PLACEHOLDER_REGEX = /\{([A-Z0-9_-]+)\}/g;
+
 // Jules API
 export const JULES_API_BASE = "https://jules.googleapis.com/v1alpha";
+
+export const WEB_CAPTURE_EXTENSION_URL = "https://chromewebstore.google.com/detail/promptroot-web-capture/fbhilkiaigdedegnjgecdggbeknnbacg?utm_campaign=pmaxusbrand&utm_content=br3&utm_medium=ga&utm_source=bgads1";
 
 export const DEFAULT_FAVORITE_REPOS = [];
 
@@ -20,8 +25,6 @@ export const STORAGE_KEY_FAVORITE_REPOS = "jules_favorite_repos";
 
 // Hardcoded favorite branches (always favorites for all users)
 export const HARDCODED_FAVORITE_BRANCHES = ["main", "web-captures"];
-
-export const STORAGE_KEY_FAVORITE_BRANCHES = "favorite_branches";
 
 // Tag definitions
 export const TAG_DEFINITIONS = {
@@ -223,6 +226,23 @@ export const UI_TEXT = {
   SAVE_KEY: "Save & Continue"
 };
 
+// Jules Modal Text
+export const JULES_MODAL_TEXT = {
+  ENTER_KEY_WARNING: 'Please enter your Jules API key.',
+  NOT_LOGGED_IN: 'Not logged in.',
+  SAVING: 'Saving...',
+  SAVE_BUTTON: 'Save & Continue',
+  KEY_SAVED_SUCCESS: 'Jules API key saved successfully',
+  KEY_SAVE_ERROR_PREFIX: 'Failed to save API key: ',
+  NOTE_QUEUED_TRY: 'Queued from Try in Jules modal',
+  NOTE_QUEUED_PARTIAL_RETRY: 'Queued from Try in Jules flow (partial retries)',
+  NOTE_QUEUED_FINAL_FAILURE: 'Queued from Try in Jules flow (final failure)',
+  SUBTASK_PROGRESS: (current, total) => `Task ${current} of ${total}`,
+  CANCEL_BUTTON: 'Cancel',
+  QUEUE_BUTTON: 'Queue',
+  SUBMIT_BUTTON: 'Submit'
+};
+
 // Folder Submenu Text
 export const FOLDER_SUBMENU_TEXT = {
   NEW_PROMPT: 'Prompt (blank)',
@@ -333,6 +353,7 @@ export const LIMITS = {
  * @typedef {object} PageSizes
  * @property {number} julesSessions - The number of Jules sessions to fetch per page.
  * @property {number} branches - The number of branches to fetch per page.
+ * @property {number} queueItems - The number of queue items to fetch per page.
  */
 
 /**
@@ -341,7 +362,8 @@ export const LIMITS = {
  */
 export const PAGE_SIZES = {
   julesSessions: 10,
-  branches: 100
+  branches: 100,
+  queueItems: 100
 };
 
 /**

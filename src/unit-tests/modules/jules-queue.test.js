@@ -82,6 +82,11 @@ vi.mock('../../utils/constants.js', () => ({
   CACHE_KEYS: {
     QUEUE_ITEMS: 'queue-items',
     USER_PROFILE: 'user-profile'
+  },
+  PAGE_SIZES: {
+    julesSessions: 10,
+    branches: 100,
+    queueItems: 100
   }
 }));
 
@@ -111,6 +116,7 @@ vi.mock('../../modules/jules-queue-store.js', () => ({
   setQueueModalEscapeHandler: vi.fn()
 }));
 
+// Add mock for getSelectedQueueIds after imports
 const createMockElement = (id = '') => ({
   id,
   setAttribute: vi.fn(),
@@ -160,7 +166,11 @@ global.document = {
   createElement: vi.fn(() => createMockElement()),
   querySelectorAll: vi.fn(() => []),
   addEventListener: vi.fn(),
-  removeEventListener: vi.fn()
+  removeEventListener: vi.fn(),
+  body: {
+    appendChild: vi.fn(),
+    removeChild: vi.fn()
+  }
 };
 
 global.console = {
@@ -169,12 +179,14 @@ global.console = {
   log: vi.fn()
 };
 
-global.Blob = vi.fn((content, options) => ({ content, options }));
-
 global.URL = {
-  createObjectURL: vi.fn(() => 'mock-url'),
+  createObjectURL: vi.fn(() => 'mock-blob-url'),
   revokeObjectURL: vi.fn()
 };
+
+global.Blob = vi.fn((content, options) => ({
+  type: options?.type || 'text/plain'
+}));
 
 function mockReset() {
   vi.clearAllMocks();
@@ -190,10 +202,6 @@ function mockReset() {
   // Restore implementations
   global.firebase.firestore.FieldValue.serverTimestamp.mockImplementation(() => 'TIMESTAMP');
   global.firebase.firestore.FieldValue.delete.mockImplementation(() => 'DELETE_FIELD');
-  
-  global.Blob.mockImplementation((content, options) => ({ content, options }));
-  global.URL.createObjectURL.mockReturnValue('mock-url');
-  global.URL.revokeObjectURL.mockClear();
   
   global.document.getElementById.mockReturnValue(null);
   global.document.createElement.mockImplementation((tag) => createMockElement(tag));
@@ -558,7 +566,9 @@ describe('jules-queue', () => {
           doc: vi.fn(() => ({
             collection: vi.fn(() => ({
               orderBy: vi.fn(() => ({
-                get: vi.fn().mockResolvedValue({ docs: mockDocs })
+                limit: vi.fn(() => ({
+                  get: vi.fn().mockResolvedValue({ docs: mockDocs })
+                }))
               }))
             }))
           }))
@@ -581,7 +591,9 @@ describe('jules-queue', () => {
           doc: vi.fn(() => ({
             collection: vi.fn(() => ({
               orderBy: vi.fn(() => ({
-                get: vi.fn().mockResolvedValue({ docs: [] })
+                limit: vi.fn(() => ({
+                  get: vi.fn().mockResolvedValue({ docs: [] })
+                }))
               }))
             }))
           }))
@@ -602,7 +614,9 @@ describe('jules-queue', () => {
           doc: vi.fn(() => ({
             collection: vi.fn(() => ({
               orderBy: vi.fn(() => ({
-                get: vi.fn().mockRejectedValue(new Error('Permission denied'))
+                limit: vi.fn(() => ({
+                  get: vi.fn().mockRejectedValue(new Error('Permission denied'))
+                }))
               }))
             }))
           }))
@@ -720,27 +734,6 @@ describe('jules-queue', () => {
     });
   });
 
-  describe('renderQueueListDirectly', () => {
-    it('should accept items array', () => {
-      const items = [
-        { id: '1', prompt: 'Test 1' },
-        { id: '2', prompt: 'Test 2' }
-      ];
-      
-      expect(() => renderQueueListDirectly(items)).not.toThrow();
-    });
-
-    it('should handle empty array', () => {
-      expect(() => renderQueueListDirectly([])).not.toThrow();
-    });
-  });
-
-  describe('attachQueueHandlers', () => {
-    it('should execute without errors', () => {
-      expect(() => attachQueueHandlers()).not.toThrow();
-    });
-  });
-
   describe('error persistence', () => {
     it('should identify recent errors within visibility window', () => {
       const now = Date.now();
@@ -773,16 +766,38 @@ describe('jules-queue', () => {
     });
   });
 
+  describe('renderQueueListDirectly', () => {
+    it('should accept items array', () => {
+      const items = [
+        { id: '1', prompt: 'Test 1' },
+        { id: '2', prompt: 'Test 2' }
+      ];
+      
+      expect(() => renderQueueListDirectly(items)).not.toThrow();
+    });
+
+    it('should handle empty array', () => {
+      expect(() => renderQueueListDirectly([])).not.toThrow();
+    });
+  });
+
+  describe('attachQueueHandlers', () => {
+    it('should execute without errors', () => {
+      expect(() => attachQueueHandlers()).not.toThrow();
+    });
+  });
+
   describe('exportQueueToMarkdown', () => {    
     beforeEach(() => {
       vi.clearAllMocks();
     });
 
     it('should show warning when no items selected', async () => {
+      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
       const { showToast } = await import('../../modules/toast.js');
       
       // Mock queue cache to have items
-      julesQueueStore.getQueueCache.mockReturnValue([{ 
+      getQueueCache.mockReturnValue([{ 
         id: 'test1', 
         prompt: 'test prompt',
         title: 'Test Item',
@@ -804,6 +819,7 @@ describe('jules-queue', () => {
     });
 
     it('should create markdown file for single prompt items', async () => {
+      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
       const { showToast } = await import('../../modules/toast.js');
       
       const mockItems = [
@@ -818,7 +834,7 @@ describe('jules-queue', () => {
         }
       ];
       
-      julesQueueStore.getQueueCache.mockReturnValue(mockItems);
+      getQueueCache.mockReturnValue(mockItems);
       
       // Mock DOM with checked checkbox for test-id-1
       const mockCheckedCheckbox = { 
@@ -861,6 +877,7 @@ describe('jules-queue', () => {
     });
 
     it('should create markdown file for subtasks items', async () => {
+      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
       const { showToast } = await import('../../modules/toast.js');
       
       const mockItems = [
@@ -878,7 +895,7 @@ describe('jules-queue', () => {
         }
       ];
       
-      julesQueueStore.getQueueCache.mockReturnValue(mockItems);
+      getQueueCache.mockReturnValue(mockItems);
       
       // Mock DOM with checked checkbox for test-id-2
       const mockCheckedCheckbox = { 
@@ -927,6 +944,8 @@ describe('jules-queue', () => {
     });
 
     it('should handle items with scheduling information', async () => {
+      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
+      
       const mockItems = [
         {
           id: 'scheduled-item',
@@ -939,7 +958,7 @@ describe('jules-queue', () => {
         }
       ];
       
-      julesQueueStore.getQueueCache.mockReturnValue(mockItems);
+      getQueueCache.mockReturnValue(mockItems);
       
       // Mock DOM with checked checkbox for scheduled-item
       const mockCheckedCheckbox = { 
@@ -977,6 +996,8 @@ describe('jules-queue', () => {
     });
 
     it('should handle items with errors', async () => {
+      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
+      
       const mockItems = [
         {
           id: 'error-item',
@@ -988,7 +1009,7 @@ describe('jules-queue', () => {
         }
       ];
       
-      julesQueueStore.getQueueCache.mockReturnValue(mockItems);
+      getQueueCache.mockReturnValue(mockItems);
       
       // Mock DOM with checked checkbox for error-item
       const mockCheckedCheckbox = { 

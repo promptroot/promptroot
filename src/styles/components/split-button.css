@@ -1,36 +1,26 @@
 /* Split Button Component - GitHub-like button with dropdown */
-
 .split-btn {
   display: inline-flex;
   position: relative;
 }
 
-/* Shared button base styles - extends .btn styles */
+/* Button positioning overrides - inherits all .btn styles */
 .split-btn__action,
 .split-btn__toggle {
-  appearance: none;
-  border: 1px solid var(--border);
-  background: linear-gradient(135deg, rgba(20,24,41,0.5), rgba(20,24,41,0.3));
-  color: var(--text);
-  padding: 8px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.2s;
   display: flex;
   align-items: center;
 }
 
-.split-btn__action:hover,
-.split-btn__toggle:hover {
-  border-color: var(--accent);
-  background: linear-gradient(135deg, rgba(77,217,255,0.15), rgba(77,217,255,0.08));
-  box-shadow: 0 0 10px rgba(77, 217, 255, 0.12);
+/* Only allow hover z-index on enabled buttons */
+.split-btn__action:hover:not(:disabled),
+.split-btn__toggle:hover:not(:disabled) {
   z-index: 1;
 }
 
-.split-btn__action:active,
-.split-btn__toggle:active {
-  transform: translateY(1px);
+/* Force pointer-events none on disabled buttons to block all hover */
+.btn.split-btn__action:disabled,
+.btn.split-btn__toggle:disabled {
+  pointer-events: none !important;
 }
 
 /* Main action button specific styles */
@@ -83,7 +73,7 @@
   top: calc(100% + 4px);
   right: 0;
   min-width: 180px;
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0;
@@ -120,16 +110,16 @@
 
 .split-btn__menu-item .icon {
   font-size: 18px;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .split-btn__menu-item:hover .icon {
   color: var(--accent);
 }
 
-/* Hover effect that spans both buttons */
-.split-btn:hover .split-btn__action,
-.split-btn:hover .split-btn__toggle {
+/* Hover effect that spans both buttons - only when not disabled */
+.split-btn:hover .split-btn__action:not(:disabled),
+.split-btn:hover .split-btn__toggle:not(:disabled) {
   border-color: var(--accent);
 }
 

@@ -1,0 +1,458 @@
+{
+  "name": "promptroot-vscode",
+  "displayName": "Promptroot",
+  "description": "VS Code extension for Promptroot workflows and asset management",
+  "version": "0.1.0",
+  "publisher": "promptroot",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/prompts/**"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "promptroot.initialize",
+        "title": "Promptroot: Initialize Workspace"
+      },
+      {
+        "command": "promptroot.openDocs",
+        "title": "Promptroot: Open Documentation"
+      },
+      {
+        "command": "promptroot.browseAssets",
+        "title": "Promptroot: Browse Assets"
+      },
+      {
+        "command": "promptroot.refreshAssets",
+        "title": "Promptroot: Refresh Assets",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "promptroot.createAsset",
+        "title": "Promptroot: Create New Prompt Asset",
+        "icon": "$(add)"
+      },
+      {
+        "command": "promptroot.cloneAsset",
+        "title": "Clone Asset",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "promptroot.deleteAsset",
+        "title": "Delete Asset",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "promptroot.configureJulesApi",
+        "title": "Promptroot: Configure Jules API"
+      },
+      {
+        "command": "promptroot.viewJulesSources",
+        "title": "Promptroot: View Jules Sources"
+      },
+      {
+        "command": "promptroot.viewJulesSessions",
+        "title": "Promptroot: View Jules Sessions"
+      },
+      {
+        "command": "promptroot.signIn",
+        "title": "Promptroot: Sign In"
+      },
+      {
+        "command": "promptroot.signOut",
+        "title": "Promptroot: Sign Out"
+      },
+      {
+        "command": "promptroot.viewProfile",
+        "title": "Promptroot: View Profile"
+      },
+      {
+        "command": "promptroot.refreshQueue",
+        "title": "Promptroot: Refresh Queue",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "promptroot.addToQueue",
+        "title": "Promptroot: Add to Jules Queue",
+        "icon": "$(add)"
+      },
+      {
+        "command": "promptroot.addAssetToQueue",
+        "title": "Add to Jules Queue",
+        "icon": "$(add)"
+      },
+      {
+        "command": "promptroot.sendAssetToJules",
+        "title": "Send to Jules",
+        "icon": "$(play)"
+      },
+      {
+        "command": "promptroot.deleteQueueItem",
+        "title": "Promptroot: Delete Queue Item",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "promptroot.pauseQueueItem",
+        "title": "Promptroot: Pause Queue Item",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "promptroot.resumeQueueItem",
+        "title": "Promptroot: Resume Queue Item",
+        "icon": "$(debug-continue)"
+      },
+      {
+        "command": "promptroot.runQueueItem",
+        "title": "Promptroot: Run Queue Item",
+        "icon": "$(run)"
+      },
+      {
+        "command": "promptroot.addBatchToQueue",
+        "title": "Promptroot: Add Multiple Prompts to Queue",
+        "icon": "$(files)"
+      },
+      {
+        "command": "promptroot.runNextPending",
+        "title": "Promptroot: Run Next Pending Queue Item",
+        "icon": "$(play)"
+      },
+      {
+        "command": "promptroot.runAllPending",
+        "title": "Promptroot: Run All Pending Queue Items",
+        "icon": "$(run-all)"
+      },
+      {
+        "command": "promptroot.clearCompleted",
+        "title": "Promptroot: Clear Completed Queue Items",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "promptroot.clearFailed",
+        "title": "Promptroot: Clear Failed Queue Items",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "promptroot.viewQueueItemDetails",
+        "title": "Promptroot: View Queue Item Details",
+        "icon": "$(info)"
+      },
+      {
+        "command": "promptroot.refreshSessions",
+        "title": "Promptroot: Refresh Sessions",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "promptroot.viewSessionDetails",
+        "title": "Promptroot: View Session Details",
+        "icon": "$(info)"
+      },
+      {
+        "command": "promptroot.openPRInBrowser",
+        "title": "Promptroot: Open PR in Browser",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "promptroot.refreshRepositories",
+        "title": "Promptroot: Refresh Repositories",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "promptroot.openRepository",
+        "title": "Promptroot: Open Repository",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "promptroot.addFavoriteRepo",
+        "title": "Promptroot: Add to Favorites",
+        "icon": "$(star-empty)"
+      },
+      {
+        "command": "promptroot.removeFavoriteRepo",
+        "title": "Promptroot: Remove from Favorites",
+        "icon": "$(star-full)"
+      },
+      {
+        "command": "promptroot.configureRepositories",
+        "title": "Promptroot: Configure Repositories",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "promptroot.selectBranch",
+        "title": "Promptroot: Select Branch",
+        "icon": "$(git-branch)"
+      },
+      {
+        "command": "promptroot.setDefaultBranch",
+        "title": "Promptroot: Set Default Branch",
+        "icon": "$(star)"
+      },
+      {
+        "command": "promptroot.debugAuth",
+        "title": "Promptroot: Debug Authentication"
+      },
+      {
+        "command": "promptroot.debugQueue",
+        "title": "Promptroot: Debug Queue"
+      },
+      {
+        "command": "promptroot.debugTreeView",
+        "title": "Promptroot: Debug Tree View"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "promptroot.assetsView",
+          "name": "Promptroot Assets",
+          "icon": "$(file-directory)"
+        },
+        {
+          "id": "promptroot.queueView",
+          "name": "Jules Queue",
+          "icon": "$(list-ordered)"
+        },
+        {
+          "id": "promptroot.sessionsView",
+          "name": "Jules Sessions",
+          "icon": "$(history)"
+        },
+        {
+          "id": "promptroot.repositoriesView",
+          "name": "GitHub Repositories",
+          "icon": "$(repo)"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "promptroot.refreshAssets",
+          "when": "view == promptroot.assetsView",
+          "group": "navigation"
+        },
+        {
+          "command": "promptroot.createAsset",
+          "when": "view == promptroot.assetsView",
+          "group": "navigation"
+        },
+        {
+          "command": "promptroot.refreshQueue",
+          "when": "view == promptroot.queueView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "promptroot.addBatchToQueue",
+          "when": "view == promptroot.queueView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "promptroot.runNextPending",
+          "when": "view == promptroot.queueView",
+          "group": "1_run@1"
+        },
+        {
+          "command": "promptroot.runAllPending",
+          "when": "view == promptroot.queueView",
+          "group": "1_run@2"
+        },
+        {
+          "command": "promptroot.clearCompleted",
+          "when": "view == promptroot.queueView",
+          "group": "2_clear@1"
+        },
+        {
+          "command": "promptroot.clearFailed",
+          "when": "view == promptroot.queueView",
+          "group": "2_clear@2"
+        },
+        {
+          "command": "promptroot.refreshSessions",
+          "when": "view == promptroot.sessionsView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "promptroot.refreshRepositories",
+          "when": "view == promptroot.repositoriesView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "promptroot.configureRepositories",
+          "when": "view == promptroot.repositoriesView",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "promptroot.runQueueItem",
+          "when": "view == promptroot.queueView && viewItem == single",
+          "group": "inline"
+        },
+        {
+          "command": "promptroot.deleteQueueItem",
+          "when": "view == promptroot.queueView && viewItem != info",
+          "group": "inline"
+        },
+        {
+          "command": "promptroot.pauseQueueItem",
+          "when": "view == promptroot.queueView && viewItem != info",
+          "group": "queue@1"
+        },
+        {
+          "command": "promptroot.resumeQueueItem",
+          "when": "view == promptroot.queueView && viewItem != info",
+          "group": "queue@2"
+        },
+        {
+          "command": "promptroot.deleteQueueItem",
+          "when": "view == promptroot.queueView && viewItem != info",
+          "group": "queue@3"
+        },
+        {
+          "command": "promptroot.viewQueueItemDetails",
+          "when": "view == promptroot.queueView && viewItem != info",
+          "group": "queue@4"
+        },
+        {
+          "command": "promptroot.viewSessionDetails",
+          "when": "view == promptroot.sessionsView && viewItem == session",
+          "group": "session@1"
+        },
+        {
+          "command": "promptroot.openPRInBrowser",
+          "when": "view == promptroot.sessionsView && viewItem == session",
+          "group": "session@2"
+        },
+        {
+          "command": "promptroot.sendAssetToJules",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "inline@1"
+        },
+        {
+          "command": "promptroot.addAssetToQueue",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "inline@2"
+        },
+        {
+          "command": "promptroot.cloneAsset",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "inline@3"
+        },
+        {
+          "command": "promptroot.deleteAsset",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "inline@4"
+        },
+        {
+          "command": "promptroot.sendAssetToJules",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "jules@1"
+        },
+        {
+          "command": "promptroot.addAssetToQueue",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "jules@2"
+        },
+        {
+          "command": "promptroot.addFavoriteRepo",
+          "when": "view == promptroot.repositoriesView && (viewItem == repository-normal-public || viewItem == repository-normal-private)",
+          "group": "inline"
+        },
+        {
+          "command": "promptroot.removeFavoriteRepo",
+          "when": "view == promptroot.repositoriesView && (viewItem == repository-favorite-public || viewItem == repository-favorite-private)",
+          "group": "inline"
+        },
+        {
+          "command": "promptroot.openRepository",
+          "when": "view == promptroot.repositoriesView && viewItem =~ /repository-/",
+          "group": "repo@1"
+        },
+        {
+          "command": "promptroot.selectBranch",
+          "when": "view == promptroot.repositoriesView && viewItem =~ /repository-/",
+          "group": "repo@2"
+        },
+        {
+          "command": "promptroot.setDefaultBranch",
+          "when": "view == promptroot.repositoriesView && viewItem =~ /repository-/",
+          "group": "repo@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Promptroot",
+      "properties": {
+        "promptroot.assetsPath": {
+          "type": "string",
+          "default": "prompts",
+          "description": "Path to Promptroot assets directory relative to workspace root"
+        },
+        "promptroot.autoDetect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect Promptroot workspaces"
+        },
+        "promptroot.firebase.projectId": {
+          "type": "string",
+          "default": "promptroot-b02a2",
+          "description": "Firebase project ID"
+        },
+        "promptroot.firebase.useEmulator": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use Firebase emulators for development"
+        },
+        "promptroot.firebase.emulatorHost": {
+          "type": "string",
+          "default": "localhost",
+          "description": "Firebase emulator host"
+        },
+        "promptroot.firebase.emulatorAuthPort": {
+          "type": "number",
+          "default": 9099,
+          "description": "Firebase Auth emulator port"
+        },
+        "promptroot.firebase.emulatorFirestorePort": {
+          "type": "number",
+          "default": 8080,
+          "description": "Firebase Firestore emulator port"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.x",
+    "@typescript-eslint/parser": "^6.x",
+    "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^2.32.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "eslint": "^8.x",
+    "typescript": "^5.3.0",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "firebase": "^10.13.0",
+    "firebase-admin": "^12.0.0"
+  }
+}

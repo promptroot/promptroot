@@ -36,6 +36,9 @@ export async function deleteStoredJulesKey(uid) {
   try {
     const db = getDb();
     if (!db) return false;
+    
+    // Clear both session cache and memory cache
+    clearJulesKeyCache(uid);
     await deleteDoc('julesKeys', uid, CACHE_KEY);
     return true;
   } catch (error) {
@@ -45,6 +48,9 @@ export async function deleteStoredJulesKey(uid) {
 
 export async function encryptAndStoreKey(plaintext, uid) {
   try {
+    // Clear caches before encrypting to prevent stale data
+    clearJulesKeyCache(uid);
+    
     // Generate random salt and IV
     const salt = window.crypto.getRandomValues(new Uint8Array(16));
     const iv = window.crypto.getRandomValues(new Uint8Array(12));

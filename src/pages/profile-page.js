@@ -457,9 +457,9 @@ async function initApp() {
       addJulesKeyBtn.addEventListener('click', () => {
         showJulesKeyModal(() => {
           // Reload Jules key status after saving
+          // Note: showToast is already called by jules-modal.js
           if (currentUser) {
             loadJulesKeyStatus(currentUser);
-            showToast('Jules API key saved successfully', 'success');
           }
         });
       });

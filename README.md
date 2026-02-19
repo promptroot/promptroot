@@ -14,6 +14,7 @@ PromptRoot is a zero-build web application for managing and sharing AI prompts a
 ### Key Features
 
 *   **Prompt Library**: Browse and share prompts organized in a GitHub repository.
+*   **Variable Substitution**: Create reusable prompt templates with `{PLACEHOLDER}` variables that are filled via modal UI before sending to Jules.
 *   **Jules Integration**: Send prompts directly to Google's Jules AI coding agent.
 *   **Task Queue**: Queue up multiple subtasks for Jules to execute sequentially.
 *   **Session Management**: View and manage your active and past Jules sessions.
@@ -266,6 +267,39 @@ PromptRoot provides deep integration with Google's Jules AI assistant:
 * **Preview & Edit**: Review and modify detected subtasks before sending
 * **Sequential Execution**: Send subtasks to Jules one at a time or all at once
 * **Context Preservation**: Each subtask includes the full prompt context
+
+#### Variable Substitution
+
+Create reusable prompt templates with placeholder variables:
+
+* **Placeholder Syntax**: Use `{VARIABLE_NAME}` in your prompts (uppercase, alphanumeric, underscore, hyphen)
+* **Interactive Modal**: When clicking "Try in Jules", a form appears to fill in variable values
+* **Multiple Variables**: Support for multiple placeholders in a single prompt
+* **Validation**: Required field validation ensures all variables are filled before sending
+* **XSS Protection**: All user input is automatically sanitized to prevent security issues
+
+**Example:**
+
+```markdown
+Fix the bug in `{FILE_PATH}` on line `{LINE_NUMBER}`.
+
+Investigate the function `{FUNCTION_NAME}` and check if it 
+handles the `{INPUT_TYPE}` input correctly.
+```
+
+When you click "Try in Jules", you'll be prompted to enter values for:
+- FILE_PATH
+- LINE_NUMBER  
+- FUNCTION_NAME
+- INPUT_TYPE
+
+The substituted text is then sent to Jules with your actual values.
+
+**Benefits:**
+- Create generic, reusable prompts for common tasks
+- Share prompt templates across your team
+- Reduce copy-paste errors with structured input forms
+- Maintain prompt libraries that adapt to different projects
 
 #### User Profile Page
 

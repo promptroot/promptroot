@@ -22,17 +22,39 @@
 
 .queue-status--pending {
   background: rgba(255, 193, 7, 0.15);
-  color: #ffc107;
+  color: var(--warning);
 }
 
 .queue-status--completed {
   background: rgba(76, 175, 80, 0.15);
-  color: #4caf50;
+  color: var(--success);
 }
 
 .queue-status--failed {
   background: rgba(192, 80, 77, 0.15);
   color: var(--danger);
+}
+
+/* Queue Error Badge */
+
+.queue-error-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 14px;
+  margin-left: 6px;
+  cursor: help;
+  vertical-align: middle;
+}
+
+.queue-error-badge .icon {
+  font-size: 14px;
+  line-height: 1;
 }
 
 /* Queue Card State Classes */
@@ -76,6 +98,33 @@
 .queue-error-info__message {
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* Aliases and additional queue info styles moved from pages/queue.css */
+
+/* Card scheduled alias used by jules-queue.js */
+.queue-status-scheduled {
+  border-left: 3px solid var(--accent);
+}
+
+/* Scheduled info details (inline next to items) */
+.queue-scheduled-info {
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.queue-scheduled-info .icon {
+  font-size: 16px;
+}
+
+/* Ensure icon sizing/shrink within error info */
+.queue-error-info .icon {
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
 .edit-queue-modal__section {
@@ -130,7 +179,7 @@
 
 .schedule-status__timezone {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 /* Timezone Dropdown */
@@ -156,7 +205,7 @@
 .queue-loading {
   text-align: center;
   padding: 40px 20px;
-  color: var(--muted);
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -167,7 +216,7 @@
 .queue-empty {
   text-align: center;
   padding: 40px 20px;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .queue-empty__icon {
@@ -185,7 +234,7 @@
 .queue-subtasks__header {
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text-muted);
   margin-bottom: 8px;
 }
 
@@ -196,5 +245,65 @@
 
 .queue-subtask__status {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--text-muted);
+}
+
+/* Schedule Queue Modal form helpers */
+#scheduleQueueModal .form-help-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+#scheduleQueueModal .form-error {
+  color: var(--danger);
+  font-size: 13px;
+  padding: 8px;
+  background: rgba(192, 80, 77, 0.1);
+  border-radius: 4px;
+  margin-top: 12px;
+}
+
+#scheduleQueueModal .form-error.hidden {
+  display: none;
+}
+
+/* Repository Filter Styles */
+.queue-repo-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.queue-repo-filter .form-label {
+  margin: 0;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.queue-repo-filter .form-control {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #12162a;
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234dd9ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.queue-repo-filter .form-control:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(77, 217, 255, 0.1);
+  outline: none;
+}
+
+.queue-repo-filter .form-control option {
+  background: #12162a;
+  color: var(--text);
+  padding: 8px;
 }

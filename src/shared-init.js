@@ -155,7 +155,7 @@ async function initializeSharedComponents(activePage) {
     const currentRepo = params.repo || REPO;
     const currentBranch = params.branch || loadBranchFromStorage(currentOwner, currentRepo) || BRANCH;
 
-    initBranchSelector(currentOwner, currentRepo, currentBranch);
+    await initBranchSelector(currentOwner, currentRepo, currentBranch);
 
     loadBranches().catch(error => {
       console.error('Failed to load branches:', error);

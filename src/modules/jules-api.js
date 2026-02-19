@@ -1,66 +1,14 @@
 // ===== Jules API Client Module =====
 // Provides access to the Jules API for managing sources, sessions, and activities
 
-import { getAuth, getDb } from './firebase-service.js';
+import { getAuth } from './firebase-service.js';
 import { JULES_API_BASE, ERRORS, PAGE_SIZES, JULES_MESSAGES, TIMEOUTS } from '../utils/constants.js';
 import { showToast } from './toast.js';
 import { handleError, ErrorCategory } from '../utils/error-handler.js';
 import { clearCache, CACHE_KEYS } from '../utils/session-cache.js';
+import { getDecryptedJulesKey, clearJulesKeyCache } from './jules-keys.js';
 
-// API key cache for memoization
-const keyCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-export function clearJulesKeyCache(uid = null) {
-  if (uid) {
-    keyCache.delete(uid);
-  } else {
-    keyCache.clear();
-  }
-}
-
-export async function getDecryptedJulesKey(uid) {
-  const cached = keyCache.get(uid);
-  if (cached) {
-    if (Date.now() - cached.timestamp < CACHE_TTL) {
-      return cached.key;
-    }
-    // Remove expired cache entry to avoid unbounded memory growth
-    keyCache.delete(uid);
-  }
-
-  try {
-    const db = getDb();
-    if (!db) {
-      return null;
-    }
-
-    const doc = await db.collection('julesKeys').doc(uid).get();
-    if (!doc.exists) {
-      return null;
-    }
-
-    const { key: encrypted } = doc.data();
-    if (!encrypted) return null;
-
-    // Decrypt using same method as encryption
-    const paddedUid = (uid + '\0'.repeat(32)).slice(0, 32);
-    const keyData = new TextEncoder().encode(paddedUid);
-    const key = await window.crypto.subtle.importKey('raw', keyData, { name: 'AES-GCM' }, false, ['decrypt']);
-
-    const ivString = uid.slice(0, 12).padEnd(12, '0');
-    const iv = new TextEncoder().encode(ivString).slice(0, 12);
-
-    const ciphertextData = Uint8Array.from(atob(encrypted), c => c.charCodeAt(0));
-    const plaintext = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertextData);
-
-    const decryptedKey = new TextDecoder().decode(plaintext);
-    keyCache.set(uid, { key: decryptedKey, timestamp: Date.now() });
-    return decryptedKey;
-  } catch (error) {
-    return null;
-  }
-}
+export { getDecryptedJulesKey, clearJulesKeyCache };
 
 function createJulesHeaders(apiKey) {
   return {
@@ -123,7 +71,9 @@ export async function getJulesSession(apiKey, sessionId) {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch session: ${response.status} ${response.statusText}`);
+    const error = new Error(`Failed to fetch session: ${response.status} ${response.statusText}`);
+    error.status = response.status;
+    throw error;
   }
 
   return await response.json();
@@ -135,7 +85,9 @@ export async function getJulesSessionActivities(apiKey, sessionId) {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch session activities: ${response.status} ${response.statusText}`);
+    const error = new Error(`Failed to fetch session activities: ${response.status} ${response.statusText}`);
+    error.status = response.status;
+    throw error;
   }
 
   return await response.json();
@@ -267,7 +219,25 @@ async function runJulesAPI(promptText, sourceId, branch, title, user) {
   const token = await user.getIdToken(true);
   const functionUrl = 'https://runjuleshttp-fjbc67s6eq-uc.a.run.app';
 
-  const payload = { promptText: promptText || '', sourceId: sourceId, branch: branch, title: title };
+  // Normalize sourceId format - handle both "owner/repo" and "sources/github/owner/repo" formats
+  let normalizedSourceId = sourceId;
+  if (sourceId && typeof sourceId === 'string') {
+    if (!sourceId.startsWith('sources/github/')) {
+      // If it's just "owner/repo" format, convert to full format
+      const parts = sourceId.split('/');
+      if (parts.length === 2 && parts[0] && parts[1]) {
+        normalizedSourceId = `sources/github/${sourceId}`;
+        console.log(`Converted sourceId from "${sourceId}" to "${normalizedSourceId}"`);
+      } else {
+        console.error('Invalid sourceId format:', sourceId);
+        throw new Error(`Invalid repository format: "${sourceId}". Expected either "owner/repo" or "sources/github/owner/repo".`);
+      }
+    }
+  } else {
+    throw new Error('Repository sourceId is required');
+  }
+
+  const payload = { promptText: promptText || '', sourceId: normalizedSourceId, branch: branch, title: title };
   
   const response = await fetch(functionUrl, {
     method: 'POST',
@@ -280,6 +250,8 @@ async function runJulesAPI(promptText, sourceId, branch, title, user) {
 
   const result = await response.json();
   if (!response.ok) {
+    console.error('Jules API error:', response.status, result);
+    console.error('Payload sent:', { promptText: `${promptText.slice(0, 100)}...`, sourceId, branch, title });
     throw new Error(result.error || `HTTP ${response.status}`);
   }
 

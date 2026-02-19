@@ -9,7 +9,7 @@ export function parseDateInTimeZone(dateTimeStr, timeZone) {
   const dateInLocal = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
   const offset = dateInLocal - dateInTz;
   
-  return new Date(dateInLocal.getTime() - offset);
+  return new Date(dateInLocal.getTime() + offset);
 }
 
 export function getCommonTimeZones() {
@@ -83,7 +83,7 @@ export function extractSubtasksFromDOM() {
 
 export function validateSchedule(scheduledDate) {
   const now = new Date();
-  if (scheduledDate < now) {
+  if (scheduledDate <= now) {
     return { valid: false, error: 'Scheduled time must be in the future' };
   }
   return { valid: true, error: null };

@@ -1,7 +1,9 @@
 const functions = require("firebase-functions");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
+const {onCall} = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
+const { webcrypto: crypto } = require('crypto');
 
 admin.initializeApp();
 
@@ -9,12 +11,55 @@ function formatJulesError(error, statusCode) {
   return 'Failed to create Jules session. Most likely causes: (1) API rate limit - wait a few minutes, (2) Invalid API key - check your settings, (3) Repository access - verify permissions.';
 }
 
-async function decryptJulesKeyBase64(b64, uid) {
+async function decryptJulesKey(docData, uid) {
   try {
-    const enc = Buffer.from(b64, "base64");
-    const encView = enc.buffer.slice(enc.byteOffset, enc.byteOffset + enc.byteLength);
+    const encryptedBase64 = docData.key;
+    if (!encryptedBase64) throw new Error("Missing encrypted key data");
+
     const te = new TextEncoder();
     const td = new TextDecoder();
+
+    // Check for New Scheme (Random IV + PBKDF2)
+    if (docData.iv && docData.salt) {
+      // Frontend uses: btoa(String.fromCharCode(...new Uint8Array(data)))
+      // So we need to reverse this: Buffer.from(base64, 'base64')
+      const iv = new Uint8Array(Buffer.from(docData.iv, "base64"));
+      const salt = new Uint8Array(Buffer.from(docData.salt, "base64"));
+      const ciphertext = new Uint8Array(Buffer.from(encryptedBase64, "base64"));
+
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        te.encode(uid),
+        { name: "PBKDF2" },
+        false,
+        ["deriveKey"]
+      );
+
+      const key = await crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt: salt,
+          iterations: 100000,
+          hash: "SHA-256"
+        },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["decrypt"]
+      );
+
+      const plainBuf = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: iv },
+        key,
+        ciphertext
+      );
+
+      return td.decode(plainBuf);
+    }
+
+    // Fallback to Legacy Scheme (Deterministic IV + Padded Key)
+    const enc = Buffer.from(encryptedBase64, "base64");
+    const encView = new Uint8Array(enc.buffer, enc.byteOffset, enc.byteLength);
 
     const paddedKeyString = (uid + '\0'.repeat(32)).slice(0, 32);
     const keyBytes = te.encode(paddedKeyString);
@@ -25,7 +70,13 @@ async function decryptJulesKeyBase64(b64, uid) {
 
     return td.decode(plainBuf);
   } catch (error) {
-    console.error("Decryption error:", error.message);
+    console.error("Decryption error details:", {
+      message: error.message,
+      stack: error.stack,
+      hasIvSalt: !!(docData.iv && docData.salt),
+      keyLength: docData.key?.length || 0,
+      uid: uid?.substring(0, 8) + '...' // Only log first 8 chars for privacy
+    });
     throw new Error("Failed to decrypt Jules API key");
   }
 }
@@ -67,14 +118,14 @@ exports.runJules = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError("failed-precondition", "No Jules API key stored. Please save your API key first.");
     }
 
-    const encryptedBase64 = snap.data().key;
-    if (!encryptedBase64) {
+    const docData = snap.data();
+    if (!docData.key) {
       throw new functions.https.HttpsError("failed-precondition", "Stored key is missing or invalid");
     }
 
     let julesKey;
     try {
-      julesKey = await decryptJulesKeyBase64(encryptedBase64, uid);
+      julesKey = await decryptJulesKey(docData, uid);
     } catch (e) {
       console.error("Decryption failed for user:", uid);
       throw new functions.https.HttpsError("internal", "Failed to decrypt Jules API key");
@@ -113,7 +164,62 @@ exports.runJules = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError("internal", "Jules did not return a session URL");
     }
 
-    return { sessionUrl: json.url };
+    // Extract session ID from the response (need it outside the try block)
+    let sessionId = null;
+    if (json.name && typeof json.name === 'string' && json.name.includes('sessions/')) {
+      sessionId = json.name.split('sessions/')[1];
+    } else if (json.id && typeof json.id === 'string' && json.id.includes('sessions/')) {
+      sessionId = json.id.split('sessions/')[1];
+    } else if (json.id && typeof json.id === 'string') {
+      sessionId = json.id;
+    } else if (json.url && typeof json.url === 'string' && json.url.includes('sessions/')) {
+      const urlParts = json.url.split('sessions/');
+      if (urlParts[1]) {
+        sessionId = urlParts[1].split('?')[0];
+      }
+    }
+
+    // Track session in Firestore
+    try {
+      if (sessionId && context.auth && context.auth.uid) {
+        await db.doc(`juleSessions/${context.auth.uid}/sessions/${sessionId}`).set({
+          sessionId: sessionId,
+          sessionName: json.name || `sessions/${sessionId}`,
+          promptPath: (data && data.promptPath) || null,
+          promptContent: promptText,
+          sourceId: sourceId,
+          branch: branch,
+          title: (data && data.title) || 'Unnamed Session',
+          status: json.state || 'UNKNOWN',
+          hasPR: false,
+          prUrl: null,
+          prTitle: null,
+          prDescription: null,
+          hasPlan: false,
+          planStepCount: 0,
+          failureStep: null,
+          failureReason: null,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          completedAt: null,
+          lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+          queueItemId: (data && data.queueItemId) || null,
+          userId: context.auth.uid
+        });
+        console.log(`Session ${sessionId} tracked in Firestore for user ${context.auth.uid}`);
+      } else {
+        console.warn('Could not extract sessionId from Jules response:', json);
+      }
+    } catch (trackError) {
+      console.error('Failed to track session:', trackError.message);
+      // Don't fail the request if tracking fails
+    }
+
+    // Return properly formatted Jules URL
+    const sessionUrl = sessionId 
+      ? `https://jules.google.com/session/${sessionId}`
+      : json.url; // fallback to raw URL if sessionId extraction failed
+    
+    return { sessionUrl };
 
   } catch (error) {
     if (error.code && error.code.startsWith("functions/")) {
@@ -125,6 +231,14 @@ exports.runJules = functions.https.onCall(async (data, context) => {
 });
 
 exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
+  // Log incoming request for debugging
+  console.log('runJulesHttp called with:', {
+    method: req.method,
+    headers: Object.keys(req.headers),
+    body: req.body,
+    url: req.url
+  });
+
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -142,6 +256,7 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Missing or invalid auth header:', authHeader);
       res.status(401).json({ error: 'Missing or invalid Authorization header' });
       return;
     }
@@ -173,15 +288,15 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    const encryptedBase64 = snap.data().key;
-    if (!encryptedBase64) {
+    const docData = snap.data();
+    if (!docData.key) {
       res.status(400).json({ error: 'Stored key is missing or invalid' });
       return;
     }
 
     let julesKey;
     try {
-      julesKey = await decryptJulesKeyBase64(encryptedBase64, uid);
+      julesKey = await decryptJulesKey(docData, uid);
     } catch (e) {
       console.error('Decryption failed:', e.message);
       res.status(500).json({ error: 'Failed to decrypt Jules API key' });
@@ -224,7 +339,62 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    res.json({ sessionUrl: json.url });
+    // Extract session ID from the response (need it outside the try block)
+    let sessionId = null;
+    if (json.name && typeof json.name === 'string' && json.name.includes('sessions/')) {
+      sessionId = json.name.split('sessions/')[1];
+    } else if (json.id && typeof json.id === 'string' && json.id.includes('sessions/')) {
+      sessionId = json.id.split('sessions/')[1];
+    } else if (json.id && typeof json.id === 'string') {
+      sessionId = json.id;
+    } else if (json.url && typeof json.url === 'string' && json.url.includes('sessions/')) {
+      const urlParts = json.url.split('sessions/');
+      if (urlParts[1]) {
+        sessionId = urlParts[1].split('?')[0];
+      }
+    }
+
+    // Track session in Firestore
+    try {
+      if (sessionId && uid) {
+        await db.collection('juleSessions').doc(uid).collection('sessions').doc(sessionId).set({
+          sessionId: sessionId,
+          sessionName: json.name || `sessions/${sessionId}`,
+          promptPath: req.body.promptPath || null,
+          promptContent: promptText,
+          sourceId: source,
+          branch: startingBranch,
+          title: req.body.title || 'Unnamed Session',
+          status: json.state || 'UNKNOWN',
+          hasPR: false,
+          prUrl: null,
+          prTitle: null,
+          prDescription: null,
+          hasPlan: false,
+          planStepCount: 0,
+          failureStep: null,
+          failureReason: null,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          completedAt: null,
+          lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+          queueItemId: req.body.queueItemId || null,
+          userId: uid
+        });
+        console.log(`Session ${sessionId} tracked in Firestore for user ${uid}`);
+      } else {
+        console.warn('Could not extract sessionId from Jules response:', json);
+      }
+    } catch (trackError) {
+      console.error('Failed to track session:', trackError.message);
+      // Don't fail the request if tracking fails
+    }
+
+    // Return properly formatted Jules URL
+    const sessionUrl = sessionId 
+      ? `https://jules.google.com/session/${sessionId}`
+      : json.url; // fallback to raw URL if sessionId extraction failed
+    
+    res.json({ sessionUrl, sessionId: sessionId || null });
 
   } catch (error) {
     console.error('Error in runJulesHttp:', error.message);
@@ -246,8 +416,12 @@ exports.validateJulesKey = functions.https.onCall(async (data, context) => {
       return { valid: false, message: "No Jules API key stored" };
     }
 
-    const encryptedBase64 = snap.data().key;
-    const julesKey = await decryptJulesKeyBase64(encryptedBase64, uid);
+    const docData = snap.data();
+    if (!docData.key) {
+      return { valid: false, message: "Stored key is invalid" };
+    }
+
+    const julesKey = await decryptJulesKey(docData, uid);
 
     const r = await fetch("https://jules.googleapis.com/v1alpha/sessions", {
       method: "GET",
@@ -464,8 +638,18 @@ exports.activateScheduledQueueItems = onSchedule('every 1 minutes', async (event
           continue;
         }
         
-        const encryptedBase64 = keySnap.data().key;
-        const julesKey = await decryptJulesKeyBase64(encryptedBase64, userId);
+        const docData = keySnap.data();
+        if (!docData.key) {
+           console.error(`Jules API key empty/invalid for user ${userId}`);
+           await doc.ref.update({
+             status: 'error',
+             error: 'Jules API key invalid',
+             updatedAt: now
+           });
+           continue;
+        }
+
+        const julesKey = await decryptJulesKey(docData, userId);
         
         if (item.type === 'single') {
           await doc.ref.update({ status: 'in-progress', updatedAt: now });
@@ -579,5 +763,118 @@ exports.activateScheduledQueueItems = onSchedule('every 1 minutes', async (event
   } catch (error) {
     console.error('Error in activateScheduledQueueItems:', error);
     return null;
+  }
+});
+
+/**
+ * Exchange VS Code GitHub token for Firebase custom token
+ * Used by VS Code extension for authentication
+ */
+exports.exchangeVSCodeGitHubToken = onCall(async (request) => {
+  const { githubToken } = request.data;
+
+  console.log('exchangeVSCodeGitHubToken called');
+  console.log('Data received:', JSON.stringify(request.data));
+  console.log('githubToken extracted:', githubToken ? `${githubToken.substring(0, 10)}...` : 'null/undefined');
+
+  if (!githubToken) {
+    console.error('No githubToken in data');
+    throw new functions.https.HttpsError('invalid-argument', 'GitHub token is required');
+  }
+
+  try {
+    // Verify GitHub token and get user info
+    const githubResponse = await fetch('https://api.github.com/user', {
+      headers: {
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/json',
+        'User-Agent': 'Promptroot-VSCode-Extension'
+      }
+    });
+
+    if (!githubResponse.ok) {
+      throw new functions.https.HttpsError(
+        'unauthenticated',
+        `GitHub API returned ${githubResponse.status}: ${githubResponse.statusText}`
+      );
+    }
+
+    const githubUser = await githubResponse.json();
+    console.log('GitHub user:', { id: githubUser.id, login: githubUser.login, email: githubUser.email });
+    
+    // Use a fallback email if GitHub email is null or private
+    const userEmail = githubUser.email || `${githubUser.login}@users.noreply.github.com`;
+    
+    let uid;
+    let existingUser = null;
+    
+    try {
+      // First, try to find existing web app user by GitHub provider ID
+      console.log('Searching for existing web app user...');
+      const users = await admin.auth().listUsers();
+      const webAppUser = users.users.find(user => 
+        user.providerData.some(provider => 
+          provider.providerId === 'github.com' && 
+          provider.uid === githubUser.id.toString()
+        )
+      );
+      
+      if (webAppUser) {
+        console.log('Found existing web app user:', webAppUser.uid);
+        uid = webAppUser.uid;
+        existingUser = webAppUser;
+      } else {
+        // Fallback to VS Code extension format
+        console.log('No existing web app user found, using extension format');
+        uid = `github:${githubUser.id}`;
+      }
+    } catch (error) {
+      console.log('Error searching for existing user, using extension format:', error);
+      uid = `github:${githubUser.id}`;
+    }
+    
+    // If no web app user found, try to get/create VS Code extension user
+    if (!existingUser) {
+      try {
+        existingUser = await admin.auth().getUser(uid);
+        console.log('Existing extension user found:', existingUser.uid);
+      } catch (error) {
+        // User doesn't exist, create them
+        console.log('Creating new user with uid:', uid, 'email:', userEmail);
+        await admin.auth().createUser({
+          uid,
+          email: userEmail,
+          displayName: githubUser.name || githubUser.login,
+          photoURL: githubUser.avatar_url,
+          emailVerified: true
+        });
+        console.log('User created successfully');
+      }
+    }
+
+    // Create custom token
+    const customToken = await admin.auth().createCustomToken(uid, {
+      github_id: githubUser.id,
+      github_login: githubUser.login,
+      provider: 'github.com'
+    });
+
+    console.log('Custom token created successfully');
+
+    return {
+      customToken,
+      user: {
+        uid,
+        email: userEmail,
+        displayName: githubUser.name || githubUser.login,
+        photoURL: githubUser.avatar_url
+      }
+    };
+  } catch (error) {
+    console.error('Token exchange error:', error);
+    throw new functions.https.HttpsError(
+      'internal',
+      error instanceof Error ? error.message : 'Failed to exchange token'
+    );
   }
 });

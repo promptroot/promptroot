@@ -95,11 +95,6 @@ const createMockElement = (id, type = 'select') => {
     },
     addEventListener: vi.fn(),
     appendChild: vi.fn(),
-    replaceChildren: vi.fn(function() {
-      // Simulate clearing children by resetting innerHTML
-      this.innerHTML = '';
-      this.options = [];
-    }),
     options: [],
     style: {},
     textContent: '',
@@ -148,10 +143,6 @@ global.document = {
         setAttribute: vi.fn(),
         addEventListener: vi.fn(),
         appendChild: vi.fn(),
-        replaceChildren: vi.fn(function() {
-          // Simulate clearing children by resetting innerHTML
-          this.innerHTML = '';
-        }),
         dataset: {}
       };
     }
@@ -501,9 +492,7 @@ describe('branch-selector', () => {
     it('should show loading message', async () => {
       const loadPromise = loadBranches();
       
-      expect(mockSelect.appendChild).toHaveBeenCalledWith(
-        expect.objectContaining({ textContent: 'Loading branches…' })
-      );
+      expect(mockSelect.innerHTML).toContain('Loading');
       
       await loadPromise;
     });
@@ -563,12 +552,7 @@ describe('branch-selector', () => {
       
       await loadBranches();
       
-      expect(mockSelect.appendChild).toHaveBeenCalledWith(
-        expect.objectContaining({
-          value: 'main',
-          textContent: 'main'
-        })
-      );
+      expect(mockSelect.innerHTML).toContain('main');
       expect(mockSelect.title).toBeTruthy();
       expect(mockSelect.disabled).toBe(false);
     });

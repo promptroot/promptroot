@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com; frame-src 'self' https://*.firebaseapp.com; connect-src 'self' https://api.github.com https://jules.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://runjuleshttp-fjbc67s6eq-uc.a.run.app https://raw.githubusercontent.com https://gist.githubusercontent.com https://cdn.jsdelivr.net https://www.gstatic.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com" />
   <title>PromptRoot</title>
   <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
   
@@ -13,9 +15,9 @@
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
   
   <!-- Preload critical Firebase scripts -->
-  <link rel="preload" href="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" as="script" />
-  <link rel="preload" href="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js" as="script" />
-  <link rel="preload" href="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js" as="script" />
+  <link rel="preload" href="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" as="script" integrity="sha384-BkEIW/B4JV9w6pRfBRgZtAcYDk5goH1nUI49rLo8s5PSHgTfgxWBczRVJx+fv5kP" crossorigin="anonymous" />
+  <link rel="preload" href="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js" as="script" integrity="sha384-96KlrabK9X4T/tq4duY+/4JE60jZAiSs4QVJFwmY30ETT24x2+89B7qmq7O4IETX" crossorigin="anonymous" />
+  <link rel="preload" href="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js" as="script" integrity="sha384-LF74FIj8PQKxRVken52qSHntBSVEC6b05H04maSVJibifVGmWz9Ajc23WjrRVSCX" crossorigin="anonymous" />
   
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
@@ -23,9 +25,9 @@
   <script src="src/font-init.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js" integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu" crossorigin="anonymous"></script>
   <!-- Deferred: marked.js loads when first prompt is rendered -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" integrity="sha384-BkEIW/B4JV9w6pRfBRgZtAcYDk5goH1nUI49rLo8s5PSHgTfgxWBczRVJx+fv5kP" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js" integrity="sha384-96KlrabK9X4T/tq4duY+/4JE60jZAiSs4QVJFwmY30ETT24x2+89B7qmq7O4IETX" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js" integrity="sha384-LF74FIj8PQKxRVken52qSHntBSVEC6b05H04maSVJibifVGmWz9Ajc23WjrRVSCX" crossorigin="anonymous"></script>
   <!-- Removed: firebase-functions-compat.js - not used in app (uses REST API) -->
   <!-- Deferred: fuse.js loads when search is initiated -->
   <script type="module" src="src/firebase-init.js"></script>
@@ -61,7 +63,13 @@
         
         <!-- Repository and Branch Selection -->
         <div class="panel">
+          <!-- Options -->
           <div class="form-row">
+            <label class="form-label small-text"><input type="checkbox" id="freeInputSuppressPopupsCheckbox" data-exclusive-group="free-input" /> Suppress Popups</label>
+            <label class="form-label small-text"><input type="checkbox" id="freeInputOpenInBackgroundCheckbox" data-exclusive-group="free-input" /> Open in Background</label>
+          </div>
+          
+          <div class="form-row" style="margin-top: 12px;">
             <!-- Repository Selection -->
             <div class="form-col">
               <label class="form-label">Repository:</label>
@@ -88,20 +96,15 @@
           </div>
         </div>
         
-        <div class="options-box">
-          <label class="form-label small-text"><input type="checkbox" id="freeInputSuppressPopupsCheckbox" data-exclusive-group="free-input" /> Suppress Popups</label>
-          <label class="form-label small-text"><input type="checkbox" id="freeInputOpenInBackgroundCheckbox" data-exclusive-group="free-input" /> Open in Background</label>
-        </div>
-        
         <div class="actions-right">
           <button id="freeInputSplitBtn" class="btn" title="Split into Subtasks"><span class="icon icon-inline" aria-hidden="true">content_cut</span> Split</button>
           <button id="freeInputSaveBtn" class="btn" title="Save content as a new prompt file"><span class="icon icon-inline" aria-hidden="true">save</span> Save</button>
           <div id="freeInputCopenContainer" class="split-btn" title="Copy prompt and open in new tab">
-            <button class="split-btn__action" aria-label="Copy and open in selected app">
+            <button class="btn split-btn__action" aria-label="Copy and open in selected app">
               <span class="icon icon-inline" aria-hidden="true">open_in_new</span>
               <span>Copen</span>
             </button>
-            <button class="split-btn__toggle" aria-label="Select app" aria-haspopup="true" aria-expanded="false"></button>
+            <button class="btn split-btn__toggle" aria-label="Select app" aria-haspopup="true" aria-expanded="false"></button>
             <div class="split-btn__menu"></div>
           </div>
           <button id="freeInputCancelBtn" class="btn"><span class="icon icon-inline" aria-hidden="true">clear</span> Clear</button>
@@ -115,15 +118,16 @@
       <div id="actions" class="hidden">
         <button class="btn" id="copyBtn" title="Copy the entire prompt"><span class="icon icon-inline" aria-hidden="true">content_copy</span> Copy</button>
         <div id="copenContainer" class="split-btn" title="Copy prompt and open in new tab">
-          <button class="split-btn__action" aria-label="Copy and open in selected app">
+          <button class="btn split-btn__action" aria-label="Copy and open in selected app">
             <span class="icon icon-inline" aria-hidden="true">open_in_new</span>
             <span>Copen</span>
           </button>
-          <button class="split-btn__toggle" aria-label="Select app" aria-haspopup="true" aria-expanded="false"></button>
+          <button class="btn split-btn__toggle" aria-label="Select app" aria-haspopup="true" aria-expanded="false"></button>
           <div class="split-btn__menu"></div>
         </div>
         <button class="btn" id="julesBtn" title="Try this prompt in Jules"><span class="icon icon-inline" aria-hidden="true">smart_toy</span> Try in Jules</button>
         <button class="btn" id="queueBtn" title="Add this prompt to queue"><span class="icon icon-inline" aria-hidden="true">list_alt</span> Queue</button>
+        <button class="btn" id="scheduleBtn" title="Schedule this prompt"><span class="icon icon-inline" aria-hidden="true">schedule</span> Schedule</button>
         <button class="btn" id="shareBtn" title="Copy a link to this prompt"><span class="icon icon-inline" aria-hidden="true">link</span> Copy link</button>
         <div class="menu-anchor">
           <button class="btn" id="moreBtn" title="More actions">⋯ More</button>
@@ -133,16 +137,16 @@
             <div class="custom-dropdown-item" id="moreRawBtn"><span class="icon icon-inline" aria-hidden="true">description</span> Open raw</div>
           </div>
         </div>
-        <a class="btn" id="editBtn" target="_blank" rel="noopener" title="Edit the file on GitHub" style="display:none;"><span class="icon icon-inline" aria-hidden="true">edit</span> Edit on GitHub</a>
-        <a class="btn" id="ghBtn" target="_blank" rel="noopener" title="Open the file on GitHub" style="display:none;"><span class="icon icon-inline" aria-hidden="true">folder</span> View on GitHub</a>
-        <a class="btn" id="rawBtn" target="_blank" rel="noopener" title="Open the raw file" style="display:none;"><span class="icon icon-inline" aria-hidden="true">description</span> Open raw</a>
+        <a class="btn hidden" id="editBtn" target="_blank" rel="noopener" title="Edit the file on GitHub"><span class="icon icon-inline" aria-hidden="true">edit</span> Edit on GitHub</a>
+        <a class="btn hidden" id="ghBtn" target="_blank" rel="noopener" title="Open the file on GitHub"><span class="icon icon-inline" aria-hidden="true">folder</span> View on GitHub</a>
+        <a class="btn hidden" id="rawBtn" target="_blank" rel="noopener" title="Open the raw file"><span class="icon icon-inline" aria-hidden="true">description</span> Open raw</a>
       </div>
       <article id="content" class="scrollable-list list-lg"></article>
     </main>
   </div>
 
   <!-- Jules API Key Modal -->
-  <div id="julesKeyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="julesKeyModalTitle">
+  <div id="julesKeyModal" class="modal modal--jules-key" role="dialog" aria-modal="true" aria-labelledby="julesKeyModalTitle">
     <div class="modal-content">
       <h2 id="julesKeyModalTitle">Save Jules API Key</h2>
       <p>Enter your Jules API key. This will be encrypted and stored securely.</p>
@@ -164,7 +168,7 @@
         <div class="form-row">
           <!-- Repository Selection -->
           <div class="form-col">
-            <label class="form-label">Repository:</label>
+            <label class="modal__form-label">Repository:</label>
             <div id="julesRepoDropdown" class="custom-dropdown">
               <button id="julesRepoDropdownBtn" class="custom-dropdown-btn w-full" type="button">
                 <span id="julesRepoDropdownText">Select a repository...</span>
@@ -176,7 +180,7 @@
           
           <!-- Branch Selection -->
           <div class="form-col">
-            <label class="form-label">Branch:</label>
+            <label class="modal__form-label">Branch:</label>
             <div id="julesBranchDropdown" class="custom-dropdown">
               <button id="julesBranchDropdownBtn" class="custom-dropdown-btn w-full" type="button" disabled>
                 <span id="julesBranchDropdownText">Select branch...</span>
@@ -189,13 +193,14 @@
       </div>
       
       <div class="options-box">
-        <label class="form-label small-text"><input type="checkbox" id="julesEnvSuppressPopupsCheckbox" data-exclusive-group="jules-env" /> Suppress Popups</label>
-        <label class="form-label small-text"><input type="checkbox" id="julesEnvOpenInBackgroundCheckbox" data-exclusive-group="jules-env" /> Open in Background</label>
+        <label class="modal__form-label small-text"><input type="checkbox" id="julesEnvSuppressPopupsCheckbox" data-exclusive-group="jules-env" /> Suppress Popups</label>
+        <label class="modal__form-label small-text"><input type="checkbox" id="julesEnvOpenInBackgroundCheckbox" data-exclusive-group="jules-env" /> Open in Background</label>
       </div>
       
       <div class="modal-buttons">
         <button id="julesEnvCancelBtn" class="btn">Cancel</button>
         <button id="julesEnvQueueBtn" class="btn" disabled>Queue</button>
+        <button id="julesEnvScheduleBtn" class="btn" disabled>Schedule</button>
         <button id="julesEnvSubmitBtn" class="btn primary" disabled>Submit</button>
       </div>
     </div>
@@ -231,7 +236,7 @@
   </div>
 
   <!-- Subtask Preview Modal -->
-  <div id="subtaskPreviewModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="subtaskPreviewTitle">
+  <div id="subtaskPreviewModal" class="modal modal--subtask-preview" role="dialog" aria-modal="true" aria-labelledby="subtaskPreviewTitle">
     <div class="modal-content modal-xl">
       <h2 id="subtaskPreviewTitle">Subtask Preview</h2>
       <div id="subtaskPreviewContent" class="scroll-box"></div>
@@ -244,12 +249,15 @@
   <!-- Status Bar -->
   <div id="statusBar" class="hidden" aria-live="polite">
     <div class="status-inner">
-      <div class="status-msg flex-1">Ready</div>
+      <div class="status-msg">Ready</div>
       <div class="status-progress hidden"></div>
       <button class="status-action btn hidden">Action</button>
       <button class="status-close btn-icon" title="Close" aria-label="Close">✕</button>
     </div>
   </div>
+
+  <!-- Schedule Modal Container (reused for stored prompts) -->
+  <div id="scheduleQueueModalContainer"></div>
 
   <footer>
     <div class="footer-nav">

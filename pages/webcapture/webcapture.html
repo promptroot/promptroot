@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Web Capture Extension - PromptRoot</title>
   <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -30,9 +31,9 @@
           A browser extension that converts any webpage to clean Markdown and syncs it directly to your GitHub repository.
         </p>
         <button id="downloadExtensionBtn" class="btn primary xl fw-600">
-          <span class="icon icon-inline" aria-hidden="true">download</span> Download Extension
+          <span class="icon icon-inline" aria-hidden="true">store</span> Get Extension
         </button>
-        <p class="hero-note">Compatible with Chrome, Edge, Brave, and other Chromium browsers</p>
+        <p class="hero-note">Available in the Chrome Web Store for Chrome, Edge, Brave, and other Chromium browsers</p>
       </div>
 
       <!-- Features -->
@@ -86,24 +87,12 @@
           
           <ol class="instruction-list">
             <li class="instruction-item">
-              <strong class="instruction-strong">Download the extension</strong><br/>
-              Click the "Download Extension" button above to download the extension files
+              <strong class="instruction-strong">Open the Chrome Web Store</strong><br/>
+              Click the "Get Extension" button above to open the Chrome Web Store listing
             </li>
             <li class="instruction-item">
-              <strong class="instruction-strong">Extract the files</strong><br/>
-              Unzip the downloaded file to a location on your computer (e.g., Documents/PromptRoot-Extension)
-            </li>
-            <li class="instruction-item">
-              <strong class="instruction-strong">Open Extensions Page</strong><br/>
-              Navigate to <code class="code-inline">chrome://extensions/</code> (Chrome) or <code class="code-inline">edge://extensions/</code> (Edge) or <code class="code-inline">brave://extensions/</code> (Brave)
-            </li>
-            <li class="instruction-item">
-              <strong class="instruction-strong">Enable Developer Mode</strong><br/>
-              Toggle the "Developer mode" switch in the top-right corner
-            </li>
-            <li class="instruction-item">
-              <strong class="instruction-strong">Load the Extension</strong><br/>
-              Click "Load unpacked", navigate to the extracted folder, and select it
+              <strong class="instruction-strong">Add the extension</strong><br/>
+              Click "Add to Chrome" (or "Add extension") and confirm the prompt
             </li>
             <li class="instruction-item">
               <strong class="instruction-strong">Pin the Extension</strong> (optional)<br/>
@@ -172,7 +161,7 @@
           <div class="mb-md">
             <strong class="instruction-strong">Extension not appearing after installation?</strong>
             <p class="muted-text small-text" style="margin:4px 0 0;">
-              Make sure Developer Mode is enabled and you selected the correct folder. The folder should contain the manifest.json file.
+              Open your browser extensions page and verify "PromptRoot Web Capture" is enabled.
             </p>
           </div>
           <div class="mb-md">
@@ -208,9 +197,9 @@
   <!-- Status Bar -->
   <div id="statusBar" class="hidden" aria-live="polite">
     <div class="status-inner">
-      <div class="status-msg" style="flex:1;">Ready</div>
-      <div class="status-progress hidden" style="margin-left:12px;"></div>
-      <button class="status-action btn hidden" style="margin-left:12px; padding:6px 10px;">Action</button>
+      <div class="status-msg">Ready</div>
+      <div class="status-progress hidden"></div>
+      <button class="status-action btn hidden">Action</button>
     </div>
   </div>
 

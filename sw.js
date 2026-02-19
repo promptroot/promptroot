@@ -1,8 +1,16 @@
 // Service Worker for PromptRoot
 // Provides offline support and dramatic performance improvements for repeat visits
 // Expected: 88% faster repeat loads (~50ms vs 409ms)
+//
+// Update Flow:
+// 1. New SW installs (waits in 'installed' state).
+// 2. Client detects update, shows notification with "Refresh" button.
+// 3. User clicks "Refresh", client sends { type: 'SKIP_WAITING' }.
+// 4. SW calls skipWaiting(), activates, and claims clients.
+// 5. SW broadcasts { type: 'SW_UPDATED' } to all clients (e.g. other tabs).
+// 6. Clients reload or show notification.
 
-const CACHE_VERSION = 'promptroot-v5-no-warnings';
+const CACHE_VERSION = 'promptroot-v8';
 const CACHE_NAME = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -26,7 +34,6 @@ const STATIC_ASSETS = [
   '/src/modules/prompt-service.js',
   '/src/modules/sidebar.js',
   '/src/modules/header.js',
-  '/src/modules/navbar.js',
   '/src/modules/toast.js',
   '/src/modules/dropdown.js',
   
@@ -65,7 +72,15 @@ const CACHE_EXCLUDE_PATTERNS = [
   /oauth2\.googleapis\.com/,
   /firebaselogging\.googleapis\.com/,
   /chrome-extension:\/\//,
-  /hot-update/
+  /hot-update/,
+  /fonts\.gstatic\.com.*\.(woff2|woff|ttf|eot)$/
+];
+
+// Assets that should use network-first strategy (frequently updated content)
+const NETWORK_FIRST_PATTERNS = [
+  /raw\.githubusercontent\.com.*\.md$/,
+  /gist\.githubusercontent\.com/,
+  /github\.com\/.*\/contents\//
 ];
 
 // Install event - cache critical static assets
@@ -75,10 +90,6 @@ self.addEventListener('install', (event) => {
       .then((cache) => {
         // Use addAll for atomic caching - fails if any asset fails
         return cache.addAll(STATIC_ASSETS);
-      })
-      .then(() => {
-        // Force activate immediately (skip waiting)
-        return self.skipWaiting();
       })
       .catch((error) => {
         console.error('[SW] Failed to cache static assets:', error);
@@ -102,6 +113,10 @@ self.addEventListener('activate', (event) => {
         );
       })
       .then(() => {
+        // Notify clients about the update
+        self.clients.matchAll().then(clients => {
+          clients.forEach(c => c.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION }));
+        });
         // Take control of all pages immediately
         return self.clients.claim();
       })
@@ -112,6 +127,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+  
+  // Skip caching on localhost entirely
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    return; // Let browser handle normally
+  }
   
   // Skip caching for excluded patterns (API calls, external auth, etc.)
   if (CACHE_EXCLUDE_PATTERNS.some(pattern => pattern.test(request.url))) {
@@ -128,10 +148,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
+  // Use network-first for frequently updated content (markdown files, etc.)
+  if (NETWORK_FIRST_PATTERNS.some(pattern => pattern.test(request.url))) {
+    event.respondWith(networkFirstStrategy(request));
+    return;
+  }
   event.respondWith(
     cacheFirstStrategy(request)
   );
 });
+
+async function networkFirstStrategy(request) {
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse && networkResponse.status >= 200 && networkResponse.status < 300) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    throw error;
+  }
+}
 
 // Cache-first strategy: Try cache, fallback to network, then cache response
 async function cacheFirstStrategy(request) {
@@ -218,7 +261,7 @@ async function cacheFirstStrategy(request) {
 
 // Message handler for manual cache updates (future use)
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
   

@@ -11,6 +11,7 @@
 @import url('./styles/components/pills.css');
 @import url('./styles/components/dropdown.css');
 @import url('./styles/components/modals.css');
+@import url('./styles/components/variable-modal.css');
 @import url('./styles/components/jules-modals.css');
 @import url('./styles/components/jules-account.css');
 @import url('./styles/components/jules-queue.css');
@@ -28,6 +29,7 @@
 @import url('./styles/components/jules-profile.css');
 @import url('./styles/components/update-banner.css');
 @import url('./styles/components/toast.css');
+@import url('./styles/components/copen.css');
 @import url('./styles/components/utilities.css');
 
 /* Page-specific overrides */
@@ -38,3 +40,5 @@
 @import url('./styles/pages/profile.css');
 @import url('./styles/pages/webcapture.css');
 @import url('./styles/pages/privacy.css');
+/* Page-specific styles */
+@import url('./styles/pages/analytics.css');

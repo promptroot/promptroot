@@ -48,6 +48,7 @@
 }
 
 #statusBar .status-msg { 
+  flex: 1;
   font-size: 14px; 
   color: var(--text); 
   font-weight: 500;
@@ -88,7 +89,7 @@
 #statusBar .status-close {
   background: none;
   border: none;
-  color: var(--muted);
+  color: var(--text-muted);
   font-size: 18px;
   cursor: pointer;
   padding: 4px;

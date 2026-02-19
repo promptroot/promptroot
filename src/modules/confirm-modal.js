@@ -8,7 +8,7 @@ import { createModal } from '../utils/modal-manager.js';
 let activeConfirmModal = null;
 
 function buildConfirmModalDOM() {
-  const modal = createElement('div', 'modal');
+  const modal = createElement('div', 'modal modal--confirm');
   modal.id = 'confirmModal';
   modal.setAttribute('role', 'dialog');
   modal.setAttribute('aria-modal', 'true');

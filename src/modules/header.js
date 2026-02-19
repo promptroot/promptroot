@@ -34,14 +34,14 @@ export async function loadHeader() {
       const openSidebar = () => {
         mobileSidebar.classList.add('open');
         mobileOverlay.classList.add('show');
-        document.body.style.overflow = 'hidden';
+        document.body.classList.add('mobile-menu-open');
         mobileSidebarClose.focus();
       };
       
       const closeSidebar = () => {
         mobileSidebar.classList.remove('open');
         mobileOverlay.classList.remove('show');
-        document.body.style.overflow = '';
+        document.body.classList.remove('mobile-menu-open');
         mobileMenuBtn.focus();
       };
       

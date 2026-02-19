@@ -15,6 +15,7 @@ ui-debug.log
 .env
 .env.local
 .env.*.local
+.env.test
 
 # IDE
 .vscode/
@@ -30,6 +31,13 @@ Thumbs.db
 # Build/Dist
 dist/
 build/
+
+# Test artifacts
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+*.trace.zip
 
 # Logs
 *.log

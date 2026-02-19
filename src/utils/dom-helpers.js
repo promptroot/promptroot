@@ -25,10 +25,8 @@ export function createIcon(iconName, classes = [], ariaHidden = true) {
 export function toggleVisibility(element, shouldShow = true) {
   if (!element) return;
   element.classList.toggle('hidden', !shouldShow);
-}
-
-export function setElementDisplay(el, show = true) {
-  toggleVisibility(el, show);
+  // Clean up any inline styles that might conflict
+  element.style.display = '';
 }
 
 export function toggleClass(el, className, force) {

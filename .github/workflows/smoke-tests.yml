@@ -1,0 +1,109 @@
+name: Smoke Tests
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: Smoke Tests (Chromium only)
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install Playwright Chromium
+      run: npx playwright install --with-deps chromium
+    
+    - name: Setup Python (for dev server)
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Run smoke tests only
+      run: npm run test:e2e:smoke -- --project=chromium --reporter=github,html
+      env:
+        BASE_URL: http://localhost:3000
+        CI: true
+
+    - name: Show test failure summary
+      if: failure()
+      run: |
+        echo "=== Test Results Summary ==="
+        if [ -f "test-results/e2e-results.json" ]; then
+          echo "JSON results found, parsing failures..."
+          node -e "
+            const results = JSON.parse(require('fs').readFileSync('test-results/e2e-results.json'));
+            const failures = results.suites.flatMap(s => s.specs.filter(spec => spec.tests.some(t => t.results.some(r => r.status === 'failed' || r.status === 'timedOut'))));
+            console.log('FAILED TESTS:');
+            failures.forEach(spec => {
+              console.log('- ' + spec.title);
+              spec.tests.forEach(test => {
+                test.results.forEach(result => {
+                  if (result.status === 'failed' || result.status === 'timedOut') {
+                    console.log('  Error: ' + (result.error?.message || 'No error message'));
+                  }
+                });
+              });
+            });
+          " 2>/dev/null || echo "Could not parse JSON results"
+        fi
+        echo ""
+        echo "=== Test Files ==="
+        find test-results/ -name "*.txt" -o -name "*.log" | head -10
+    
+    - name: Upload smoke test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: smoke-test-report
+        path: playwright-report/
+        retention-days: 7
+    
+    - name: Upload failures
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: smoke-test-failures
+        path: test-results/
+        retention-days: 7
+    
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request' && failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const comment = `## ⚠️ Smoke Tests Failed
+          
+          Critical path tests are failing. Please review the [test artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) before merging.
+          
+          **Next steps:**
+          1. Download and review test videos/screenshots
+          2. Run tests locally: \`npm run test:e2e:smoke\`
+          3. Fix failing tests and push updates`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });

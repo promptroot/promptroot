@@ -9,14 +9,82 @@ import { loadJulesProfileInfo, listJulesSessions, getDecryptedJulesKey } from '.
 import { getCache, setCache, clearCache, CACHE_KEYS } from '../utils/session-cache.js';
 import { showToast } from './toast.js';
 import { handleError, ErrorCategory } from '../utils/error-handler.js';
+
+// Error types for Jules account operations
+const JulesAccountErrors = {
+  KEY_CHECK_FAILED: 'KEY_CHECK_FAILED',
+  PROFILE_LOAD_FAILED: 'PROFILE_LOAD_FAILED',
+  NETWORK_ERROR: 'NETWORK_ERROR',
+  AUTH_ERROR: 'AUTH_ERROR'
+};
 import { showConfirm } from './confirm-modal.js';
 import { attachPromptViewerHandlers } from './prompt-viewer.js';
 import { TIMEOUTS, JULES_UI_TEXT, CSS_CLASSES } from '../utils/constants.js';
 import { renderStatus, STATUS_TYPES } from './status-renderer.js';
 import { toggleVisibility } from '../utils/dom-helpers.js';
+import { getHandler } from '../utils/handler-registry.js';
 
 let allSessionsCache = [];
 let sessionNextPageToken = null;
+
+/**
+ * Handles checking Jules key status and updating UI accordingly
+ * @param {Object} user - User object with uid
+ * @param {string} source - Source identifier for error tracking
+ */
+async function handleJulesKeyCheck(user, source) {
+  const julesKeyStatus = document.getElementById('julesKeyStatus');
+  const addBtn = document.getElementById('addJulesKeyBtn');
+  const dangerZoneSection = document.getElementById('dangerZoneSection');
+  const julesProfileInfoSection = document.getElementById('julesProfileInfoSection');
+
+  try {
+    const hasKey = await checkJulesKey(user.uid);
+    
+    if (julesKeyStatus) {
+      renderStatus(
+        julesKeyStatus,
+        hasKey ? STATUS_TYPES.SAVED : STATUS_TYPES.NOT_SAVED,
+        hasKey ? 'Saved' : 'Not saved'
+      );
+    }
+
+    if (hasKey) {
+      if (addBtn) toggleVisibility(addBtn, false);
+      if (dangerZoneSection) toggleVisibility(dangerZoneSection, true);
+      if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, true);
+
+      await loadAndDisplayJulesProfile(user.uid);
+    } else {
+      if (addBtn) toggleVisibility(addBtn, true);
+      if (dangerZoneSection) toggleVisibility(dangerZoneSection, false);
+      if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, false);
+    }
+  } catch (error) {
+    // Determine specific error type
+    let errorType = JulesAccountErrors.KEY_CHECK_FAILED;
+    let errorCategory = ErrorCategory.NETWORK;
+    
+    if (error.message?.includes('auth') || error.code === 'permission-denied') {
+      errorType = JulesAccountErrors.AUTH_ERROR;
+      errorCategory = ErrorCategory.AUTH;
+    } else if (error.message?.includes('network') || error.code === 'unavailable') {
+      errorType = JulesAccountErrors.NETWORK_ERROR;
+      errorCategory = ErrorCategory.NETWORK;
+    }
+
+    handleError(error, { source, errorType }, { category: errorCategory });
+    
+    if (julesKeyStatus) {
+      renderStatus(julesKeyStatus, STATUS_TYPES.NOT_SAVED, 'Unable to check');
+    }
+    
+    // Fallback to safe UI state
+    if (addBtn) toggleVisibility(addBtn, true);
+    if (dangerZoneSection) toggleVisibility(dangerZoneSection, false);
+    if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, false);
+  }
+}
 
 export function showUserProfileModal() {
   const modal = document.getElementById('userProfileModal');
@@ -42,27 +110,8 @@ export function showUserProfileModal() {
     profileUserName.textContent = user.displayName || user.email || 'Unknown User';
   }
 
-  checkJulesKey(user.uid).then(async (hasKey) => {
-    if (julesKeyStatus) {
-      renderStatus(
-        julesKeyStatus,
-        hasKey ? STATUS_TYPES.SAVED : STATUS_TYPES.NOT_SAVED,
-        hasKey ? 'Saved' : 'Not saved'
-      );
-    }
-    
-    if (hasKey) {
-      if (addBtn) toggleVisibility(addBtn, false);
-      if (dangerZoneSection) toggleVisibility(dangerZoneSection, true);
-      if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, true);
-      
-      await loadAndDisplayJulesProfile(user.uid);
-    } else {
-      if (addBtn) toggleVisibility(addBtn, true);
-      if (dangerZoneSection) toggleVisibility(dangerZoneSection, false);
-      if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, false);
-    }
-  });
+  // Check key status and update UI
+  handleJulesKeyCheck(user, 'showUserProfileModal.checkKey');
 
   if (addBtn) {
     addBtn.onclick = () => {
@@ -131,7 +180,6 @@ export function showUserProfileModal() {
     };
   }
   
-  attachViewAllSessionsHandler();
   attachViewQueueHandler();
   
   const closeSessionsHistoryBtn = document.getElementById('closeSessionsHistoryBtn');
@@ -160,18 +208,6 @@ export function showUserProfileModal() {
 }
 
 let profileHandlersAttached = false;
-
-function attachViewAllSessionsHandler() {
-  if (profileHandlersAttached) return;
-  
-  const viewAllSessionsLink = document.getElementById('viewAllSessionsLink');
-  if (viewAllSessionsLink) {
-    viewAllSessionsLink.onclick = (e) => {
-      e.preventDefault();
-      showJulesSessionsHistoryModal();
-    };
-  }
-}
 
 function attachViewQueueHandler() {
   const viewQueueLink = document.getElementById('viewQueueLink');
@@ -450,8 +486,9 @@ async function loadAndDisplayJulesProfile(uid) {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const cleanId = btn.dataset.cleanId;
-          if (window[`viewPrompt_${cleanId}`]) {
-            window[`viewPrompt_${cleanId}`]();
+          const handler = getHandler('promptViewer', cleanId);
+          if (handler) {
+            handler();
           }
         });
       });
@@ -506,19 +543,6 @@ async function loadAndDisplayJulesProfile(uid) {
 export function hideUserProfileModal() {
   const modal = document.getElementById('userProfileModal');
   modal.classList.remove('show');
-}
-
-export function showJulesSessionsHistoryModal() {
-  const modal = document.getElementById('julesSessionsHistoryModal');
-  const searchInput = document.getElementById('sessionSearchInput');
-  
-  modal.classList.add('show');
-  
-  allSessionsCache = [];
-  sessionNextPageToken = null;
-  searchInput.value = '';
-  
-  loadSessionsPage();
 }
 
 export function hideJulesSessionsHistoryModal() {
@@ -719,27 +743,8 @@ export async function loadProfileDirectly(user) {
     profileUserName.textContent = user.displayName || user.email || 'Unknown User';
   }
 
-  const hasKey = await checkJulesKey(user.uid);
-  
-  if (julesKeyStatus) {
-    renderStatus(
-      julesKeyStatus,
-      hasKey ? STATUS_TYPES.SAVED : STATUS_TYPES.NOT_SAVED,
-      hasKey ? 'Saved' : 'Not saved'
-    );
-  }
-  
-  if (hasKey) {
-    if (addBtn) toggleVisibility(addBtn, false);
-    if (dangerZoneSection) toggleVisibility(dangerZoneSection, true);
-    if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, true);
-    
-    await loadAndDisplayJulesProfile(user.uid);
-  } else {
-    if (addBtn) toggleVisibility(addBtn, true);
-    if (dangerZoneSection) toggleVisibility(dangerZoneSection, false);
-    if (julesProfileInfoSection) toggleVisibility(julesProfileInfoSection, false);
-  }
+  // Check key status and update UI
+  await handleJulesKeyCheck(user, 'loadProfileDirectly.checkKey');
 
   // Attach event handlers
   if (addBtn) {

@@ -11,8 +11,13 @@ export const GIST_POINTER_REGEX = /^https:\/\/gist\.githubusercontent\.com\/\S+\
 export const GIST_URL_REGEX = /^https:\/\/gist\.github\.com\/[\w-]+\/[a-f0-9]+\/?(?:#file-[\w.-]+)?(?:\?file=[\w.-]+)?$/i;
 export const CODEX_URL_REGEX = /^https:\/\/chatgpt\.com\/s\/[a-f0-9_]+$/i;
 
+// Variable Substitution
+export const PLACEHOLDER_REGEX = /\{([A-Z0-9_-]+)\}/g;
+
 // Jules API
 export const JULES_API_BASE = "https://jules.googleapis.com/v1alpha";
+
+export const WEB_CAPTURE_EXTENSION_URL = "https://chromewebstore.google.com/detail/promptroot-web-capture/fbhilkiaigdedegnjgecdggbeknnbacg?utm_campaign=pmaxusbrand&utm_content=br3&utm_medium=ga&utm_source=bgads1";
 
 export const DEFAULT_FAVORITE_REPOS = [];
 
@@ -20,8 +25,6 @@ export const STORAGE_KEY_FAVORITE_REPOS = "jules_favorite_repos";
 
 // Hardcoded favorite branches (always favorites for all users)
 export const HARDCODED_FAVORITE_BRANCHES = ["main", "web-captures"];
-
-export const STORAGE_KEY_FAVORITE_BRANCHES = "favorite_branches";
 
 // Tag definitions
 export const TAG_DEFINITIONS = {
@@ -45,6 +48,13 @@ export const TAG_DEFINITIONS = {
     className: "tag-refactor",
     keywords: ["refactor", "cleanup", "sweep", "maintenance", "optimize", "improve", "reorganize", "deadcode"]
   }
+};
+
+// Session tracking
+export const SESSION_TRACKING = {
+  SYNC_INTERVAL: 5 * 60 * 1000, // 5 minutes
+  TERMINAL_STATES: ['COMPLETED', 'FAILED'],
+  ACTIVE_STATES: ['IN_PROGRESS', 'PLANNING', 'AWAITING_PLAN_APPROVAL', 'AWAITING_USER_FEEDBACK', 'PAUSED', 'QUEUED']
 };
 
 // Branch classification
@@ -92,6 +102,9 @@ export const JULES_UI_TEXT = {
   FETCH_SESSIONS_ERROR: 'Failed to load sessions',
   LOAD_QUEUE_ERROR: 'Failed to load queue',
   LOAD_PROFILE_ERROR: 'Failed to load Jules profile',
+  
+  // Error visibility configuration
+  ERROR_VISIBILITY_WINDOW_MINUTES: 60, // Show error badges/notifications for errors within this window
   
   // State labels (for session/queue status display)
   STATE_LABELS: {
@@ -213,6 +226,43 @@ export const UI_TEXT = {
   SAVE_KEY: "Save & Continue"
 };
 
+// Jules Modal Text
+export const JULES_MODAL_TEXT = {
+  ENTER_KEY_WARNING: 'Please enter your Jules API key.',
+  NOT_LOGGED_IN: 'Not logged in.',
+  SAVING: 'Saving...',
+  SAVE_BUTTON: 'Save & Continue',
+  KEY_SAVED_SUCCESS: 'Jules API key saved successfully',
+  KEY_SAVE_ERROR_PREFIX: 'Failed to save API key: ',
+  NOTE_QUEUED_TRY: 'Queued from Try in Jules modal',
+  NOTE_QUEUED_PARTIAL_RETRY: 'Queued from Try in Jules flow (partial retries)',
+  NOTE_QUEUED_FINAL_FAILURE: 'Queued from Try in Jules flow (final failure)',
+  SUBTASK_PROGRESS: (current, total) => `Task ${current} of ${total}`,
+  CANCEL_BUTTON: 'Cancel',
+  QUEUE_BUTTON: 'Queue',
+  SUBMIT_BUTTON: 'Submit'
+};
+
+// Folder Submenu Text
+export const FOLDER_SUBMENU_TEXT = {
+  NEW_PROMPT: 'Prompt (blank)',
+  NEW_CONVERSATION: 'Conversation (template)',
+  CONVERSATION_TEMPLATE: `**Conversation Link (Codex, Jules, etc):** [https://chatgpt.com/s/...]
+
+### Prompt
+[paste your full prompt here]
+
+### Output
+[response(s), context, notes, or follow-up thoughts]
+`,
+  NEW_PROMPT_FILENAME_PREFIX: 'prompt-',
+  NEW_CONVERSATION_FILENAME: 'new-conversation.md',
+  ACTIONS: {
+    CREATE_PROMPT: 'create-prompt',
+    CREATE_CONVERSATION: 'create-conversation'
+  }
+};
+
 // CSS class names for state management
 export const CSS_CLASSES = {
   HIDDEN: 'hidden',
@@ -303,6 +353,7 @@ export const LIMITS = {
  * @typedef {object} PageSizes
  * @property {number} julesSessions - The number of Jules sessions to fetch per page.
  * @property {number} branches - The number of branches to fetch per page.
+ * @property {number} queueItems - The number of queue items to fetch per page.
  */
 
 /**
@@ -311,7 +362,8 @@ export const LIMITS = {
  */
 export const PAGE_SIZES = {
   julesSessions: 10,
-  branches: 100
+  branches: 100,
+  queueItems: 100
 };
 
 /**
@@ -352,7 +404,9 @@ export const CACHE_KEYS = {
   CURRENT_BRANCH: 'current_branch',
   CURRENT_REPO: 'current_repo',
   USER_PROFILE: 'user_profile',
-  USER_AVATAR: 'user_avatar'
+  USER_AVATAR: 'user_avatar',
+  TRACKED_SESSIONS: 'tracked_sessions',
+  ANALYTICS_DATA: 'analytics_data'
 };
 
 /**

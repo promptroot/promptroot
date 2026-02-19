@@ -18,6 +18,8 @@ function ensureContainer() {
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.className = 'toast-container';
+    toastContainer.setAttribute('role', 'status');
+    toastContainer.setAttribute('aria-live', 'polite');
     document.body.appendChild(toastContainer);
   }
   return toastContainer;
@@ -34,6 +36,7 @@ export function showToast(message, type = 'info', duration = TIMEOUTS.toast) {
   
   const toast = document.createElement('div');
   toast.className = `toast toast--${type}`;
+  toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
   
   const icon = document.createElement('span');
   icon.className = 'toast__icon';

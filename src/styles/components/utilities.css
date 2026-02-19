@@ -2,7 +2,6 @@
 /* Additional utility classes for common patterns and layouts */
 
 /* Display */
-.d-block { display: block !important; }
 .d-none { display: none !important; }
 .d-flex { display: flex !important; }
 .d-flex-center { display: flex; align-items: center; }
@@ -41,13 +40,18 @@
 
 /* Colors */
 .color-accent { color: var(--accent); }
-.color-muted { color: var(--muted); }
-.color-error { color: var(--error); }
+.color-muted { color: var(--text-muted); }
+.color-danger { color: var(--danger); }
 .color-success { color: var(--success); }
+.color-warning { color: var(--warning); }
+.color-info { color: var(--info); }
+
+/* Legacy aliases */
+.color-error { color: var(--danger); }
 
 /* Backgrounds */
-.bg-subtle { background: rgba(255, 255, 255, 0.03); }
-.bg-hover { background: rgba(255, 255, 255, 0.06); }
+.bg-subtle { background: var(--overlay-subtle); }
+.bg-hover { background: var(--overlay-hover); }
 
 /* Borders */
 .border-radius-8 { border-radius: 8px; }
@@ -57,10 +61,6 @@
 
 /* Cursor */
 .cursor-pointer { cursor: pointer; }
-
-/* Modal States */
-.modal-show { display: flex !important; }
-.modal-hide { display: none !important; }
 
 /* Component-Specific Utilities */
 .label-flex {
@@ -78,7 +78,7 @@
 .split-panel-config {
   margin-bottom: 12px;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--overlay-subtle);
   border-radius: 8px;
 }
 

@@ -4,6 +4,7 @@ import { getBranches } from './github-api.js';
 import { getCache, setCache, CACHE_KEYS } from '../utils/session-cache.js';
 import { initDropdown } from './dropdown.js';
 import { getCurrentUser } from './auth.js';
+import { loadFuse } from '../utils/lazy-loaders.js';
 
 let branchSelect = null;
 let branchDropdownBtn = null;
@@ -16,8 +17,12 @@ let currentRepo = null;
 let favoriteBranches = [];
 let allBranches = [];
 let allBranchesLoaded = false;
+let searchInput = null;
+let searchClearBtn = null;
+let currentSearchTerm = '';
+let cachedFuseInstance = null;
 
-export function initBranchSelector(owner, repo, branch) {
+export async function initBranchSelector(owner, repo, branch) {
   branchSelect = document.getElementById('branchSelect');
   branchDropdownBtn = document.getElementById('branchDropdownBtn');
   branchDropdownMenu = document.getElementById('branchDropdownMenu');
@@ -28,7 +33,7 @@ export function initBranchSelector(owner, repo, branch) {
   currentBranch = savedBranch || branch;
 
   // Load favorites from Firestore
-  loadFavoriteBranches();
+  await loadFavoriteBranches();
 
   if (branchSelect) {
     branchSelect.addEventListener('change', handleBranchChange);
@@ -175,6 +180,276 @@ function isBranchFavorited(branchName) {
 }
 
 /**
+ * Creates a search input element for the dropdown
+ */
+function createSearchInput() {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'dropdown-search-wrapper';
+  
+  const inputContainer = document.createElement('div');
+  inputContainer.style.position = 'relative';
+  
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'dropdown-search';
+  input.placeholder = 'Search branches...';
+  input.setAttribute('aria-label', 'Search branches');
+  
+  const clearBtn = document.createElement('button');
+  clearBtn.className = 'dropdown-search-clear hidden';
+  clearBtn.setAttribute('aria-label', 'Clear search');
+  clearBtn.innerHTML = '<span class="icon" aria-hidden="true">close</span>';
+  
+  // Prevent dropdown from closing when clicking inside search
+  wrapper.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+  
+  input.addEventListener('input', () => {
+    currentSearchTerm = input.value.toLowerCase().trim();
+    
+    // Show/hide clear button
+    if (currentSearchTerm) {
+      clearBtn.classList.remove('hidden');
+    } else {
+      clearBtn.classList.add('hidden');
+    }
+    
+    // Re-render filtered branches
+    filterAndRenderBranches();
+  });
+  
+  clearBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    input.value = '';
+    currentSearchTerm = '';
+    clearBtn.classList.add('hidden');
+    input.focus();
+    filterAndRenderBranches();
+  });
+  
+  inputContainer.appendChild(input);
+  inputContainer.appendChild(clearBtn);
+  wrapper.appendChild(inputContainer);
+  
+  searchInput = input;
+  searchClearBtn = clearBtn;
+  
+  return wrapper;
+}
+
+/**
+ * Filters branches based on current search term using Fuse.js fuzzy search
+ */
+async function filterBranches(branches) {
+  if (!currentSearchTerm) return branches;
+  
+  // Lazy load Fuse only when actually searching
+  if (!cachedFuseInstance) {
+    const Fuse = await loadFuse();
+    cachedFuseInstance = new Fuse(branches, {
+      keys: ['name'],
+      includeScore: true,
+      threshold: 0.3,
+      ignoreLocation: true
+    });
+  }
+  
+  const results = cachedFuseInstance.search(currentSearchTerm);
+  return results.map(result => result.item);
+}
+
+/**
+ * Re-renders branches based on current search term
+ */
+async function filterAndRenderBranches() {
+  if (!branchDropdownMenu || !allBranches.length) return;
+  
+  // Keep the search input at the top
+  
+  // Clear everything except search
+  const items = Array.from(branchDropdownMenu.children);
+  items.forEach(item => {
+    if (!item.classList.contains('dropdown-search-wrapper')) {
+      item.remove();
+    }
+  });
+  
+  // Get filtered branches
+  const filtered = await filterBranches(allBranches);
+  
+  if (filtered.length === 0) {
+    const noResults = document.createElement('div');
+    noResults.className = 'dropdown-helper-text';
+    noResults.textContent = 'No branches found';
+    branchDropdownMenu.appendChild(noResults);
+    return;
+  }
+  
+  // Always show current branch at top if it matches
+  const currentBranchObj = filtered.find(b => b.name === currentBranch);
+  if (currentBranchObj) {
+    const currentHeader = document.createElement('div');
+    currentHeader.className = 'dropdown-group-header';
+    currentHeader.textContent = 'Current Branch';
+    branchDropdownMenu.appendChild(currentHeader);
+    
+    const currentItem = createBranchItem(
+      currentBranchObj.name,
+      true,
+      null,
+      async (branchName, isFav) => {
+        if (isFav) {
+          await removeFavoriteBranch(branchName);
+        } else {
+          await addFavoriteBranch(branchName);
+        }
+        await populateCustomDropdownMenu(allBranches);
+      }
+    );
+    currentItem.onclick = () => {
+      if (dropdownControl) dropdownControl.close();
+    };
+    branchDropdownMenu.appendChild(currentItem);
+  }
+  
+  // Get favorite and non-favorite branches (excluding current)
+  const favBranches = filtered.filter(b => isBranchFavorited(b.name) && b.name !== currentBranch);
+  const nonFavBranches = filtered.filter(b => !isBranchFavorited(b.name) && b.name !== currentBranch);
+  
+  // Add favorites section
+  if (favBranches.length > 0) {
+    const favHeader = document.createElement('div');
+    favHeader.className = 'dropdown-group-header';
+    favHeader.textContent = `Favorites (${favBranches.length})`;
+    branchDropdownMenu.appendChild(favHeader);
+    
+    for (const branch of favBranches) {
+      const item = createBranchItem(
+        branch.name,
+        false,
+        async (branchName) => {
+          branchSelect.value = branchName;
+          await handleBranchChange();
+          if (dropdownControl) dropdownControl.close();
+          await populateCustomDropdownMenu(allBranches);
+        },
+        async (branchName) => {
+          await removeFavoriteBranch(branchName);
+          await populateCustomDropdownMenu(allBranches);
+        }
+      );
+      branchDropdownMenu.appendChild(item);
+    }
+  }
+  
+  // If searching, show all matching branches; otherwise show "Show more" button
+  if (currentSearchTerm) {
+    // Show all matching non-favorite branches grouped
+    renderAllBranchesGrouped(nonFavBranches, true);
+  } else {
+    // Add "Show more" button
+    if (nonFavBranches.length > 0) {
+      const showMoreBtn = document.createElement('div');
+      showMoreBtn.className = 'dropdown-show-more';
+      showMoreBtn.textContent = favBranches.length > 0 ? '▼ Show more branches...' : '▼ Show all branches...';
+      
+      showMoreBtn.onclick = () => {
+        showMoreBtn.classList.add('hidden');
+        renderAllBranchesGrouped(nonFavBranches, false);
+      };
+      
+      branchDropdownMenu.appendChild(showMoreBtn);
+    } else if (favBranches.length === 0) {
+      const helperDiv = document.createElement('div');
+      helperDiv.className = 'dropdown-helper-text';
+      helperDiv.textContent = 'Click ★ next to any branch to add it to favorites';
+      branchDropdownMenu.appendChild(helperDiv);
+    }
+  }
+}
+
+/**
+ * Renders branches grouped by category
+ */
+function renderAllBranchesGrouped(branches, skipHelper) {
+  if (!branchDropdownMenu) return;
+  
+  // Add helper text if there are no favorites yet
+  if (!skipHelper && (favoriteBranches.length === 0 || favoriteBranches.every(f => HARDCODED_FAVORITE_BRANCHES.includes(f)))) {
+    const helperDiv = document.createElement('div');
+    helperDiv.className = 'dropdown-helper-text';
+    helperDiv.textContent = 'Click ★ next to any branch to add it to favorites';
+    branchDropdownMenu.appendChild(helperDiv);
+  }
+  
+  // Group branches
+  const mainBranches = [];
+  const userBranchesArr = [];
+  const featureBranches = [];
+  
+  for (const b of branches) {
+    const category = classifyBranch(b.name);
+    switch (category) {
+      case 'main':
+        mainBranches.push(b);
+        break;
+      case 'user':
+        userBranchesArr.push(b);
+        break;
+      case 'feature':
+        featureBranches.push(b);
+        break;
+    }
+  }
+  
+  // Add main branches
+  if (mainBranches.length > 0) {
+    addBranchGroup('Main Branches', mainBranches);
+  }
+  
+  // Add user branches
+  if (userBranchesArr.length > 0) {
+    userBranchesArr.sort((a, b) => a.name.localeCompare(b.name));
+    addBranchGroup('User Branches', userBranchesArr);
+  }
+  
+  // Add feature branches
+  if (featureBranches.length > 0) {
+    featureBranches.sort((a, b) => a.name.localeCompare(b.name));
+    addBranchGroup('Feature Branches', featureBranches);
+  }
+}
+
+/**
+ * Adds a group of branches to the dropdown
+ */
+function addBranchGroup(groupName, branches) {
+  const header = document.createElement('div');
+  header.className = 'dropdown-group-header';
+  header.textContent = `${groupName} (${branches.length})`;
+  branchDropdownMenu.appendChild(header);
+  
+  for (const branch of branches) {
+    const item = createBranchItem(
+      branch.name,
+      false,
+      async (branchName) => {
+        branchSelect.value = branchName;
+        await handleBranchChange();
+        if (dropdownControl) dropdownControl.close();
+        await populateCustomDropdownMenu(allBranches);
+      },
+      async (branchName) => {
+        await addFavoriteBranch(branchName);
+        await populateCustomDropdownMenu(allBranches);
+      }
+    );
+    branchDropdownMenu.appendChild(item);
+  }
+}
+
+/**
  * Creates a branch dropdown item with star for favorites
  */
 function createBranchItem(branchName, isSelected, onClickItem, onClickStar) {
@@ -183,7 +458,14 @@ function createBranchItem(branchName, isSelected, onClickItem, onClickStar) {
   
   const item = document.createElement('div');
   item.className = 'dropdown-item-with-star';
-  if (isSelected) item.classList.add('selected');
+  item.setAttribute('role', 'option');
+  item.setAttribute('tabindex', '-1');
+  if (isSelected) {
+    item.classList.add('selected');
+    item.setAttribute('aria-selected', 'true');
+  } else {
+    item.setAttribute('aria-selected', 'false');
+  }
   
   const star = document.createElement('span');
   star.className = 'icon icon-inline star-icon';
@@ -318,6 +600,7 @@ export async function loadBranches() {
 
     allBranches = branches;
     allBranchesLoaded = true;
+    cachedFuseInstance = null; // Clear Fuse cache when branches change
 
     const mainBranches = [];
     const userBranchesArr = [];
@@ -414,6 +697,16 @@ async function populateCustomDropdownMenu(branches) {
   if (!branchDropdownMenu || !branchDropdownBtn) return;
 
   branchDropdownMenu.replaceChildren();
+  
+  // Reset search state
+  currentSearchTerm = '';
+  searchInput = null;
+  searchClearBtn = null;
+  cachedFuseInstance = null;
+  
+  // Add search input at the top
+  const searchElement = createSearchInput();
+  branchDropdownMenu.appendChild(searchElement);
 
   // Always show current branch at the top
   const currentBranchObj = branches.find(b => b.name === currentBranch);
@@ -477,10 +770,19 @@ async function populateCustomDropdownMenu(branches) {
     const showMoreBtn = document.createElement('div');
     showMoreBtn.className = 'dropdown-show-more';
     showMoreBtn.textContent = favBranches.length > 0 ? '▼ Show more branches...' : '▼ Show all branches...';
+    showMoreBtn.setAttribute('role', 'button');
+    showMoreBtn.setAttribute('tabindex', '-1');
     
     showMoreBtn.onclick = () => {
       showMoreBtn.classList.add('hidden');
-      renderAllBranches(nonFavBranches);
+      
+      // Add search input at the top before rendering all branches
+      if (!branchDropdownMenu.querySelector('.dropdown-search-wrapper')) {
+        const searchElement = createSearchInput();
+        branchDropdownMenu.insertBefore(searchElement, branchDropdownMenu.firstChild);
+      }
+      
+      renderAllBranchesGrouped(nonFavBranches, false);
     };
     
     branchDropdownMenu.appendChild(showMoreBtn);
@@ -497,119 +799,4 @@ async function populateCustomDropdownMenu(branches) {
   if (labelEl) labelEl.textContent = currentBranch;
 }
 
-/**
- * Renders all non-favorite branches in the dropdown
- */
-function renderAllBranches(nonFavBranches) {
-  if (!branchDropdownMenu) return;
 
-  // Add helper text if there are no favorites yet
-  if (favoriteBranches.length === 0 || favoriteBranches.every(f => HARDCODED_FAVORITE_BRANCHES.includes(f))) {
-    const helperDiv = document.createElement('div');
-    helperDiv.className = 'dropdown-helper-text';
-    helperDiv.textContent = 'Click ★ next to any branch to add it to favorites';
-    branchDropdownMenu.appendChild(helperDiv);
-  }
-
-  // Group branches
-  const mainBranches = [];
-  const userBranchesArr = [];
-  const featureBranches = [];
-
-  for (const b of nonFavBranches) {
-    const category = classifyBranch(b.name);
-    switch (category) {
-      case 'main':
-        mainBranches.push(b);
-        break;
-      case 'user':
-        userBranchesArr.push(b);
-        break;
-      case 'feature':
-        featureBranches.push(b);
-        break;
-    }
-  }
-
-  // Add main branches
-  if (mainBranches.length > 0) {
-    const header = document.createElement('div');
-    header.className = 'dropdown-group-header';
-    header.textContent = `Main Branches (${mainBranches.length})`;
-    branchDropdownMenu.appendChild(header);
-
-    for (const branch of mainBranches) {
-      const item = createBranchItem(
-        branch.name,
-        false,
-        async (branchName) => {
-          branchSelect.value = branchName;
-          await handleBranchChange();
-          if (dropdownControl) dropdownControl.close();
-          await populateCustomDropdownMenu(allBranches);
-        },
-        async (branchName) => {
-          await addFavoriteBranch(branchName);
-          await populateCustomDropdownMenu(allBranches);
-        }
-      );
-      branchDropdownMenu.appendChild(item);
-    }
-  }
-
-  // Add user branches
-  if (userBranchesArr.length > 0) {
-    const header = document.createElement('div');
-    header.className = 'dropdown-group-header';
-    header.textContent = `User Branches (${userBranchesArr.length})`;
-    branchDropdownMenu.appendChild(header);
-
-    userBranchesArr.sort((a, b) => a.name.localeCompare(b.name));
-
-    for (const branch of userBranchesArr) {
-      const item = createBranchItem(
-        branch.name,
-        false,
-        async (branchName) => {
-          branchSelect.value = branchName;
-          await handleBranchChange();
-          if (dropdownControl) dropdownControl.close();
-          await populateCustomDropdownMenu(allBranches);
-        },
-        async (branchName) => {
-          await addFavoriteBranch(branchName);
-          await populateCustomDropdownMenu(allBranches);
-        }
-      );
-      branchDropdownMenu.appendChild(item);
-    }
-  }
-
-  // Add feature branches
-  if (featureBranches.length > 0) {
-    const header = document.createElement('div');
-    header.className = 'dropdown-group-header';
-    header.textContent = `Feature Branches (${featureBranches.length})`;
-    branchDropdownMenu.appendChild(header);
-
-    featureBranches.sort((a, b) => a.name.localeCompare(b.name));
-
-    for (const branch of featureBranches) {
-      const item = createBranchItem(
-        branch.name,
-        false,
-        async (branchName) => {
-          branchSelect.value = branchName;
-          await handleBranchChange();
-          if (dropdownControl) dropdownControl.close();
-          await populateCustomDropdownMenu(allBranches);
-        },
-        async (branchName) => {
-          await addFavoriteBranch(branchName);
-          await populateCustomDropdownMenu(allBranches);
-        }
-      );
-      branchDropdownMenu.appendChild(item);
-    }
-  }
-}

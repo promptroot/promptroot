@@ -59,13 +59,11 @@ export async function switchGitHubAccount() {
   try {
     showToast('Switching accounts...', 'info');
     
-    // Sign out the current user first
     const auth = getAuth();
     if (auth?.currentUser) {
       await signOutUser();
     }
     
-    // Sign in with account selection forced
     await signInWithGitHub(true);
   } catch (error) {
     console.error('Account switching failed:', error);
@@ -85,7 +83,6 @@ export async function signOutUser() {
       await auth.signOut();
       localStorage.removeItem('github_access_token');
       
-      // Explicitly update UI to reflect signed-out state immediately
       updateAuthUI(null);
     }
   } catch (error) {
@@ -152,7 +149,6 @@ export async function updateAuthUI(user) {
       }
     }
     if (dropdownAvatar && user.photoURL) {
-      // Use cached avatar for dropdown too
       const cachedAvatar = getCache('USER_AVATAR', user.uid);
       dropdownAvatar.src = cachedAvatar || user.photoURL;
       dropdownAvatar.alt = displayName;
@@ -215,10 +211,8 @@ export function initAuthStateListener() {
     }
     
     return new Promise((resolve) => {
-      // Keep the listener active throughout the session to detect sign-out events
       auth.onAuthStateChanged((user) => {
         updateAuthUI(user);
-        // Only resolve on first call, but keep listener active
         if (!resolve.called) {
           resolve.called = true;
           resolve(user);

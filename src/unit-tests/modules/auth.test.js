@@ -617,7 +617,8 @@ describe('auth', () => {
       
       await promise;
       expect(getCurrentUser()).toBe(mockUser);
-      expect(mockUnsubscribe).toHaveBeenCalled();
+      // Listener should remain active (not unsubscribed) to detect sign-out events
+      expect(mockUnsubscribe).not.toHaveBeenCalled();
     });
   });
 });

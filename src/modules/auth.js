@@ -84,6 +84,9 @@ export async function signOutUser() {
       }
       await auth.signOut();
       localStorage.removeItem('github_access_token');
+      
+      // Explicitly update UI to reflect signed-out state immediately
+      updateAuthUI(null);
     }
   } catch (error) {
     console.error('Sign-out failed:', error);
@@ -212,10 +215,14 @@ export function initAuthStateListener() {
     }
     
     return new Promise((resolve) => {
-      const unsubscribe = auth.onAuthStateChanged((user) => {
+      // Keep the listener active throughout the session to detect sign-out events
+      auth.onAuthStateChanged((user) => {
         updateAuthUI(user);
-        resolve(user);
-        unsubscribe();
+        // Only resolve on first call, but keep listener active
+        if (!resolve.called) {
+          resolve.called = true;
+          resolve(user);
+        }
       });
     });
   } catch (error) {

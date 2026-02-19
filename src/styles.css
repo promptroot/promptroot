@@ -34,3 +34,4 @@
 
 /* Page-specific styles */
 @import url('./styles/pages/analytics.css');
+@import url('./styles/pages/privacy.css');

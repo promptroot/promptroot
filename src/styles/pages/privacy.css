@@ -1,0 +1,6 @@
+/* Page: Privacy */
+
+body[data-page="privacy"] .card {
+  max-width: 900px;
+  margin: 40px auto;
+}

@@ -266,7 +266,9 @@ a:hover { text-decoration: underline; }
 
 /* Section spacing and headings */
 .section-mb { margin-bottom:40px; }
+.content-section { margin-top: 32px; }
 .section-heading { margin:0 0 20px; font-size:18px; font-weight:600; }
+.content-heading { margin-top: 20px; }
 .section-subheading { margin:0 0 16px; font-size:16px; font-weight:600; }
 
 /* Instruction panels and lists */
@@ -284,6 +286,9 @@ a:hover { text-decoration: underline; }
 .info-card { background:var(--overlay-hover); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:16px; }
 .info-label { font-size:12px; color:var(--text-muted); margin-bottom:6px; }
 .info-value { font-weight:600; font-size:16px; }
+
+/* Content footer actions */
+.content-footer-actions { margin-top: 48px; text-align: center; }
 
 /* Additional font sizes */
 .font-12 { font-size:12px; }

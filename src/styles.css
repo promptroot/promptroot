@@ -32,13 +32,6 @@
 @import url('./styles/components/copen.css');
 @import url('./styles/components/utilities.css');
 
-/* Page-specific overrides */
-@import url('./styles/pages/home.css');
-@import url('./styles/pages/jules.css');
-@import url('./styles/pages/sessions.css');
-@import url('./styles/pages/queue.css');
-@import url('./styles/pages/profile.css');
-@import url('./styles/pages/webcapture.css');
-@import url('./styles/pages/privacy.css');
 /* Page-specific styles */
 @import url('./styles/pages/analytics.css');
+@import url('./styles/pages/privacy.css');

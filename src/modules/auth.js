@@ -59,13 +59,11 @@ export async function switchGitHubAccount() {
   try {
     showToast('Switching accounts...', 'info');
     
-    // Sign out the current user first
     const auth = getAuth();
     if (auth?.currentUser) {
       await signOutUser();
     }
     
-    // Sign in with account selection forced
     await signInWithGitHub(true);
   } catch (error) {
     console.error('Account switching failed:', error);
@@ -84,6 +82,8 @@ export async function signOutUser() {
       }
       await auth.signOut();
       localStorage.removeItem('github_access_token');
+      
+      updateAuthUI(null);
     }
   } catch (error) {
     console.error('Sign-out failed:', error);
@@ -149,7 +149,6 @@ export async function updateAuthUI(user) {
       }
     }
     if (dropdownAvatar && user.photoURL) {
-      // Use cached avatar for dropdown too
       const cachedAvatar = getCache('USER_AVATAR', user.uid);
       dropdownAvatar.src = cachedAvatar || user.photoURL;
       dropdownAvatar.alt = displayName;
@@ -212,10 +211,12 @@ export function initAuthStateListener() {
     }
     
     return new Promise((resolve) => {
-      const unsubscribe = auth.onAuthStateChanged((user) => {
+      auth.onAuthStateChanged((user) => {
         updateAuthUI(user);
-        resolve(user);
-        unsubscribe();
+        if (!resolve.called) {
+          resolve.called = true;
+          resolve(user);
+        }
       });
     });
   } catch (error) {

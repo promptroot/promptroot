@@ -617,7 +617,7 @@ describe('auth', () => {
       
       await promise;
       expect(getCurrentUser()).toBe(mockUser);
-      expect(mockUnsubscribe).toHaveBeenCalled();
+      expect(mockUnsubscribe).not.toHaveBeenCalled();
     });
   });
 });

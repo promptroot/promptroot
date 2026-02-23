@@ -8,6 +8,7 @@ import { copyAndOpen } from './copen.js';
 import { initSplitButton, destroySplitButton } from './split-button.js';
 import { getCopenOptions, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_ICON } from '../utils/copen-config.js';
 import { showToast } from './toast.js';
+import { getCurrentBranch, getCurrentRepo } from './branch-selector.js';
 
 let activeVariableModal = null;
 let activeCopenButton = null;
@@ -32,6 +33,34 @@ function downloadAsMarkdown(text, filename = 'prompt') {
   } catch (error) {
     console.error('Download failed:', error);
     showToast('Failed to download file', 'error');
+  }
+}
+
+/**
+ * Opens GitHub UI to save the text as a new file with pre-filled content
+ * @param {string} text - The text content to save
+ */
+function saveToGitHub(text) {
+  try {
+    const { owner, repo } = getCurrentRepo();
+    const branch = getCurrentBranch();
+    
+    // Generate timestamp-based filename
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `webclips/customized-prompt-${timestamp}.md`;
+    
+    // Encode content for URL
+    const encodedContent = encodeURIComponent(text);
+    
+    // Build GitHub URL for creating new file
+    const githubUrl = `https://github.com/${owner}/${repo}/new/${branch}?filename=${filename}&value=${encodedContent}`;
+    
+    // Open in new tab
+    window.open(githubUrl, '_blank');
+    showToast('Opening GitHub to save...', 'success');
+  } catch (error) {
+    console.error('Failed to open GitHub:', error);
+    showToast('Failed to open GitHub', 'error');
   }
 }
 
@@ -235,7 +264,16 @@ function buildVariableModalDOM(placeholders, promptText = '') {
   const downloadText = createElement('span', '', 'Download');
   downloadBtn.appendChild(downloadIcon);
   downloadBtn.appendChild(downloadText);
-  
+
+  // Save to GitHub button
+  const saveBtn = createElement('button', 'btn');
+  saveBtn.id = 'variableModalSave';
+  saveBtn.type = 'button';
+  const saveIcon = createIcon('cloud_upload', 'icon-inline');
+  const saveText = createElement('span', '', 'Save to GitHub');
+  saveBtn.appendChild(saveIcon);
+  saveBtn.appendChild(saveText);
+
   // Copen split button container
   const copenContainer = createElement('div', 'split-btn variable-modal__copen-btn');
   copenContainer.id = 'variableModalCopenContainer';
@@ -267,6 +305,7 @@ function buildVariableModalDOM(placeholders, promptText = '') {
 
   modalButtons.appendChild(cancelBtn);
   modalButtons.appendChild(downloadBtn);
+  modalButtons.appendChild(saveBtn);
   modalButtons.appendChild(copenContainer);
   modalButtons.appendChild(continueBtn);
 
@@ -314,6 +353,7 @@ export function showCustomizeModal(promptText) {
     const continueBtn = modalElement.querySelector('#variableModalContinue');
     const cancelBtn = modalElement.querySelector('#variableModalCancel');
     const downloadBtn = modalElement.querySelector('#variableModalDownload');
+    const saveBtn = modalElement.querySelector('#variableModalSave');
     const copenContainer = modalElement.querySelector('#variableModalCopenContainer');
     const closeBtn = modalElement.querySelector('#variableModalClose');
 
@@ -421,6 +461,11 @@ export function showCustomizeModal(promptText) {
       downloadAsMarkdown(text, 'customized-prompt');
     };
     
+    const handleSaveToGitHub = () => {
+      const text = getCurrentText();
+      saveToGitHub(text);
+    };
+    
     // Add tracked listeners
     if (form) {
       modal.addListener(form, 'submit', (e) => e.preventDefault());
@@ -428,6 +473,7 @@ export function showCustomizeModal(promptText) {
     modal.addListener(continueBtn, 'click', handleSendToJules);
     modal.addListener(cancelBtn, 'click', handleCancel);
     modal.addListener(downloadBtn, 'click', handleDownload);
+    modal.addListener(saveBtn, 'click', handleSaveToGitHub);
     modal.addListener(closeBtn, 'click', handleCancel);
 
     // Close on background click

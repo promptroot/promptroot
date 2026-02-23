@@ -1847,7 +1847,11 @@ async function deleteSelectedQueueItems() {
     return;
   }
   
-  const totalCount = queueSelections.length + Object.values(subtaskSelections).reduce((sum, arr) => sum + arr.length, 0);
+  // Calculate total count, excluding subtasks whose parent batch is already selected
+  const subtaskCount = Object.entries(subtaskSelections).reduce((sum, [docId, arr]) => {
+    return queueSelections.includes(docId) ? sum : sum + arr.length;
+  }, 0);
+  const totalCount = queueSelections.length + subtaskCount;
   const confirmed = await showConfirm(`Delete ${totalCount} selected item(s)?`, {
     title: 'Delete Items',
     confirmText: 'Delete',

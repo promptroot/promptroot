@@ -1847,7 +1847,27 @@ async function deleteSelectedQueueItems() {
     return;
   }
   
-  const totalCount = queueSelections.length + Object.values(subtaskSelections).reduce((sum, arr) => sum + arr.length, 0);
+  // Calculate total count by counting actual subtasks in selected batches
+  const queueCache = getQueueCache();
+  let totalCount = 0;
+  
+  // Count subtasks in selected batches
+  queueSelections.forEach(docId => {
+    const item = queueCache.find(qi => qi.id === docId);
+    if (item && item.type === 'subtasks' && Array.isArray(item.remaining)) {
+      totalCount += item.remaining.length;
+    } else {
+      totalCount += 1; // Single prompt items count as 1
+    }
+  });
+  
+  // Add individually selected subtasks (only if their parent batch is not selected)
+  Object.entries(subtaskSelections).forEach(([docId, arr]) => {
+    if (!queueSelections.includes(docId)) {
+      totalCount += arr.length;
+    }
+  });
+  
   const confirmed = await showConfirm(`Delete ${totalCount} selected item(s)?`, {
     title: 'Delete Items',
     confirmText: 'Delete',

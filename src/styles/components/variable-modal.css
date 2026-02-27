@@ -19,7 +19,7 @@
 }
 
 .variable-modal .modal-content {
-  max-width: 540px;
+  max-width: 700px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -30,6 +30,26 @@
   overflow-y: auto;
   max-height: calc(90vh - 140px); /* Account for header and button height */
   padding-right: 4px; /* Space for scrollbar */
+}
+
+/* Sections */
+.variable-modal__variables-section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.variable-modal__editor-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.variable-modal__section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 12px 0;
 }
 
 /* Modal description */
@@ -113,17 +133,79 @@
   display: none;
 }
 
+/* Textarea editor */
+.variable-modal__textarea {
+  width: 100%;
+  min-height: 300px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  box-sizing: border-box;
+  font-size: 14px;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.variable-modal__textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.variable-modal__textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-bg-medium);
+}
+
+/* Apply button in variables section */
+.variable-modal__variables-section .btn-sm {
+  margin-top: 12px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
 /* Buttons */
 .variable-modal .modal-buttons {
   margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .variable-modal .btn {
-  min-width: 90px;
+  flex-shrink: 0;
+}
+
+/* Variable modal actions - 4 buttons layout */
+.variable-modal__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Copen button container in modal */
+.variable-modal__copen-btn {
+  flex-shrink: 0;
+}
+
+/* Cancel button pushes content to the right */
+.variable-modal__actions > button:first-child {
+  margin-right: auto;
+}
+
+/* Ensure primary button stands out */
+.variable-modal .btn.primary {
+  margin-left: 0;
 }
 
 /* Mobile responsive */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .variable-modal .modal-content {
     max-width: 95%;
     width: 95%;
@@ -140,6 +222,26 @@
 
   .variable-modal__input {
     font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .variable-modal__textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 200px;
+  }
+  
+  /* Stack buttons vertically on mobile */
+  .variable-modal__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .variable-modal__actions > button:first-child {
+    margin-right: 0;
+  }
+  
+  .variable-modal .btn,
+  .variable-modal__copen-btn {
+    width: 100%;
   }
 }
 

@@ -79,6 +79,7 @@ let metaEl = null;
 let emptyEl = null;
 let actionsEl = null;
 let copyBtn = null;
+let customizeBtn = null;
 let copenContainer = null;
 let copenSplitBtn = null;
 let rawBtn = null;
@@ -98,6 +99,7 @@ export function initPromptRenderer() {
   emptyEl = document.getElementById('empty');
   actionsEl = document.getElementById('actions');
   copyBtn = document.getElementById('copyBtn');
+  customizeBtn = document.getElementById('customizeBtn');
   
   copenContainer = document.getElementById('copenContainer');
   if (copenContainer) {
@@ -180,6 +182,14 @@ function handleDocumentClick(event) {
 
   if (target === copyBtn) {
     handleCopyPrompt();
+    return;
+  }
+
+  if (target === customizeBtn) {
+    (async () => {
+      const { showCustomizeModal } = await import('./variable-substitution.js');
+      showCustomizeModal(currentPromptText);
+    })();
     return;
   }
 

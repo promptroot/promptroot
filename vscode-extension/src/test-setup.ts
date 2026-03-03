@@ -58,6 +58,16 @@ const vscode = {
     })),
     onDidChangeConfiguration: vi.fn(),
     findFiles: vi.fn(),
+    fs: {
+      readFile: vi.fn(),
+      writeFile: vi.fn(),
+      readDirectory: vi.fn(),
+      createDirectory: vi.fn(),
+      delete: vi.fn(),
+      rename: vi.fn(),
+      copy: vi.fn(),
+      stat: vi.fn(),
+    },
   },
   commands: {
     registerCommand: vi.fn(),

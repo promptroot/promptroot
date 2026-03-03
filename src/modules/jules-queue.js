@@ -1876,15 +1876,19 @@ async function deleteSelectedQueueItems() {
   if (!confirmed) return;
   
   try {
+    const deletePromises = [];
+
     for (const id of queueSelections) {
-      await deleteFromJulesQueue(user.uid, id);
+      deletePromises.push(deleteFromJulesQueue(user.uid, id));
     }
     
     for (const [docId, indices] of Object.entries(subtaskSelections)) {
       if (queueSelections.includes(docId)) continue;
       
-      await deleteSelectedSubtasks(docId, indices);
+      deletePromises.push(deleteSelectedSubtasks(docId, indices));
     }
+
+    await Promise.all(deletePromises);
     
     showToast(JULES_MESSAGES.deleted(totalCount), 'success');
     await loadQueuePage();

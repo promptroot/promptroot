@@ -90,7 +90,7 @@ export async function addCustomCopen(userId, copen) {
   const docRef = db.collection('userCopens').doc(userId);
   
   const newCopen = {
-    id: `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `custom_${Date.now()}_${crypto.randomUUID()}`,
     label: copen.label,
     url: copen.url,
     icon: copen.icon || CUSTOM_COPEN_ICON,

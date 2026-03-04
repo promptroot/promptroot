@@ -183,7 +183,7 @@ describe('copen-manager', () => {
         url: 'https://myai.com'
       });
 
-      expect(copenId).toMatch(/^custom_\d+_[a-z0-9]+$/);
+      expect(copenId).toMatch(/^custom_\d+_[a-f0-9\-]+$/);
       expect(mockDb.collection).toHaveBeenCalledWith('userCopens');
       expect(mockCollection.doc).toHaveBeenCalledWith('user123');
       expect(mockDocRef.set).toHaveBeenCalled();

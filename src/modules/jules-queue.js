@@ -1198,16 +1198,16 @@ async function confirmScheduleItems() {
     const scheduledAt = firebase.firestore.Timestamp.fromDate(scheduledDate);
     const retryOnFailure = retryCheckbox ? retryCheckbox.checked : false;
     
-    for (const docId of queueSelections) {
-      await updateJulesQueueItem(user.uid, docId, {
+    await Promise.all(queueSelections.map(docId =>
+      updateJulesQueueItem(user.uid, docId, {
         status: 'scheduled',
         scheduledAt: scheduledAt,
         scheduledTimeZone: selectedTimeZone,
         retryOnFailure: retryOnFailure,
         retryCount: 0,
         updatedAt: getServerTimestamp()
-      });
-    }
+      })
+    ));
     
     const totalScheduled = queueSelections.length;
     

@@ -137,7 +137,8 @@ function createSubmenu() {
     item.className = 'folder-submenu-item';
     item.setAttribute('role', 'menuitem');
     item.setAttribute('tabindex', '-1');
-    item.innerHTML = `${emoji} ${label}`;
+    item.insertAdjacentHTML('beforeend', emoji);
+    item.appendChild(document.createTextNode(` ${label}`));
     item.dataset.action = dataAction;
     return item;
   };

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handleError, ErrorCategory } from '../../utils/error-handler.js';
+import { handleError, ErrorCategory, detectCategory } from '../../utils/error-handler.js';
 import * as toastModule from '../../modules/toast.js';
 import statusBar from '../../modules/status-bar.js';
 
@@ -79,5 +79,40 @@ describe('error-handler', () => {
       'error',
       undefined
     );
+  });
+});
+
+describe('detectCategory', () => {
+  it('should return UNEXPECTED for falsy inputs', () => {
+    expect(detectCategory(null)).toBe(ErrorCategory.UNEXPECTED);
+    expect(detectCategory(undefined)).toBe(ErrorCategory.UNEXPECTED);
+    expect(detectCategory(false)).toBe(ErrorCategory.UNEXPECTED);
+    expect(detectCategory('')).toBe(ErrorCategory.UNEXPECTED);
+  });
+
+  it('should detect NETWORK errors', () => {
+    expect(detectCategory('Network request failed')).toBe(ErrorCategory.NETWORK);
+    expect(detectCategory('failed to connect to server')).toBe(ErrorCategory.NETWORK);
+    expect(detectCategory('you are offline')).toBe(ErrorCategory.NETWORK);
+    expect(detectCategory(new Error('timeout exceeded'))).toBe(ErrorCategory.NETWORK);
+  });
+
+  it('should detect AUTH errors', () => {
+    expect(detectCategory('auth failed')).toBe(ErrorCategory.AUTH);
+    expect(detectCategory('please login first')).toBe(ErrorCategory.AUTH);
+    expect(detectCategory('unauthorized access')).toBe(ErrorCategory.AUTH);
+    expect(detectCategory(new Error('invalid token'))).toBe(ErrorCategory.AUTH);
+  });
+
+  it('should detect VALIDATION errors', () => {
+    expect(detectCategory('validation failed')).toBe(ErrorCategory.VALIDATION);
+    expect(detectCategory('invalid input')).toBe(ErrorCategory.VALIDATION);
+    expect(detectCategory('missing required field')).toBe(ErrorCategory.VALIDATION);
+    expect(detectCategory(new Error('incorrect format'))).toBe(ErrorCategory.VALIDATION);
+  });
+
+  it('should return UNEXPECTED for unknown errors', () => {
+    expect(detectCategory('something went horribly wrong')).toBe(ErrorCategory.UNEXPECTED);
+    expect(detectCategory(new Error('unknown error'))).toBe(ErrorCategory.UNEXPECTED);
   });
 });

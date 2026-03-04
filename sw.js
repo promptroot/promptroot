@@ -10,7 +10,7 @@
 // 5. SW broadcasts { type: 'SW_UPDATED' } to all clients (e.g. other tabs).
 // 6. Clients reload or show notification.
 
-const CACHE_VERSION = 'promptroot-v8';
+const CACHE_VERSION = 'promptroot-v9';
 const CACHE_NAME = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

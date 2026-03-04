@@ -148,7 +148,9 @@ function setupEventListeners() {
       
       const repoPill = document.getElementById('repoPill');
       if (repoPill) {
-        repoPill.textContent = `${currentOwner}/${currentRepo}`;
+        const strong = document.createElement('strong');
+        strong.textContent = `${currentOwner}/${currentRepo}`;
+        repoPill.replaceChildren(strong);
       }
     } catch (error) {
       console.error('Error handling branchChanged:', {

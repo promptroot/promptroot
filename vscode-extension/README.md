@@ -10,6 +10,8 @@
 
 Manage prompts, queue tasks, and track Jules sessions directly inside VS Code. Same account, same data, real-time sync with the [PromptRoot web app](https://promptroot.ai).
 
+![Promptroot VS Code Extension](assets/screenshots/extension-main-view.png)
+
 ## Features
 
 ### Prompt Asset Browser

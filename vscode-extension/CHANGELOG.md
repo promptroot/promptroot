@@ -2,6 +2,13 @@
 
 All notable changes to the "promptroot-vscode" extension will be documented in this file.
 
+## [0.1.1] - 2026-03-07
+
+### Changed
+- Added globe icon button to all sidebar tree view title bars linking to promptroot.ai
+- Fixed "Open Documentation" command to open promptroot.ai website
+- Added screenshot to README
+
 ## [0.1.0] - 2026-03-07
 
 ### Added

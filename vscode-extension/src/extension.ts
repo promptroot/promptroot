@@ -158,8 +158,8 @@ export async function activate(context: vscode.ExtensionContext) {
   const openDocsCommand = vscode.commands.registerCommand(
     COMMANDS.openDocs,
     () => {
-      outputChannel.appendLine('Open docs command executed');
-      vscode.env.openExternal(vscode.Uri.parse('https://github.com/jessewashburn/prompt-sharing'));
+      outputChannel.appendLine('Open promptroot.ai website');
+      vscode.env.openExternal(vscode.Uri.parse('https://promptroot.ai'));
     }
   );
 

@@ -93,7 +93,8 @@
       { "source": "/favicon.ico", "destination": "/assets/favicon.ico", "type": 301 }
     ],
     "rewrites": [
-      { "source": "/privacy", "destination": "/pages/privacy/privacy.html" }
+      { "source": "/privacy", "destination": "/pages/privacy/privacy.html" },
+      { "source": "/ide-extension", "destination": "/pages/ide-extension/ide-extension.html" }
     ]
   }
 }

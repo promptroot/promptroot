@@ -4,11 +4,43 @@
   "description": "VS Code extension for Promptroot workflows and asset management",
   "version": "0.1.0",
   "publisher": "promptroot",
+  "icon": "icon.png",
+  "homepage": "https://promptroot.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/promptroot/promptroot"
+  },
+  "bugs": {
+    "url": "https://github.com/promptroot/promptroot/issues"
+  },
+  "license": "AGPL-3.0-only",
+  "galleryBanner": {
+    "color": "#1a1d2e",
+    "theme": "dark"
+  },
+  "keywords": [
+    "promptroot",
+    "prompts",
+    "ai",
+    "jules",
+    "prompt-management",
+    "github",
+    "queue",
+    "markdown"
+  ],
+  "badges": [
+    {
+      "url": "https://img.shields.io/badge/website-promptroot.ai-blue",
+      "href": "https://promptroot.ai",
+      "description": "PromptRoot Website"
+    }
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "SCM Providers"
   ],
   "activationEvents": [
     "workspaceContains:**/prompts/**"

@@ -72,3 +72,14 @@ export function onFirebaseReady(callback) {
     readyCallbacks.push(callback);
   }
 }
+
+/**
+ * Reset the Firebase services (mainly for testing)
+ */
+export function resetServices() {
+  authInstance = null;
+  dbInstance = null;
+  functionsInstance = null;
+  readyCallbacks = [];
+  isReady = false;
+}

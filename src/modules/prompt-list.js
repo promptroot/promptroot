@@ -20,6 +20,13 @@ let cachedFiles = null;
 let cachedItemsWithTags = null;
 let cachedFuseInstance = null;
 
+const TAG_REGEXES = Object.fromEntries(
+  Object.entries(TAG_DEFINITIONS).map(([key, tag]) => [
+    key,
+    tag.keywords.map(kw => new RegExp(kw, 'i'))
+  ])
+);
+
 export function setSelectFileCallback(callback) {
   selectFileCallback = callback;
 }
@@ -381,13 +388,14 @@ function renderTree(node, container, forcedExpanded, owner, repo, branch) {
       tagContainer.className = 'tag-container';
       const addedTags = new Set();
 
-      for (const [key, { label, className, keywords }] of Object.entries(TAG_DEFINITIONS)) {
-        if (keywords.some(kw => new RegExp(kw, 'i').test(file.name))) {
+      for (const [key, tag] of Object.entries(TAG_DEFINITIONS)) {
+        const regexes = TAG_REGEXES[key];
+        if (regexes.some(re => re.test(file.name))) {
           if (addedTags.has(key)) continue;
 
           const badge = document.createElement('span');
-          badge.className = `tag-badge ${className}`;
-          badge.textContent = label;
+          badge.className = `tag-badge ${tag.className}`;
+          badge.textContent = tag.label;
           badge.dataset.tag = key;
 
           tagContainer.appendChild(badge);
@@ -454,7 +462,8 @@ export async function renderList(items, owner, repo, branch) {
         const tags = [];
         for (const tagKey in TAG_DEFINITIONS) {
           const tag = TAG_DEFINITIONS[tagKey];
-          if (tag.keywords.some(kw => new RegExp(kw, 'i').test(item.name))) {
+          const regexes = TAG_REGEXES[tagKey];
+          if (regexes.some(re => re.test(item.name))) {
             tags.push(tag.label);
           }
         }

@@ -56,14 +56,6 @@ global.firebase = {
   }
 };
 
-Object.defineProperty(global, 'sessionStorage', {
-  value: {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn()
-  },
-  writable: true
-});
 
 global.console = {
   error: vi.fn(),
@@ -115,9 +107,7 @@ function mockReset() {
   global.window.populateFreeInputBranchSelection = vi.fn().mockResolvedValue();
   
   // Reset sessionStorage
-  global.sessionStorage.getItem.mockReturnValue(null);
-  global.sessionStorage.setItem.mockImplementation(() => {});
-  global.sessionStorage.removeItem.mockImplementation(() => {});
+  global.sessionStorage.clear();
   
   // Reset document.getElementById
   global.document.getElementById.mockImplementation((id) => {
@@ -261,7 +251,7 @@ describe('auth', () => {
 
       await signInWithGitHub();
       
-      expect(global.sessionStorage.setItem).toHaveBeenCalledWith(
+      expect(sessionStorage.setItem).toHaveBeenCalledWith(
         'github_access_token',
         expect.stringContaining('github-token-123')
       );
@@ -277,7 +267,7 @@ describe('auth', () => {
       await signInWithGitHub();
       
       expect(global.console.warn).toHaveBeenCalled();
-      expect(global.sessionStorage.setItem).not.toHaveBeenCalled();
+      expect(sessionStorage.setItem).not.toHaveBeenCalled();
     });
 
     it('should show error toast on sign-in failure', async () => {
@@ -320,7 +310,7 @@ describe('auth', () => {
 
       await signOutUser();
       
-      expect(global.sessionStorage.removeItem).toHaveBeenCalledWith('github_access_token');
+      expect(sessionStorage.removeItem).toHaveBeenCalledWith('github_access_token');
     });
 
     it('should clear Jules key cache if user is signed in', async () => {
@@ -586,7 +576,7 @@ describe('auth', () => {
       await signInWithGitHub();
       
       expect(mockFirebaseAuth.signInWithPopup).toHaveBeenCalled();
-      expect(global.sessionStorage.setItem).toHaveBeenCalled();
+      expect(sessionStorage.setItem).toHaveBeenCalled();
     });
 
     it('should handle complete sign-out workflow', async () => {
@@ -599,7 +589,7 @@ describe('auth', () => {
       
       expect(clearJulesKeyCache).toHaveBeenCalledWith('user-123');
       expect(mockFirebaseAuth.signOut).toHaveBeenCalled();
-      expect(global.sessionStorage.removeItem).toHaveBeenCalled();
+      expect(sessionStorage.removeItem).toHaveBeenCalled();
     });
 
     it('should handle auth state listener with user changes', async () => {

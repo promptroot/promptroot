@@ -43,7 +43,7 @@ export async function signInWithGitHub(forceAccountSelection = false) {
         token: result.credential.accessToken,
         timestamp: Date.now()
       };
-      localStorage.setItem('github_access_token', JSON.stringify(tokenData));
+      sessionStorage.setItem('github_access_token', JSON.stringify(tokenData));
     } else {
       console.warn('GitHub sign-in succeeded but no access token was returned. Falling back to unauthenticated GitHub requests.', {
         hasCredential: !!result.credential
@@ -81,7 +81,7 @@ export async function signOutUser() {
         clearJulesKeyCache(auth.currentUser.uid);
       }
       await auth.signOut();
-      localStorage.removeItem('github_access_token');
+      sessionStorage.removeItem('github_access_token');
       
       updateAuthUI(null);
     }

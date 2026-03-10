@@ -61,7 +61,7 @@ describe('Auth Module', () => {
       await signInWithGitHub();
 
       expect(mockAuth.signInWithPopup).toHaveBeenCalled();
-      expect(vi.mocked(localStorage.setItem)).toHaveBeenCalledWith('github_access_token', expect.any(String));
+      expect(vi.mocked(sessionStorage.setItem)).toHaveBeenCalledWith('github_access_token', expect.any(String));
     });
 
     it('should show error toast when auth not ready', async () => {
@@ -94,7 +94,7 @@ describe('Auth Module', () => {
       await signOutUser();
 
       expect(mockAuth.signOut).toHaveBeenCalled();
-      expect(vi.mocked(localStorage.removeItem)).toHaveBeenCalledWith('github_access_token');
+      expect(vi.mocked(sessionStorage.removeItem)).toHaveBeenCalledWith('github_access_token');
       expect(clearJulesKeyCache).toHaveBeenCalled();
     });
   });

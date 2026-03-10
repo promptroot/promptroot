@@ -56,7 +56,7 @@ global.firebase = {
   }
 };
 
-Object.defineProperty(global, 'localStorage', {
+Object.defineProperty(global, 'sessionStorage', {
   value: {
     getItem: vi.fn(),
     setItem: vi.fn(),
@@ -114,10 +114,10 @@ function mockReset() {
   global.window.populateFreeInputRepoSelection = vi.fn().mockResolvedValue();
   global.window.populateFreeInputBranchSelection = vi.fn().mockResolvedValue();
   
-  // Reset localStorage
-  global.localStorage.getItem.mockReturnValue(null);
-  global.localStorage.setItem.mockImplementation(() => {});
-  global.localStorage.removeItem.mockImplementation(() => {});
+  // Reset sessionStorage
+  global.sessionStorage.getItem.mockReturnValue(null);
+  global.sessionStorage.setItem.mockImplementation(() => {});
+  global.sessionStorage.removeItem.mockImplementation(() => {});
   
   // Reset document.getElementById
   global.document.getElementById.mockImplementation((id) => {
@@ -250,7 +250,7 @@ describe('auth', () => {
       expect(mockFirebaseAuth.signInWithPopup).toHaveBeenCalledWith(mockProvider);
     });
 
-    it('should store access token in localStorage on success', async () => {
+    it('should store access token in sessionStorage on success', async () => {
       const mockProvider = { addScope: vi.fn() };
       mockGithubAuthProvider.mockReturnValue(mockProvider);
       mockFirebaseAuth.signInWithPopup.mockResolvedValue({
@@ -261,7 +261,7 @@ describe('auth', () => {
 
       await signInWithGitHub();
       
-      expect(global.localStorage.setItem).toHaveBeenCalledWith(
+      expect(global.sessionStorage.setItem).toHaveBeenCalledWith(
         'github_access_token',
         expect.stringContaining('github-token-123')
       );
@@ -277,7 +277,7 @@ describe('auth', () => {
       await signInWithGitHub();
       
       expect(global.console.warn).toHaveBeenCalled();
-      expect(global.localStorage.setItem).not.toHaveBeenCalled();
+      expect(global.sessionStorage.setItem).not.toHaveBeenCalled();
     });
 
     it('should show error toast on sign-in failure', async () => {
@@ -315,12 +315,12 @@ describe('auth', () => {
       expect(mockFirebaseAuth.signOut).toHaveBeenCalled();
     });
 
-    it('should remove GitHub access token from localStorage', async () => {
+    it('should remove GitHub access token from sessionStorage', async () => {
       mockFirebaseAuth.signOut.mockResolvedValue();
 
       await signOutUser();
       
-      expect(global.localStorage.removeItem).toHaveBeenCalledWith('github_access_token');
+      expect(global.sessionStorage.removeItem).toHaveBeenCalledWith('github_access_token');
     });
 
     it('should clear Jules key cache if user is signed in', async () => {
@@ -586,7 +586,7 @@ describe('auth', () => {
       await signInWithGitHub();
       
       expect(mockFirebaseAuth.signInWithPopup).toHaveBeenCalled();
-      expect(global.localStorage.setItem).toHaveBeenCalled();
+      expect(global.sessionStorage.setItem).toHaveBeenCalled();
     });
 
     it('should handle complete sign-out workflow', async () => {
@@ -599,7 +599,7 @@ describe('auth', () => {
       
       expect(clearJulesKeyCache).toHaveBeenCalledWith('user-123');
       expect(mockFirebaseAuth.signOut).toHaveBeenCalled();
-      expect(global.localStorage.removeItem).toHaveBeenCalled();
+      expect(global.sessionStorage.removeItem).toHaveBeenCalled();
     });
 
     it('should handle auth state listener with user changes', async () => {

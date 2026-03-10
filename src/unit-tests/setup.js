@@ -42,8 +42,8 @@ global.window.db = {
 // Mock console.warn for tests that check for it
 global.console.warn = vi.fn();
 
-// Mock localStorage more realistically
-const localStorageMock = (() => {
+// Mock localStorage and sessionStorage more realistically
+const createStorageMock = () => {
   let store = {};
   return {
     getItem: vi.fn((key) => store[key] || null),
@@ -51,8 +51,15 @@ const localStorageMock = (() => {
     removeItem: vi.fn((key) => { delete store[key]; }),
     clear: vi.fn(() => { store = {}; }),
   };
-})();
+};
+
+const localStorageMock = createStorageMock();
+const sessionStorageMock = createStorageMock();
 
 Object.defineProperty(global.window, 'localStorage', {
   value: localStorageMock,
+});
+
+Object.defineProperty(global.window, 'sessionStorage', {
+  value: sessionStorageMock,
 });

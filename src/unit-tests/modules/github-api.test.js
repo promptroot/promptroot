@@ -35,8 +35,8 @@ global.fetch = mockFetch;
 global.window = global.window || {};
 global.window.auth = mockAuth;
 
-// Mock localStorage
-const mockLocalStorage = (() => {
+// Mock sessionStorage
+const mockSessionStorage = (() => {
   let storage = {};
   return {
     getItem: vi.fn((key) => storage[key] || null),
@@ -52,9 +52,9 @@ const mockLocalStorage = (() => {
   };
 })();
 
-// Mock localStorage with proper property descriptor
-Object.defineProperty(global, 'localStorage', {
-  value: mockLocalStorage,
+// Mock sessionStorage with proper property descriptor
+Object.defineProperty(global, 'sessionStorage', {
+  value: mockSessionStorage,
   writable: true,
   configurable: true
 });
@@ -69,7 +69,7 @@ describe('github-api', () => {
     mockFetch.mockReset();
     vi.clearAllMocks();
     mockAuth.currentUser = null;
-    mockLocalStorage.clear();
+    mockSessionStorage.clear();
     mockConsoleError.mockClear();
     
     // Clear module caches
@@ -109,7 +109,7 @@ describe('github-api', () => {
       mockAuth.currentUser = {
         providerData: [{ providerId: 'github.com' }]
       };
-      mockLocalStorage.setItem('github_access_token', JSON.stringify({
+      mockSessionStorage.setItem('github_access_token', JSON.stringify({
         token: 'github_pat_12345',
         timestamp: 1000000 - 1000 // 1 second ago
       }));
@@ -162,7 +162,7 @@ describe('github-api', () => {
       
       // Set expired token (older than TOKEN_MAX_AGE)
       const expiredTime = 1000000 - (60 * 24 * 60 * 60 * 1000 + 1000); // 60 days + 1 second ago
-      mockLocalStorage.setItem('github_access_token', JSON.stringify({
+      mockSessionStorage.setItem('github_access_token', JSON.stringify({
         token: 'expired_token',
         timestamp: expiredTime
       }));
@@ -174,7 +174,7 @@ describe('github-api', () => {
 
       await fetchJSON('https://api.github.com/test');
 
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('github_access_token');
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('github_access_token');
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.github.com/test',
         {
@@ -188,7 +188,7 @@ describe('github-api', () => {
       mockAuth.currentUser = {
         providerData: [{ providerId: 'github.com' }]
       };
-      mockLocalStorage.setItem('github_access_token', 'invalid-json');
+      mockSessionStorage.setItem('github_access_token', 'invalid-json');
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -307,7 +307,7 @@ describe('github-api', () => {
       mockAuth.currentUser = {
         providerData: [{ providerId: 'github.com' }]
       };
-      mockLocalStorage.setItem('github_access_token', JSON.stringify({
+      mockSessionStorage.setItem('github_access_token', JSON.stringify({
         token: 'github_pat_12345',
         timestamp: 999000
       }));
@@ -917,7 +917,7 @@ describe('github-api', () => {
       };
       
       // Set token that will be valid for first call but expire during second
-      mockLocalStorage.setItem('github_access_token', JSON.stringify({
+      mockSessionStorage.setItem('github_access_token', JSON.stringify({
         token: 'valid_token',
         timestamp: 999000
       }));
@@ -942,7 +942,7 @@ describe('github-api', () => {
 
       const result2 = await fetchJSON('https://api.github.com/test2');
       expect(result2).toEqual({ data: 'second' });
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('github_access_token');
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('github_access_token');
     });
 
     it('should handle network failures gracefully across all functions', async () => {

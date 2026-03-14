@@ -101,11 +101,15 @@ function renderCopenList(copens) {
   if (!copenList) return;
 
   if (copens.length === 0) {
-    copenList.innerHTML = '<div class="muted-text text-center pad-md">No copens available</div>';
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'muted-text text-center pad-md';
+    emptyDiv.textContent = 'No copens available';
+    copenList.replaceChildren(emptyDiv);
     return;
   }
 
-  copenList.innerHTML = copens.map((copen, index) => createCopenItem(copen, index, copens.length)).join('');
+  const copenItems = copens.map((copen, index) => createCopenItem(copen, index, copens.length));
+  copenList.replaceChildren(...copenItems);
 
   // Attach drag event listeners
   let draggedElement = null;
@@ -184,40 +188,91 @@ function renderCopenList(copens) {
 
 function createCopenItem(copen, index, totalCount) {
   const isDisabled = copen.disabled || false;
-  const defaultBadge = copen.isDefault ? '<span class="copen-item-default-badge">Default</span>' : '';
   
-  // Checkbox and edit button (no individual delete button)
-  const actions = `
-    <div class="copen-checkbox-col">
-      <input type="checkbox" class="copen-checkbox" data-copen-id="${copen.id}" />
-    </div>
-    <button class="btn-icon" data-action="edit-copen" data-copen-id="${copen.id}" title="Edit">
-      <span class="icon" aria-hidden="true">edit</span>
-    </button>
-  `;
+  const itemDiv = document.createElement('div');
+  itemDiv.className = `copen-item ${isDisabled ? 'disabled' : ''}`;
+  itemDiv.dataset.copenId = copen.id;
 
-  return `
-    <div class="copen-item ${isDisabled ? 'disabled' : ''}" data-copen-id="${copen.id}">
-      <div class="copen-drag-handle" draggable="true">
-        <span class="icon" aria-hidden="true">drag_indicator</span>
-      </div>
-      <div class="copen-item-left">
-        <div class="copen-item-icon">
-          <span class="icon" aria-hidden="true">${copen.icon}</span>
-        </div>
-        <div class="copen-item-info">
-          <div class="copen-item-label">
-            ${copen.label}
-            ${defaultBadge}
-          </div>
-          <div class="copen-item-url">${copen.url}</div>
-        </div>
-      </div>
-      <div class="copen-item-actions">
-        ${actions}
-      </div>
-    </div>
-  `;
+  const dragHandleDiv = document.createElement('div');
+  dragHandleDiv.className = 'copen-drag-handle';
+  dragHandleDiv.setAttribute('draggable', 'true');
+
+  const dragIcon = document.createElement('span');
+  dragIcon.className = 'icon';
+  dragIcon.setAttribute('aria-hidden', 'true');
+  dragIcon.textContent = 'drag_indicator';
+  dragHandleDiv.appendChild(dragIcon);
+
+  const leftDiv = document.createElement('div');
+  leftDiv.className = 'copen-item-left';
+
+  const iconDiv = document.createElement('div');
+  iconDiv.className = 'copen-item-icon';
+
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'icon';
+  iconSpan.setAttribute('aria-hidden', 'true');
+  iconSpan.textContent = copen.icon;
+  iconDiv.appendChild(iconSpan);
+
+  const infoDiv = document.createElement('div');
+  infoDiv.className = 'copen-item-info';
+
+  const labelDiv = document.createElement('div');
+  labelDiv.className = 'copen-item-label';
+
+  const labelText = document.createTextNode(copen.label + (copen.isDefault ? ' ' : ''));
+  labelDiv.appendChild(labelText);
+
+  if (copen.isDefault) {
+    const defaultBadge = document.createElement('span');
+    defaultBadge.className = 'copen-item-default-badge';
+    defaultBadge.textContent = 'Default';
+    labelDiv.appendChild(defaultBadge);
+  }
+
+  const urlDiv = document.createElement('div');
+  urlDiv.className = 'copen-item-url';
+  urlDiv.textContent = copen.url;
+
+  infoDiv.appendChild(labelDiv);
+  infoDiv.appendChild(urlDiv);
+
+  leftDiv.appendChild(iconDiv);
+  leftDiv.appendChild(infoDiv);
+
+  const actionsDiv = document.createElement('div');
+  actionsDiv.className = 'copen-item-actions';
+
+  const checkboxColDiv = document.createElement('div');
+  checkboxColDiv.className = 'copen-checkbox-col';
+
+  const checkboxInput = document.createElement('input');
+  checkboxInput.type = 'checkbox';
+  checkboxInput.className = 'copen-checkbox';
+  checkboxInput.dataset.copenId = copen.id;
+  checkboxColDiv.appendChild(checkboxInput);
+
+  const editButton = document.createElement('button');
+  editButton.className = 'btn-icon';
+  editButton.dataset.action = 'edit-copen';
+  editButton.dataset.copenId = copen.id;
+  editButton.title = 'Edit';
+
+  const editIcon = document.createElement('span');
+  editIcon.className = 'icon';
+  editIcon.setAttribute('aria-hidden', 'true');
+  editIcon.textContent = 'edit';
+  editButton.appendChild(editIcon);
+
+  actionsDiv.appendChild(checkboxColDiv);
+  actionsDiv.appendChild(editButton);
+
+  itemDiv.appendChild(dragHandleDiv);
+  itemDiv.appendChild(leftDiv);
+  itemDiv.appendChild(actionsDiv);
+
+  return itemDiv;
 }
 
 function showCopenEditor(copenId = null, existingData = null) {

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>IDE Extension - PromptRoot</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="../../src/styles.css" />
+  <script src="../../src/font-init.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script type="module" src="../../src/firebase-init.js"></script>
+  <script type="module" src="../../src/sw-register.js"></script>
+</head>
+<body data-page="ide-extension">
+
+  <div class="wrap">
+    <main class="card pad-lg">
+      <h2 class="section-title-lg font-28 mb-lg"><span class="icon icon-inline" aria-hidden="true">extension</span> PromptRoot IDE Extension</h2>
+
+      <div class="hero-panel">
+        <h3 class="hero-title">PromptRoot in Your Editor</h3>
+        <p class="hero-desc">
+          Manage prompts, queue tasks, and track Jules sessions — all without leaving VS Code. Same account, same data, real-time sync with <a href="https://promptroot.ai" class="hero-link">promptroot.ai</a>.
+        </p>
+        <button id="installExtensionBtn" class="btn primary xl fw-600">
+          <span class="icon icon-inline" aria-hidden="true">store</span> Install from VS Code Marketplace
+        </button>
+        <p class="hero-note">Available for VS Code, Cursor, and other VS Code-based editors</p>
+        <p class="hero-note mt-sm">
+          <a href="https://promptroot.ai" class="hero-link fw-600"><span class="icon icon-inline" aria-hidden="true">language</span> Visit promptroot.ai &rarr;</a>
+        </p>
+      </div>
+
+      <!-- Features -->
+      <div class="section-mb">
+        <h3 class="section-heading"><span class="icon icon-inline" aria-hidden="true">auto_awesome</span> Features</h3>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">folder_open</span></div>
+            <div class="feature-content">
+              <div class="feature-title">Prompt Asset Browser</div>
+              <div class="feature-desc">Browse, create, clone, and delete prompts from the Explorer sidebar tree view</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">list_alt</span></div>
+            <div class="feature-content">
+              <div class="feature-title">Jules Queue Management</div>
+              <div class="feature-desc">Add single or batch prompts to the queue, run, pause, and resume items with real-time status</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">history</span></div>
+            <div class="feature-content">
+              <div class="feature-title">Session &amp; PR Tracking</div>
+              <div class="feature-desc">View Jules session history with PR links, filter by status, and open PRs directly in the browser</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">lock</span></div>
+            <div class="feature-content">
+              <div class="feature-title">GitHub OAuth</div>
+              <div class="feature-desc">Sign in with the same GitHub account you use on the web app — no extra setup needed</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">sync</span></div>
+            <div class="feature-content">
+              <div class="feature-title">Real-time Sync</div>
+              <div class="feature-desc">Changes sync instantly between the extension and <a href="https://promptroot.ai">promptroot.ai</a> via Firebase</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Installation Instructions -->
+      <div class="section-mb">
+        <h3 class="section-heading"><span class="icon icon-inline" aria-hidden="true">inventory_2</span> Installation</h3>
+
+        <div class="instruction-panel">
+          <h4 class="section-subheading">From the VS Code Marketplace</h4>
+
+          <ol class="instruction-list">
+            <li class="instruction-item">
+              <strong class="instruction-strong">Open Extensions</strong><br/>
+              Press <code class="code-inline">Ctrl+Shift+X</code> (or <code class="code-inline">Cmd+Shift+X</code> on Mac) to open the Extensions panel
+            </li>
+            <li class="instruction-item">
+              <strong class="instruction-strong">Search for "Promptroot"</strong><br/>
+              Type "Promptroot" in the search bar and click <strong>Install</strong>
+            </li>
+            <li class="instruction-item">
+              <strong class="instruction-strong">Sign In</strong><br/>
+              Open the Command Palette (<code class="code-inline">Ctrl+Shift+P</code>) and run <code class="code-inline">Promptroot: Sign In</code>
+            </li>
+          </ol>
+        </div>
+
+        <div class="instruction-panel">
+          <h4 class="section-subheading">From the Command Line</h4>
+
+          <ol class="instruction-list">
+            <li class="instruction-item">
+              <strong class="instruction-strong">Install via CLI</strong><br/>
+              Run: <code class="code-inline">code --install-extension promptroot.promptroot-vscode</code>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- How to Use -->
+      <div class="section-mb">
+        <h3 class="section-heading"><span class="icon icon-inline" aria-hidden="true">rocket_launch</span> How to Use</h3>
+
+        <div class="instruction-panel">
+          <ol class="instruction-list">
+            <li class="instruction-item">
+              <strong class="instruction-strong">Open any workspace</strong> in VS Code — look for "PROMPTROOT ASSETS" in the Explorer sidebar
+            </li>
+            <li class="instruction-item">
+              <strong class="instruction-strong">Sign in with GitHub</strong> via the Command Palette (<code class="code-inline">Promptroot: Sign In</code>) — same account as the web app
+            </li>
+            <li class="instruction-item">
+              <strong class="instruction-strong">Create a prompt</strong> with <code class="code-inline">Promptroot: Create New Prompt Asset</code> — choose a template, fill in metadata, and confirm
+            </li>
+            <li class="instruction-item">
+              <strong class="instruction-strong">Queue it up</strong> — right-click any prompt asset → "Add to Jules Queue" or use batch mode
+            </li>
+            <li class="instruction-item">
+              <strong class="instruction-strong">Track progress</strong> — watch the "JULES SESSIONS" tree view for real-time status and PR links
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Core Commands -->
+      <div class="section-mb">
+        <h3 class="section-heading"><span class="icon icon-inline" aria-hidden="true">terminal</span> Core Commands</h3>
+
+        <div class="instruction-panel">
+          <div class="mb-md">
+            <strong class="instruction-strong">Authentication</strong>
+            <ul class="instruction-sublist">
+              <li><code class="code-inline">Promptroot: Sign In</code> — GitHub OAuth</li>
+              <li><code class="code-inline">Promptroot: Sign Out</code> — Sign out and clear tokens</li>
+              <li><code class="code-inline">Promptroot: View Profile</code> — Display profile info</li>
+            </ul>
+          </div>
+          <div class="mb-md">
+            <strong class="instruction-strong">Asset Management</strong>
+            <ul class="instruction-sublist">
+              <li><code class="code-inline">Promptroot: Create New Prompt Asset</code> — Guided creation</li>
+              <li><code class="code-inline">Promptroot: Browse Assets</code> — Focus tree view</li>
+              <li><code class="code-inline">Promptroot: Initialize Workspace</code> — Create prompts directory</li>
+            </ul>
+          </div>
+          <div class="mb-md">
+            <strong class="instruction-strong">Queue &amp; Sessions</strong>
+            <ul class="instruction-sublist">
+              <li><code class="code-inline">Promptroot: Add to Queue</code> — Single prompt</li>
+              <li><code class="code-inline">Promptroot: Add Batch to Queue</code> — Multiple prompts</li>
+              <li><code class="code-inline">Promptroot: Run All Pending</code> — Process queue</li>
+              <li><code class="code-inline">Promptroot: View Session Details</code> — Open session WebView</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Troubleshooting -->
+      <div>
+        <h3 class="section-heading"><span class="icon icon-inline" aria-hidden="true">build</span> Troubleshooting</h3>
+
+        <div class="instruction-panel">
+          <div class="mb-md">
+            <strong class="instruction-strong">Extension not appearing after installation?</strong>
+            <p class="muted-text small-text" style="margin:4px 0 0;">
+              Try reloading the window: <code class="code-inline">Ctrl+Shift+P</code> → "Developer: Reload Window". Verify the workspace contains a <code class="code-inline">prompts/</code> folder or run "Promptroot: Initialize Workspace".
+            </p>
+          </div>
+          <div class="mb-md">
+            <strong class="instruction-strong">Authentication not working?</strong>
+            <p class="muted-text small-text" style="margin:4px 0 0;">
+              Ensure your GitHub account is active. Try signing out and back in. Check the Output panel (View → Output → "Promptroot") for details.
+            </p>
+          </div>
+          <div class="mb-md">
+            <strong class="instruction-strong">Queue or sessions not loading?</strong>
+            <p class="muted-text small-text" style="margin:4px 0 0;">
+              Verify you're signed in (check the status bar). Use "Promptroot: Show Connection Status" to check Firebase connectivity.
+            </p>
+          </div>
+          <div>
+            <strong class="instruction-strong">Need more help?</strong>
+            <p class="muted-text small-text" style="margin:4px 0 0;">
+              Visit <a href="https://promptroot.ai">promptroot.ai</a> or <a href="https://github.com/promptroot/promptroot/issues" target="_blank" rel="noopener">open an issue on GitHub</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-nav">
+      <a href="https://promptroot.ai" class="footer-nav__item footer-nav__item--prominent">promptroot.ai</a>
+      <span class="footer-nav__sep">&bull;</span>
+      <a href="https://github.com/promptroot/promptroot/blob/main/README.md" target="_blank" rel="noopener" class="footer-nav__item">Help</a>
+      <span class="footer-nav__sep">&bull;</span>
+      <button id="footerFeedbackBtn" class="footer-nav__item">Feedback</button>
+      <span class="footer-nav__sep">&bull;</span>
+      <a href="../../pages/privacy/privacy.html" class="footer-nav__item">Privacy Policy</a>
+      <span class="footer-nav__sep">&bull;</span>
+      <a href="https://github.com/promptroot/promptroot" target="_blank" rel="noopener" class="footer-nav__item">GitHub</a>
+    </div>
+  </footer>
+
+  <!-- Status Bar -->
+  <div id="statusBar" class="hidden" aria-live="polite">
+    <div class="status-inner">
+      <div class="status-msg">Ready</div>
+      <div class="status-progress hidden"></div>
+      <button class="status-action btn hidden">Action</button>
+    </div>
+  </div>
+
+  <script type="module" src="../../src/shared-init.js"></script>
+  <script type="module" src="../../src/pages/ide-extension-page.js"></script>
+</body>
+</html>

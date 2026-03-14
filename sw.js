@@ -50,6 +50,10 @@ const STATIC_ASSETS = [
   '/src/pages/queue-page.js',
   '/src/pages/profile-page.js',
   '/src/pages/sessions-page.js',
+  '/src/pages/ide-extension-page.js',
+  
+  // Pages
+  '/pages/ide-extension/ide-extension.html',
   
   // External dependencies (high priority - largest performance win)
   'https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js',

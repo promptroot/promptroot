@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 import { FirestoreService } from './firestore-service';
 import { AuthManager } from './auth-manager';
 import { JulesQueueItem, isSingleQueueItem, isBatchQueueItem } from './models';
+import { COMMANDS } from './constants';
 import { Unsubscribe } from 'firebase/firestore';
 
 export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem> {
@@ -159,7 +160,12 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 		const user = this.authManager.getCurrentUser();
 		if (!user) {
 			this.outputChannel.appendLine('getChildren: No user signed in');
-			return [new QueueTreeItem('🔑 Sign in to view queue', '', 'info')];
+			const signInItem = new QueueTreeItem('🔑 Sign in to view queue', 'Click to sign in', 'info');
+			signInItem.command = {
+				command: COMMANDS.signIn,
+				title: 'Sign In'
+			};
+			return [signInItem];
 		}
 
 		// If no element, return root items (queue items)

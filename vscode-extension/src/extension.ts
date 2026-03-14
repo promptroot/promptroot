@@ -90,11 +90,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Listen to auth state changes
   authManager.onAuthStateChanged((user) => {
+    void vscode.commands.executeCommand('setContext', 'promptroot.isSignedIn', Boolean(user));
     updateStatusBar(user);
     if (user) {
       onUserSignedIn(user);
     }
   });
+
+  // Initialize auth context for view toolbar visibility conditions.
+  void vscode.commands.executeCommand('setContext', 'promptroot.isSignedIn', authManager.isSignedIn());
 
   // Initialize Jules services
   julesConfig = new JulesConfig(context);

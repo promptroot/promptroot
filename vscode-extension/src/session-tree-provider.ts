@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 import { FirestoreService } from './firestore-service';
 import { AuthManager } from './auth-manager';
 import { JulesSession, SessionStatus } from './models';
+import { COMMANDS } from './constants';
 import { Unsubscribe } from 'firebase/firestore';
 
 export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeItem> {
@@ -122,6 +123,11 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeI
 		// Check if user is signed in (only after auth is verified)
 		if (!this.authManager.getCurrentUser()) {
 			const item = new vscode.TreeItem('🔑 Sign in to view sessions', vscode.TreeItemCollapsibleState.None);
+			item.description = 'Click to sign in';
+			item.command = {
+				command: COMMANDS.signIn,
+				title: 'Sign In'
+			};
 			return Promise.resolve([item as any]);
 		}
 

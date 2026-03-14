@@ -95,11 +95,13 @@
       },
       {
         "command": "promptroot.signIn",
-        "title": "Promptroot: Sign In"
+        "title": "Promptroot: Sign In",
+        "icon": "$(account)"
       },
       {
         "command": "promptroot.signOut",
-        "title": "Promptroot: Sign Out"
+        "title": "Promptroot: Sign Out",
+        "icon": "$(sign-out)"
       },
       {
         "command": "promptroot.viewProfile",
@@ -270,24 +272,34 @@
           "group": "navigation@0"
         },
         {
+          "command": "promptroot.signIn",
+          "when": "(view == promptroot.assetsView || view == promptroot.queueView || view == promptroot.sessionsView || view == promptroot.repositoriesView) && !promptroot.isSignedIn",
+          "group": "navigation@1"
+        },
+        {
+          "command": "promptroot.signOut",
+          "when": "(view == promptroot.assetsView || view == promptroot.queueView || view == promptroot.sessionsView || view == promptroot.repositoriesView) && promptroot.isSignedIn",
+          "group": "navigation@1"
+        },
+        {
           "command": "promptroot.refreshAssets",
           "when": "view == promptroot.assetsView",
-          "group": "navigation"
+          "group": "navigation@10"
         },
         {
           "command": "promptroot.createAsset",
           "when": "view == promptroot.assetsView",
-          "group": "navigation"
+          "group": "navigation@11"
         },
         {
           "command": "promptroot.refreshQueue",
           "when": "view == promptroot.queueView",
-          "group": "navigation@1"
+          "group": "navigation@10"
         },
         {
           "command": "promptroot.addBatchToQueue",
           "when": "view == promptroot.queueView",
-          "group": "navigation@2"
+          "group": "navigation@11"
         },
         {
           "command": "promptroot.runNextPending",
@@ -312,17 +324,17 @@
         {
           "command": "promptroot.refreshSessions",
           "when": "view == promptroot.sessionsView",
-          "group": "navigation@1"
+          "group": "navigation@10"
         },
         {
           "command": "promptroot.refreshRepositories",
           "when": "view == promptroot.repositoriesView",
-          "group": "navigation@1"
+          "group": "navigation@10"
         },
         {
           "command": "promptroot.configureRepositories",
           "when": "view == promptroot.repositoriesView",
-          "group": "navigation@2"
+          "group": "navigation@11"
         }
       ],
       "view/item/context": [

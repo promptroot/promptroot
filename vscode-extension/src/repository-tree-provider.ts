@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { GitHubService, GitHubRepository } from './github-service';
 import { FirestoreService } from './firestore-service';
 import { AuthManager } from './auth-manager';
+import { COMMANDS } from './constants';
 
 /**
  * Repository tree item types
@@ -261,13 +262,19 @@ export class RepositoryTreeProvider implements vscode.TreeDataProvider<Repositor
 		
 		// Check authentication (only after auth is verified)
 		if (!this.authManager.isSignedIn()) {
+			const signInItem = new RepositoryTreeItem(
+				'🔑 Sign in to view repositories',
+				RepositoryItemType.LOADING,
+				undefined,
+				vscode.TreeItemCollapsibleState.None
+			);
+			signInItem.description = 'Click to sign in';
+			signInItem.command = {
+				command: COMMANDS.signIn,
+				title: 'Sign In'
+			};
 			return [
-				new RepositoryTreeItem(
-					'🔑 Sign in to view repositories',
-					RepositoryItemType.LOADING,
-					undefined,
-					vscode.TreeItemCollapsibleState.None
-				)
+				signInItem
 			];
 		}
 

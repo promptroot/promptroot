@@ -186,4 +186,28 @@ describe('copen-config', () => {
       expect(options.find(o => o.value === 'default2')).toBeUndefined();
     });
   });
+
+  describe('clearCopenOptionsCache', () => {
+    it('should clear the cache and force a refetch on next call', async () => {
+      mockGetAuth.mockReturnValue({ currentUser: { uid: 'user123' } });
+      mockGetUserCopens.mockResolvedValue([
+        { id: 'blank', label: 'Blank', icon: 'public', isDefault: true }
+      ]);
+
+      // Call once to populate cache
+      await getCopenOptions();
+      expect(mockGetUserCopens).toHaveBeenCalledTimes(1);
+
+      // Call again to verify cache is used (should not call getUserCopens again)
+      await getCopenOptions();
+      expect(mockGetUserCopens).toHaveBeenCalledTimes(1);
+
+      // Clear the cache
+      clearCopenOptionsCache();
+
+      // Call again to verify cache is cleared (should call getUserCopens again)
+      await getCopenOptions();
+      expect(mockGetUserCopens).toHaveBeenCalledTimes(2);
+    });
+  });
 });

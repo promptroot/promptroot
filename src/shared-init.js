@@ -163,7 +163,9 @@ async function initializeSharedComponents(activePage) {
 
     const repoPill = document.getElementById('repoPill');
     if (repoPill) {
-      repoPill.innerHTML = `<strong>${currentOwner}/${currentRepo}</strong>`;
+      const strong = document.createElement('strong');
+      strong.textContent = `${currentOwner}/${currentRepo}`;
+      repoPill.replaceChildren(strong);
     }
 
     fetchVersion();

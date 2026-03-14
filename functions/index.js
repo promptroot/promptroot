@@ -1,4 +1,5 @@
 const functions = require("firebase-functions");
+const logger = require("firebase-functions/logger");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {onCall} = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
@@ -70,7 +71,7 @@ async function decryptJulesKey(docData, uid) {
 
     return td.decode(plainBuf);
   } catch (error) {
-    console.error("Decryption error details:", {
+    logger.error("Decryption error details:", {
       message: error.message,
       stack: error.stack,
       hasIvSalt: !!(docData.iv && docData.salt),
@@ -127,7 +128,7 @@ exports.runJules = functions.https.onCall(async (data, context) => {
     try {
       julesKey = await decryptJulesKey(docData, uid);
     } catch (e) {
-      console.error("Decryption failed for user:", uid);
+      logger.error("Decryption failed for user:", uid);
       throw new functions.https.HttpsError("internal", "Failed to decrypt Jules API key");
     }
 
@@ -149,18 +150,18 @@ exports.runJules = functions.https.onCall(async (data, context) => {
       });
       json = await r.json();
     } catch (e) {
-      console.error("Network error calling Jules:", e.message);
+      logger.error("Network error calling Jules:", e.message);
       throw new functions.https.HttpsError("unavailable", "Failed to reach Jules API");
     }
 
     if (!r.ok) {
-      console.error("Jules API error:", r.status, json);
+      logger.error("Jules API error:", r.status, json);
       const errorMessage = formatJulesError(json.error, r.status);
       throw new functions.https.HttpsError("permission-denied", errorMessage);
     }
 
     if (!json || !json.url) {
-      console.error("Jules response missing url:", json);
+      logger.error("Jules response missing url:", json);
       throw new functions.https.HttpsError("internal", "Jules did not return a session URL");
     }
 
@@ -205,12 +206,12 @@ exports.runJules = functions.https.onCall(async (data, context) => {
           queueItemId: (data && data.queueItemId) || null,
           userId: context.auth.uid
         });
-        console.log(`Session ${sessionId} tracked in Firestore for user ${context.auth.uid}`);
+        logger.info(`Session ${sessionId} tracked in Firestore for user ${context.auth.uid}`);
       } else {
-        console.warn('Could not extract sessionId from Jules response:', json);
+        logger.warn('Could not extract sessionId from Jules response:', json);
       }
     } catch (trackError) {
-      console.error('Failed to track session:', trackError.message);
+      logger.error('Failed to track session:', trackError.message);
       // Don't fail the request if tracking fails
     }
 
@@ -225,14 +226,14 @@ exports.runJules = functions.https.onCall(async (data, context) => {
     if (error.code && error.code.startsWith("functions/")) {
       throw error;
     }
-    console.error("Error in runJules:", error.message);
+    logger.error("Error in runJules:", error.message);
     throw new functions.https.HttpsError("internal", error.message || "Failed to create Jules session");
   }
 });
 
 exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
   // Log incoming request for debugging
-  console.log('runJulesHttp called with:', {
+  logger.info('runJulesHttp called with:', {
     method: req.method,
     headers: Object.keys(req.headers),
     body: req.body,
@@ -256,7 +257,7 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('Missing or invalid auth header:', authHeader);
+      logger.info('Missing or invalid auth header:', authHeader);
       res.status(401).json({ error: 'Missing or invalid Authorization header' });
       return;
     }
@@ -298,7 +299,7 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
     try {
       julesKey = await decryptJulesKey(docData, uid);
     } catch (e) {
-      console.error('Decryption failed:', e.message);
+      logger.error('Decryption failed:', e.message);
       res.status(500).json({ error: 'Failed to decrypt Jules API key' });
       return;
     }
@@ -321,20 +322,20 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
       });
       json = await r.json();
     } catch (e) {
-      console.error('Network error calling Jules:', e.message);
+      logger.error('Network error calling Jules:', e.message);
       res.status(503).json({ error: 'Failed to reach Jules API' });
       return;
     }
 
     if (!r.ok) {
-      console.error('Jules API error:', r.status, 'Full response:', JSON.stringify(json));
+      logger.error('Jules API error:', r.status, 'Full response:', JSON.stringify(json));
       const errorMessage = formatJulesError(json.error || json, r.status);
       res.status(502).json({ error: errorMessage });
       return;
     }
 
     if (!json || !json.url) {
-      console.error('Jules response missing url:', json);
+      logger.error('Jules response missing url:', json);
       res.status(500).json({ error: 'Jules did not return a session URL' });
       return;
     }
@@ -380,12 +381,12 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
           queueItemId: req.body.queueItemId || null,
           userId: uid
         });
-        console.log(`Session ${sessionId} tracked in Firestore for user ${uid}`);
+        logger.info(`Session ${sessionId} tracked in Firestore for user ${uid}`);
       } else {
-        console.warn('Could not extract sessionId from Jules response:', json);
+        logger.warn('Could not extract sessionId from Jules response:', json);
       }
     } catch (trackError) {
-      console.error('Failed to track session:', trackError.message);
+      logger.error('Failed to track session:', trackError.message);
       // Don't fail the request if tracking fails
     }
 
@@ -397,7 +398,7 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
     res.json({ sessionUrl, sessionId: sessionId || null });
 
   } catch (error) {
-    console.error('Error in runJulesHttp:', error.message);
+    logger.error('Error in runJulesHttp:', error.message);
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
@@ -496,7 +497,7 @@ exports.githubOAuthExchange = functions.https.onRequest(async (req, res) => {
     const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      console.error('GitHub OAuth credentials not configured');
+      logger.error('GitHub OAuth credentials not configured');
       res.status(500).json({ error: 'Server configuration error' });
       return;
     }
@@ -517,7 +518,7 @@ exports.githubOAuthExchange = functions.https.onRequest(async (req, res) => {
     const tokenData = await tokenResponse.json();
 
     if (tokenData.error) {
-      console.error('GitHub OAuth error:', tokenData.error_description);
+      logger.error('GitHub OAuth error:', tokenData.error_description);
       res.status(400).json({ 
         error: tokenData.error_description || 'Failed to exchange code for token' 
       });
@@ -536,7 +537,7 @@ exports.githubOAuthExchange = functions.https.onRequest(async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error in githubOAuthExchange:', error);
+    logger.error('Error in githubOAuthExchange:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -589,7 +590,7 @@ exports.getGitHubUser = functions.https.onRequest(async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error in getGitHubUser:', error);
+    logger.error('Error in getGitHubUser:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -598,7 +599,7 @@ exports.activateScheduledQueueItems = onSchedule('every 1 minutes', async (event
   const db = admin.firestore();
   const now = admin.firestore.Timestamp.now();
   
-  console.log('Running scheduled queue activation check at', now.toDate().toISOString());
+  logger.debug('Running scheduled queue activation check at', now.toDate().toISOString());
   
   try {
     const scheduledItemsSnapshot = await db.collectionGroup('items')
@@ -607,29 +608,29 @@ exports.activateScheduledQueueItems = onSchedule('every 1 minutes', async (event
       .get();
     
     if (scheduledItemsSnapshot.empty) {
-      console.log('No scheduled items found to activate.');
-      console.log('Activation check complete. Total items activated: 0');
+      logger.debug('No scheduled items found to activate.');
+      logger.debug('Activation check complete. Total items activated: 0');
       return null;
     }
     
-    console.log(`Found ${scheduledItemsSnapshot.size} scheduled items across all users.`);
+    logger.info(`Found ${scheduledItemsSnapshot.size} scheduled items across all users.`);
     
     let totalActivated = 0;
     
     for (const doc of scheduledItemsSnapshot.docs) {
       const userId = doc.ref.parent?.parent?.id;
       if (!userId) {
-        console.error(`Could not determine user ID for item ${doc.id}`);
+        logger.error(`Could not determine user ID for item ${doc.id}`);
         continue;
       }
       
       const item = doc.data();
-      console.log(`Processing scheduled item ${doc.id} for user ${userId}`);
+      logger.info(`Processing scheduled item ${doc.id} for user ${userId}`);
       
       try {
         const keySnap = await db.doc(`julesKeys/${userId}`).get();
         if (!keySnap.exists) {
-          console.error(`No Jules API key found for user ${userId}`);
+          logger.error(`No Jules API key found for user ${userId}`);
           await doc.ref.update({
             status: 'error',
             error: 'No Jules API key configured',
@@ -640,7 +641,7 @@ exports.activateScheduledQueueItems = onSchedule('every 1 minutes', async (event
         
         const docData = keySnap.data();
         if (!docData.key) {
-           console.error(`Jules API key empty/invalid for user ${userId}`);
+           logger.error(`Jules API key empty/invalid for user ${userId}`);
            await doc.ref.update({
              status: 'error',
              error: 'Jules API key invalid',
@@ -678,7 +679,7 @@ exports.activateScheduledQueueItems = onSchedule('every 1 minutes', async (event
           
           await doc.ref.delete();
           
-          console.log(`Successfully executed single prompt for item ${doc.id}`);
+          logger.info(`Successfully executed single prompt for item ${doc.id}`);
           totalActivated++;
           
         } else if (item.type === 'subtasks' && Array.isArray(item.remaining) && item.remaining.length > 0) {
@@ -718,12 +719,12 @@ exports.activateScheduledQueueItems = onSchedule('every 1 minutes', async (event
             });
           }
           
-          console.log(`Successfully executed first subtask for item ${doc.id}, ${newRemaining.length} remaining`);
+          logger.info(`Successfully executed first subtask for item ${doc.id}, ${newRemaining.length} remaining`);
           totalActivated++;
         }
         
       } catch (err) {
-        console.error(`Error processing item ${doc.id}:`, err);
+        logger.error(`Error processing item ${doc.id}:`, err);
         
         const retryCount = item.retryCount || 0;
         const maxRetries = 3;
@@ -734,7 +735,7 @@ exports.activateScheduledQueueItems = onSchedule('every 1 minutes', async (event
             now.nanoseconds
           );
           
-          console.log(`Scheduling retry ${retryCount + 1}/${maxRetries} for item ${doc.id} in 10 minutes`);
+          logger.info(`Scheduling retry ${retryCount + 1}/${maxRetries} for item ${doc.id} in 10 minutes`);
           
           await doc.ref.update({
             status: 'scheduled',
@@ -758,10 +759,10 @@ exports.activateScheduledQueueItems = onSchedule('every 1 minutes', async (event
       }
     }
     
-    console.log(`Activation check complete. Total items processed: ${totalActivated}`);
+    logger.info(`Activation check complete. Total items processed: ${totalActivated}`);
     return null;
   } catch (error) {
-    console.error('Error in activateScheduledQueueItems:', error);
+    logger.error('Error in activateScheduledQueueItems:', error);
     return null;
   }
 });
@@ -773,12 +774,12 @@ exports.activateScheduledQueueItems = onSchedule('every 1 minutes', async (event
 exports.exchangeVSCodeGitHubToken = onCall(async (request) => {
   const { githubToken } = request.data;
 
-  console.log('exchangeVSCodeGitHubToken called');
-  console.log('Data received:', JSON.stringify(request.data));
-  console.log('githubToken extracted:', githubToken ? `${githubToken.substring(0, 10)}...` : 'null/undefined');
+  logger.info('exchangeVSCodeGitHubToken called');
+  logger.info('Data received:', JSON.stringify(request.data));
+  logger.info('githubToken extracted:', githubToken ? `${githubToken.substring(0, 10)}...` : 'null/undefined');
 
   if (!githubToken) {
-    console.error('No githubToken in data');
+    logger.error('No githubToken in data');
     throw new functions.https.HttpsError('invalid-argument', 'GitHub token is required');
   }
 
@@ -800,7 +801,7 @@ exports.exchangeVSCodeGitHubToken = onCall(async (request) => {
     }
 
     const githubUser = await githubResponse.json();
-    console.log('GitHub user:', { id: githubUser.id, login: githubUser.login, email: githubUser.email });
+    logger.info('GitHub user:', { id: githubUser.id, login: githubUser.login, email: githubUser.email });
     
     // Use a fallback email if GitHub email is null or private
     const userEmail = githubUser.email || `${githubUser.login}@users.noreply.github.com`;
@@ -810,7 +811,7 @@ exports.exchangeVSCodeGitHubToken = onCall(async (request) => {
     
     try {
       // First, try to find existing web app user by GitHub provider ID
-      console.log('Searching for existing web app user...');
+      logger.info('Searching for existing web app user...');
       const users = await admin.auth().listUsers();
       const webAppUser = users.users.find(user => 
         user.providerData.some(provider => 
@@ -820,16 +821,16 @@ exports.exchangeVSCodeGitHubToken = onCall(async (request) => {
       );
       
       if (webAppUser) {
-        console.log('Found existing web app user:', webAppUser.uid);
+        logger.info('Found existing web app user:', webAppUser.uid);
         uid = webAppUser.uid;
         existingUser = webAppUser;
       } else {
         // Fallback to VS Code extension format
-        console.log('No existing web app user found, using extension format');
+        logger.info('No existing web app user found, using extension format');
         uid = `github:${githubUser.id}`;
       }
     } catch (error) {
-      console.log('Error searching for existing user, using extension format:', error);
+      logger.info('Error searching for existing user, using extension format:', error);
       uid = `github:${githubUser.id}`;
     }
     
@@ -837,10 +838,10 @@ exports.exchangeVSCodeGitHubToken = onCall(async (request) => {
     if (!existingUser) {
       try {
         existingUser = await admin.auth().getUser(uid);
-        console.log('Existing extension user found:', existingUser.uid);
+        logger.info('Existing extension user found:', existingUser.uid);
       } catch (error) {
         // User doesn't exist, create them
-        console.log('Creating new user with uid:', uid, 'email:', userEmail);
+        logger.info('Creating new user with uid:', uid, 'email:', userEmail);
         await admin.auth().createUser({
           uid,
           email: userEmail,
@@ -848,7 +849,7 @@ exports.exchangeVSCodeGitHubToken = onCall(async (request) => {
           photoURL: githubUser.avatar_url,
           emailVerified: true
         });
-        console.log('User created successfully');
+        logger.info('User created successfully');
       }
     }
 
@@ -859,7 +860,7 @@ exports.exchangeVSCodeGitHubToken = onCall(async (request) => {
       provider: 'github.com'
     });
 
-    console.log('Custom token created successfully');
+    logger.info('Custom token created successfully');
 
     return {
       customToken,
@@ -871,7 +872,7 @@ exports.exchangeVSCodeGitHubToken = onCall(async (request) => {
       }
     };
   } catch (error) {
-    console.error('Token exchange error:', error);
+    logger.error('Token exchange error:', error);
     throw new functions.https.HttpsError(
       'internal',
       error instanceof Error ? error.message : 'Failed to exchange token'

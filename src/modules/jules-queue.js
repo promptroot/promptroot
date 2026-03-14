@@ -226,7 +226,7 @@ export function attachQueueHandlers() {
   setupQueueHandlers();
 }
 
-async function initializeEditRepoAndBranch(sourceId, branch, repoDropdownBtn, repoDropdownText, repoDropdownMenu, branchDropdownBtn, branchDropdownText, branchDropdownMenu) {
+async function initializeEditRepoAndBranch({ sourceId, branch, repoDropdownBtn, repoDropdownText, repoDropdownMenu, branchDropdownBtn, branchDropdownText, branchDropdownMenu }) {
   const editModalState = getEditModalState();
   
   const branchSelector = new BranchSelector({
@@ -598,7 +598,16 @@ async function openEditQueueModal(docId) {
 
   displayScheduleStatus(item);
 
-  await initializeEditRepoAndBranch(item.sourceId, item.branch || 'master', repoDropdownBtn, repoDropdownText, repoDropdownMenu, branchDropdownBtn, branchDropdownText, branchDropdownMenu);
+  await initializeEditRepoAndBranch({
+    sourceId: item.sourceId,
+    branch: item.branch || 'master',
+    repoDropdownBtn,
+    repoDropdownText,
+    repoDropdownMenu,
+    branchDropdownBtn,
+    branchDropdownText,
+    branchDropdownMenu
+  });
 
   updateEditModalState({ isInitializing: false });
 

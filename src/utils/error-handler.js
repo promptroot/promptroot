@@ -29,7 +29,7 @@ const ERROR_PATTERNS = [
  * @param {Error|string} error
  * @returns {string} ErrorCategory
  */
-function detectCategory(error) {
+export function detectCategory(error) {
   if (!error) return ErrorCategory.UNEXPECTED;
   const msg = (typeof error === 'string' ? error : error.message || '').toLowerCase();
 

@@ -19,11 +19,31 @@ describe('slug.js', () => {
         // Based on regex /\.md$/i, if no .md, it just lowercases and slugifies
         expect(slugify('My File')).toBe('my-file');
     });
+
+    it('should return empty string for null or undefined', () => {
+        expect(slugify(null)).toBe('');
+        expect(slugify(undefined)).toBe('');
+    });
+
+    it('should return empty string for non-string inputs', () => {
+        expect(slugify(123)).toBe('');
+        expect(slugify({})).toBe('');
+    });
   });
 
   describe('unslugify', () => {
     it('should decode slug', () => {
-      expect(unslugify('hello-world%3F')).toBe('hello-world?');
+        expect(unslugify('hello-world%3F')).toBe('hello-world?');
+    });
+
+    it('should return empty string for null or undefined', () => {
+        expect(unslugify(null)).toBe('');
+        expect(unslugify(undefined)).toBe('');
+    });
+
+    it('should return empty string for non-string inputs', () => {
+        expect(unslugify(123)).toBe('');
+        expect(unslugify({})).toBe('');
     });
   });
 });

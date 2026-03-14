@@ -351,9 +351,6 @@ export async function syncActiveSessions(progressCallback = null) {
       pageToken = response.nextPageToken;
     } while (pageToken);
 
-    console.log(`[Session Tracking] Fetched ${apiSessions.size} sessions from API`);
-    console.log('[Session Tracking] API State distribution:', stateCounts);
-
     // Get all local sessions
     const allSessionsSnapshot = await db
       .collection('juleSessions')
@@ -380,8 +377,6 @@ export async function syncActiveSessions(progressCallback = null) {
         toUpdate.push(apiSession);
       }
     });
-
-    console.log(`[Session Tracking] Syncing ${toUpdate.length} changed sessions`);
 
     // Track sync statistics
     const syncStats = {
@@ -486,8 +481,6 @@ export async function syncActiveSessions(progressCallback = null) {
         console.error(`[Session Tracking] Failed to sync session ${session.id}:`, err);
       }
     }
-
-    console.log('[Session Tracking] Sync complete');
   } catch (error) {
     handleError(error, { source: 'syncActiveSessions' });
     throw error; // Re-throw to ensure finally block runs
@@ -614,7 +607,6 @@ export async function importJulesHistory(progressCallback = null) {
     } while (pageToken);
 
     const totalSessions = allApiSessions.length;
-    console.log(`[Session Tracking] Fetched ${totalSessions} sessions from API`);
 
     // Now process each session
     for (let i = 0; i < allApiSessions.length; i++) {

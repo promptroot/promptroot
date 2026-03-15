@@ -115,7 +115,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
   // Initialize tree view provider
-  dashboardProvider = new DashboardWebviewProvider(authManager);
+  dashboardProvider = new DashboardWebviewProvider(context.extensionUri, authManager);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(VIEWS.dashboard, dashboardProvider)
   );

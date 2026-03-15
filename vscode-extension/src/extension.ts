@@ -19,6 +19,7 @@ import { RepositoryTreeItem } from './repository-tree-provider';
 import { GitHubRepository, GitHubService } from './github-service';
 import { BranchSelector } from './branch-selector';
 import { ErrorHandler } from './error-handler';
+import { DashboardWebviewProvider } from './dashboard-webview-provider';
 import { JulesSession, SessionStatus, JulesQueueItem } from './models';
 import { User } from 'firebase/auth';
 import { Timestamp } from 'firebase/firestore';
@@ -40,6 +41,7 @@ let errorHandler: ErrorHandler | null = null;
 let statusBarItem: vscode.StatusBarItem;
 let connectionStatusItem: vscode.StatusBarItem;
 let queueTreeView: vscode.TreeView<QueueTreeItem> | null = null;
+let dashboardProvider: DashboardWebviewProvider | null = null;
 
 /**
  * Extension activation entry point.
@@ -92,6 +94,7 @@ export async function activate(context: vscode.ExtensionContext) {
   authManager.onAuthStateChanged((user) => {
     void vscode.commands.executeCommand('setContext', 'promptroot.isSignedIn', Boolean(user));
     updateStatusBar(user);
+    dashboardProvider?.refresh();
     if (user) {
       onUserSignedIn(user);
     }
@@ -112,6 +115,11 @@ export async function activate(context: vscode.ExtensionContext) {
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
   // Initialize tree view provider
+  dashboardProvider = new DashboardWebviewProvider(authManager);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(VIEWS.dashboard, dashboardProvider)
+  );
+
   treeProvider = new PromptrootTreeProvider(workspaceRoot);
   const treeView = vscode.window.createTreeView(VIEWS.assets, {
     treeDataProvider: treeProvider

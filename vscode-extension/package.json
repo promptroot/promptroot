@@ -45,7 +45,7 @@
   "activationEvents": [
     "workspaceContains:**/prompts/**"
   ],
-  "main": "./dist/extension.js",
+  "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
@@ -241,7 +241,12 @@
       }
     ],
     "views": {
-      "explorer": [
+      "promptroot": [
+        {
+          "type": "webview",
+          "id": "promptroot.dashboardView",
+          "name": "Dashboard"
+        },
         {
           "id": "promptroot.assetsView",
           "name": "Promptroot Assets",
@@ -261,6 +266,15 @@
           "id": "promptroot.repositoriesView",
           "name": "GitHub Repositories",
           "icon": "$(repo)"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "promptroot",
+          "title": "Promptroot",
+          "icon": "assets/promptroot-activity.svg"
         }
       ]
     },

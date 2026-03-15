@@ -47,6 +47,7 @@ describe('constants', () => {
 
   describe('VIEWS', () => {
     it('should have all view IDs defined', () => {
+      expect(VIEWS.dashboard).toBe('promptroot.dashboardView');
       expect(VIEWS.assets).toBe('promptroot.assetsView');
       expect(VIEWS.queue).toBe('promptroot.queueView');
       expect(VIEWS.sessions).toBe('promptroot.sessionsView');

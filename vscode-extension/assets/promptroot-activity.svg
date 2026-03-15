@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- Clean "P" letterform — transparent bg so VS Code can apply its theme color as a mask -->
+  <path fill="white" fill-rule="evenodd" d="M3 2h8a6 6 0 0 1 0 12H7v7H3zm4 3h4a3 3 0 0 1 0 6H7z"/>
+</svg>

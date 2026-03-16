@@ -280,7 +280,7 @@ function buildTree(items, folder = 'prompts') {
 }
 
 function renderTree(node, container, options) {
-  const { forcedExpanded, owner, repo, branch } = options;
+  const { forcedExpanded } = options;
   const entries = Array.from(node.children.values());
   entries.sort((a, b) => {
     if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
@@ -497,7 +497,7 @@ export async function renderList(items, owner, repo, branch) {
   listEl.appendChild(rootList);
   const folder = getPromptFolder(branch);
   const tree = buildTree(filtered, folder);
-  renderTree(tree, rootList, { forcedExpanded, owner, repo, branch });
+  renderTree(tree, rootList, { forcedExpanded });
   updateActiveItem();
 }
 

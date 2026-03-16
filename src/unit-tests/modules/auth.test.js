@@ -95,7 +95,9 @@ const createMockElement = (id) => ({
 });
 
 global.document = {
-  getElementById: vi.fn()
+  getElementById: vi.fn(),
+  createElement: vi.fn((tag) => createMockElement(null)),
+  createTextNode: vi.fn((text) => ({ nodeType: 3, textContent: text }))
 };
 
 function mockReset() {
@@ -140,7 +142,7 @@ describe('auth', () => {
     });
 
     it('should return the current user from auth service if available', () => {
-      const mockUser = { uid: '123', email: 'test@example.com' };
+      const mockUser = { uid: '123', email: 'test@example.com', providerData: [] };
       mockFirebaseAuth.currentUser = mockUser;
       // getAuth returns mockFirebaseAuth which has currentUser
       
@@ -150,7 +152,7 @@ describe('auth', () => {
     });
 
     it('should cache the user once retrieved', () => {
-      const mockUser = { uid: '123', email: 'test@example.com' };
+      const mockUser = { uid: '123', email: 'test@example.com', providerData: [] };
       mockFirebaseAuth.currentUser = mockUser;
       
       getCurrentUser();
@@ -177,7 +179,7 @@ describe('auth', () => {
 
   describe('setCurrentUser', () => {
     it('should set the current user', () => {
-      const mockUser = { uid: '456', email: 'user@test.com' };
+      const mockUser = { uid: '456', email: 'user@test.com', providerData: [] };
       
       setCurrentUser(mockUser);
       
@@ -363,7 +365,8 @@ describe('auth', () => {
         uid: 'user-123',
         displayName: 'Test User',
         email: 'test@example.com',
-        photoURL: 'https://example.com/avatar.jpg'
+        photoURL: 'https://example.com/avatar.jpg',
+        providerData: []
       };
 
       await updateAuthUI(mockUser);
@@ -375,7 +378,8 @@ describe('auth', () => {
       const mockUser = {
         uid: 'user-123',
         displayName: 'Test User',
-        photoURL: 'https://example.com/avatar.jpg'
+        photoURL: 'https://example.com/avatar.jpg',
+        providerData: []
       };
       const mockAvatar = createMockElement('userAvatar');
       global.document.getElementById.mockImplementation((id) => {
@@ -390,7 +394,7 @@ describe('auth', () => {
     });
 
     it('should hide sign-in and show sign-out when user is signed in', async () => {
-      const mockUser = { uid: 'user-123', displayName: 'Test' };
+      const mockUser = { uid: 'user-123', displayName: 'Test', providerData: [] };
       const mockSignIn = createMockElement('headerSignIn');
       const mockSignOut = createMockElement('headerSignOut');
       
@@ -428,7 +432,7 @@ describe('auth', () => {
     });
 
     it('should set sign-out onclick handler', async () => {
-      const mockUser = { uid: 'user-123' };
+      const mockUser = { uid: 'user-123', providerData: [] };
       const mockSignOut = createMockElement('headerSignOut');
       
       global.document.getElementById.mockImplementation((id) => {
@@ -479,7 +483,8 @@ describe('auth', () => {
     it('should update dropdown user name', async () => {
       const mockUser = {
         displayName: 'John Doe',
-        email: 'john@example.com'
+        email: 'john@example.com',
+        providerData: []
       };
       const mockDropdownName = createMockElement('dropdownUserName');
       
@@ -510,7 +515,8 @@ describe('auth', () => {
       const mockUser = {
         uid: 'user-123',
         displayName: 'Test User',
-        photoURL: 'https://example.com/avatar.jpg'
+        photoURL: 'https://example.com/avatar.jpg',
+        providerData: []
       };
       const mockAvatar = createMockElement('userAvatar');
       const { getCache } = await import('../../utils/session-cache.js');
@@ -527,7 +533,7 @@ describe('auth', () => {
     });
 
     it('should call populateFreeInputRepoSelection if available', async () => {
-      const mockUser = { uid: 'user-123' };
+      const mockUser = { uid: 'user-123', providerData: [] };
       
       await updateAuthUI(mockUser);
       
@@ -536,14 +542,14 @@ describe('auth', () => {
 
     it('should throw error with missing DOM elements', async () => {
       global.document.getElementById.mockReturnValue(null);
-      const mockUser = { uid: 'user-123', displayName: 'Test' };
+      const mockUser = { uid: 'user-123', displayName: 'Test', providerData: [] };
 
       await expect(updateAuthUI(mockUser)).rejects.toThrow();
     });
 
     it('should handle dropdown population errors', async () => {
       window.populateFreeInputRepoSelection = vi.fn().mockRejectedValue(new Error('Failed'));
-      const mockUser = { uid: 'user-123' };
+      const mockUser = { uid: 'user-123', providerData: [] };
 
       await updateAuthUI(mockUser);
       

@@ -115,7 +115,8 @@ export async function updateAuthUI(user) {
     const displayName = user.displayName || user.email || 'User';
 
     // Check if we need to reconnect GitHub (user is signed in but session token is missing)
-    const hasGitHubProvider = user.providerData.some(p => p.providerId === 'github.com');
+    const providerData = user.providerData || [];
+    const hasGitHubProvider = providerData.some(p => p.providerId === 'github.com');
     const hasToken = !!sessionStorage.getItem('github_access_token');
     const needsReconnect = hasGitHubProvider && !hasToken;
 

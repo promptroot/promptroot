@@ -105,7 +105,8 @@ describe('Auth Module', () => {
               uid: '123',
               displayName: 'Test User',
               photoURL: 'http://example.com/photo.jpg',
-              email: 'test@example.com'
+              email: 'test@example.com',
+              providerData: []
           };
 
           updateAuthUI(user);
@@ -116,7 +117,8 @@ describe('Auth Module', () => {
           const ddName = document.getElementById('dropdownUserName');
 
           // Image loading is async in the code (onload), so we check the src was set
-          expect(avatar.src).toBe(user.photoURL);
+          // In jsdom, img.src might be resolved to a full URL
+          expect(avatar.src).toContain(user.photoURL);
           // UI Logic: cached avatar might show it immediately, but here we don't have cache.
           // The code sets src and waits for onload.
           // We can check other elements

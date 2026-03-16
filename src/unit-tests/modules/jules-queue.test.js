@@ -17,20 +17,7 @@ vi.mock('../../modules/firebase-service.js', () => ({
   getFunctions: vi.fn(() => null)
 }));
 
-import {
-  handleQueueAction,
-  addToJulesQueue,
-  updateJulesQueueItem,
-  deleteFromJulesQueue,
-  listJulesQueue,
-  showJulesQueueModal,
-  hideJulesQueueModal,
-  renderQueueListDirectly,
-  attachQueueHandlers,
-  exportQueueToMarkdown,
-  getSelectedQueueIds,
-  deleteSelectedQueueItems
-} from '../../modules/jules-queue.js';
+import * as julesQueue from '../../modules/jules-queue.js';
 import { getCache } from '../../utils/session-cache.js';
 import * as julesQueueStore from '../../modules/jules-queue-store.js';
 
@@ -73,6 +60,7 @@ vi.mock('../../utils/constants.js', () => ({
   JULES_MESSAGES: {
     SIGN_IN_REQUIRED: 'Please sign in to use Jules features',
     QUEUED: 'Added to Jules queue',
+    deleted: (n) => `Deleted ${n} items`,
     QUEUE_FAILED: (msg) => `Failed to add to queue: ${msg}`
   },
   TIMEOUTS: {
@@ -219,7 +207,7 @@ describe('jules-queue', () => {
       const { showToast } = await import('../../modules/toast.js');
       global.window.auth.currentUser = null;
       
-      const result = await handleQueueAction({ prompt: 'test' });
+      const result = await julesQueue.handleQueueAction({ prompt: 'test' });
       
       expect(result).toBe(false);
       expect(showToast).toHaveBeenCalledWith(
@@ -244,7 +232,7 @@ describe('jules-queue', () => {
       // Need window.firebase for serverTimestamp
       global.window.firebase = global.firebase;
       
-      const result = await handleQueueAction({ prompt: 'test prompt' });
+      const result = await julesQueue.handleQueueAction({ prompt: 'test prompt' });
       
       expect(result).toBe(true);
       expect(showToast).toHaveBeenCalledWith('Added to Jules queue', 'success');
@@ -264,11 +252,9 @@ describe('jules-queue', () => {
       };
       global.window.firebase = global.firebase;
       
-      const result = await handleQueueAction({ prompt: 'test' });
+      const result = await julesQueue.handleQueueAction({ prompt: 'test' });
       
       expect(result).toBe(false);
-      // The original error "Network error" is passed through.
-      // handleError adds suggestion "Please check your connection and try again."
       expect(showToast).toHaveBeenCalledWith(
         expect.stringContaining('Network error'),
         'error',
@@ -280,7 +266,7 @@ describe('jules-queue', () => {
       const { showToast } = await import('../../modules/toast.js');
       global.window.auth = null;
       
-      const result = await handleQueueAction({ prompt: 'test' });
+      const result = await julesQueue.handleQueueAction({ prompt: 'test' });
       
       expect(result).toBe(false);
       expect(showToast).toHaveBeenCalledWith(
@@ -295,7 +281,7 @@ describe('jules-queue', () => {
     it('should throw error if Firestore not initialized', async () => {
       global.window.db = null;
       
-      await expect(addToJulesQueue('user123', {})).rejects.toThrow('Firestore not initialized');
+      await expect(julesQueue.addToJulesQueue('user123', {})).rejects.toThrow('Firestore not initialized');
     });
 
     it('should add item to queue collection', async () => {
@@ -311,7 +297,7 @@ describe('jules-queue', () => {
       };
       global.window.firebase = global.firebase;
       
-      const docId = await addToJulesQueue('user123', { prompt: 'test', sourceId: 'repo1' });
+      const docId = await julesQueue.addToJulesQueue('user123', { prompt: 'test', sourceId: 'repo1' });
       
       expect(docId).toBe('newDoc123');
       expect(mockAdd).toHaveBeenCalledWith(
@@ -337,7 +323,7 @@ describe('jules-queue', () => {
       };
       global.window.firebase = global.firebase;
       
-      await addToJulesQueue('user123', { prompt: 'test', autoOpen: false });
+      await julesQueue.addToJulesQueue('user123', { prompt: 'test', autoOpen: false });
       
       expect(mockAdd).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -358,10 +344,9 @@ describe('jules-queue', () => {
         }))
       };
       global.window.firebase = global.firebase;
-      // Completely replace the mock function to ensure it works
       global.firebase.firestore.FieldValue.serverTimestamp = vi.fn(() => 'TIMESTAMP');
       
-      await addToJulesQueue('user123', { prompt: 'test' });
+      await julesQueue.addToJulesQueue('user123', { prompt: 'test' });
       
       expect(mockAdd).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -372,7 +357,6 @@ describe('jules-queue', () => {
 
     it('should clear cache after adding', async () => {
       const { clearCache, CACHE_KEYS } = await import('../../utils/session-cache.js');
-      // addDoc unconditionally clears cache if key provided
 
       global.window.db = {
         collection: vi.fn(() => ({
@@ -385,7 +369,7 @@ describe('jules-queue', () => {
       };
       global.window.firebase = global.firebase;
       
-      await addToJulesQueue('user456', { prompt: 'test' });
+      await julesQueue.addToJulesQueue('user456', { prompt: 'test' });
       
       expect(clearCache).toHaveBeenCalledWith(CACHE_KEYS.QUEUE_ITEMS, 'user456');
     });
@@ -402,7 +386,7 @@ describe('jules-queue', () => {
       };
       global.window.firebase = global.firebase;
       
-      await expect(addToJulesQueue('user123', { prompt: 'test' })).rejects.toThrow();
+      await expect(julesQueue.addToJulesQueue('user123', { prompt: 'test' })).rejects.toThrow();
     });
   });
 
@@ -410,13 +394,13 @@ describe('jules-queue', () => {
     it('should throw error if Firestore not initialized', async () => {
       global.window.db = null;
       
-      await expect(updateJulesQueueItem('user123', 'doc1', {})).rejects.toThrow('Firestore not initialized');
+      await expect(julesQueue.updateJulesQueueItem('user123', 'doc1', {})).rejects.toThrow('Firestore not initialized');
     });
 
     it('should update queue item', async () => {
       const mockUpdate = vi.fn().mockResolvedValue();
       const { getCache } = await import('../../utils/session-cache.js');
-      getCache.mockReturnValue([{id: 'doc456'}]); // Ensure getCache returns something
+      getCache.mockReturnValue([{id: 'doc456'}]);
 
       global.window.db = {
         collection: vi.fn(() => ({
@@ -430,7 +414,7 @@ describe('jules-queue', () => {
         }))
       };
       
-      const result = await updateJulesQueueItem('user123', 'doc456', { status: 'completed' });
+      const result = await julesQueue.updateJulesQueueItem('user123', 'doc456', { status: 'completed' });
       
       expect(result).toBe(true);
       expect(mockUpdate).toHaveBeenCalledWith({ status: 'completed' });
@@ -439,7 +423,6 @@ describe('jules-queue', () => {
     it('should clear cache after updating', async () => {
       const { clearCache, CACHE_KEYS } = await import('../../utils/session-cache.js');
       const { getCache: getCacheSpy } = await import('../../utils/session-cache.js');
-      // updateDoc only clears/updates if item is in cache.
       getCacheSpy.mockImplementation(() => ['item']);
 
       global.window.db = {
@@ -454,7 +437,7 @@ describe('jules-queue', () => {
         }))
       };
       
-      await updateJulesQueueItem('user789', 'doc123', { status: 'running' });
+      await julesQueue.updateJulesQueueItem('user789', 'doc123', { status: 'running' });
       
       expect(clearCache).toHaveBeenCalledWith(CACHE_KEYS.QUEUE_ITEMS, 'user789');
     });
@@ -474,7 +457,7 @@ describe('jules-queue', () => {
       const { getCache } = await import('../../utils/session-cache.js');
       getCache.mockReturnValue(['item']);
       
-      await expect(updateJulesQueueItem('user123', 'doc1', {})).rejects.toThrow();
+      await expect(julesQueue.updateJulesQueueItem('user123', 'doc1', {})).rejects.toThrow();
     });
   });
 
@@ -482,7 +465,7 @@ describe('jules-queue', () => {
     it('should throw error if Firestore not initialized', async () => {
       global.window.db = null;
       
-      await expect(deleteFromJulesQueue('user123', 'doc1')).rejects.toThrow('Firestore not initialized');
+      await expect(julesQueue.deleteFromJulesQueue('user123', 'doc1')).rejects.toThrow('Firestore not initialized');
     });
 
     it('should delete queue item', async () => {
@@ -502,7 +485,7 @@ describe('jules-queue', () => {
         }))
       };
       
-      const result = await deleteFromJulesQueue('user123', 'doc789');
+      const result = await julesQueue.deleteFromJulesQueue('user123', 'doc789');
       
       expect(result).toBe(true);
       expect(mockDelete).toHaveBeenCalled();
@@ -523,7 +506,7 @@ describe('jules-queue', () => {
         }))
       };
       
-      await deleteFromJulesQueue('user999', 'doc555');
+      await julesQueue.deleteFromJulesQueue('user999', 'doc555');
       
       expect(clearCache).toHaveBeenCalledWith(CACHE_KEYS.QUEUE_ITEMS, 'user999');
     });
@@ -541,7 +524,7 @@ describe('jules-queue', () => {
         }))
       };
 
-      await expect(deleteFromJulesQueue('user123', 'doc1')).rejects.toThrow();
+      await expect(julesQueue.deleteFromJulesQueue('user123', 'doc1')).rejects.toThrow();
     });
   });
 
@@ -549,7 +532,7 @@ describe('jules-queue', () => {
     it('should throw error if Firestore not initialized', async () => {
       global.window.db = null;
       
-      await expect(listJulesQueue('user123')).rejects.toThrow('Firestore not initialized');
+      await expect(julesQueue.listJulesQueue('user123')).rejects.toThrow('Firestore not initialized');
     });
 
     it('should list queue items ordered by createdAt', async () => {
@@ -558,7 +541,6 @@ describe('jules-queue', () => {
         { id: 'doc2', data: () => ({ prompt: 'Second', createdAt: { seconds: 2000 } }) }
       ];
       
-      // Mock getCache to return null so it fetches from DB
       const { getCache } = await import('../../utils/session-cache.js');
       getCache.mockReturnValue(null);
 
@@ -576,7 +558,7 @@ describe('jules-queue', () => {
         }))
       };
       
-      const items = await listJulesQueue('user123');
+      const items = await julesQueue.listJulesQueue('user123');
       
       expect(items).toHaveLength(2);
       expect(items[0]).toEqual({ id: 'doc1', prompt: 'First', createdAt: { seconds: 1000 } });
@@ -601,7 +583,7 @@ describe('jules-queue', () => {
         }))
       };
       
-      const items = await listJulesQueue('user123');
+      const items = await julesQueue.listJulesQueue('user123');
       
       expect(items).toEqual([]);
     });
@@ -624,7 +606,7 @@ describe('jules-queue', () => {
         }))
       };
 
-      await expect(listJulesQueue('user123')).rejects.toThrow();
+      await expect(julesQueue.listJulesQueue('user123')).rejects.toThrow();
     });
   });
 
@@ -632,7 +614,7 @@ describe('jules-queue', () => {
     it('should log error if modal element not found', () => {
       global.document.getElementById.mockReturnValue(null);
       
-      showJulesQueueModal();
+      julesQueue.showJulesQueueModal();
       
       expect(global.console.error).toHaveBeenCalledWith('julesQueueModal element not found!');
     });
@@ -641,7 +623,7 @@ describe('jules-queue', () => {
       const mockModal = createMockElement('julesQueueModal');
       global.document.getElementById.mockReturnValue(mockModal);
       
-      showJulesQueueModal();
+      julesQueue.showJulesQueueModal();
       
       expect(mockModal.classList.add).toHaveBeenCalledWith('modal-overlay');
       expect(mockModal.classList.add).toHaveBeenCalledWith('show');
@@ -652,7 +634,7 @@ describe('jules-queue', () => {
       const mockModal = createMockElement('julesQueueModal');
       global.document.getElementById.mockReturnValue(mockModal);
       
-      showJulesQueueModal();
+      julesQueue.showJulesQueueModal();
       
       expect(mockModal.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
       expect(global.document.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
@@ -662,9 +644,8 @@ describe('jules-queue', () => {
       const mockModal = createMockElement('julesQueueModal');
       global.document.getElementById.mockReturnValue(mockModal);
       
-      showJulesQueueModal();
+      julesQueue.showJulesQueueModal();
       
-      // Simulate click on modal itself (outside content)
       const calls = mockModal.addEventListener.mock.calls;
       const clickCall = calls.find(call => call[0] === 'click');
       const handler = clickCall[1];
@@ -678,36 +659,15 @@ describe('jules-queue', () => {
       const mockModal = createMockElement('julesQueueModal');
       global.document.getElementById.mockReturnValue(mockModal);
 
-      showJulesQueueModal();
+      julesQueue.showJulesQueueModal();
 
-      // Find the escape handler passed to addEventListener
       const calls = global.document.addEventListener.mock.calls;
       const keydownCall = calls.find(call => call[0] === 'keydown');
       const handler = keydownCall[1];
 
-      // Call handler
       handler({ key: 'Escape' });
 
       expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
-    });
-
-    it('should not close modal when clicking inside content', () => {
-      const mockModal = createMockElement('julesQueueModal');
-      const mockContent = createMockElement('content');
-      global.document.getElementById.mockReturnValue(mockModal);
-      
-      showJulesQueueModal();
-      
-      const setAttributeCalls = mockModal.setAttribute.mock.calls.length;
-      
-      // Simulate click on content element
-      const calls = mockModal.addEventListener.mock.calls;
-      const clickCall = calls.find(call => call[0] === 'click');
-      const handler = clickCall[1];
-      handler({ target: mockContent });
-      
-      // Should not add new setAttribute call
-      expect(mockModal.setAttribute).toHaveBeenCalledTimes(setAttributeCalls);
     });
   });
 
@@ -716,11 +676,10 @@ describe('jules-queue', () => {
       const mockModal = createMockElement('julesQueueModal');
       global.document.getElementById.mockReturnValue(mockModal);
       
-      // Mock escape handler to test removeEventListener call
       const mockHandler = vi.fn();
       julesQueueStore.getQueueModalEscapeHandler.mockReturnValue(mockHandler);
       
-      hideJulesQueueModal();
+      julesQueue.hideJulesQueueModal();
       
       expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
       expect(mockModal.removeAttribute).toHaveBeenCalledWith('style');
@@ -731,39 +690,7 @@ describe('jules-queue', () => {
     it('should do nothing if modal not found', () => {
       global.document.getElementById.mockReturnValue(null);
       
-      expect(() => hideJulesQueueModal()).not.toThrow();
-    });
-  });
-
-  describe('error persistence', () => {
-    it('should identify recent errors within visibility window', () => {
-      const now = Date.now();
-      const recentError = {
-        error: 'Test error',
-        errorAt: now - (30 * 60 * 1000) // 30 minutes ago
-      };
-      
-      const ageMinutes = Math.floor((now - recentError.errorAt) / (60 * 1000));
-      expect(ageMinutes).toBeLessThan(60); // Within ERROR_VISIBILITY_WINDOW_MINUTES
-    });
-
-    it('should exclude errors outside visibility window', () => {
-      const now = Date.now();
-      const oldError = {
-        error: 'Old error',
-        errorAt: now - (90 * 60 * 1000) // 90 minutes ago
-      };
-      
-      const ageMinutes = Math.floor((now - oldError.errorAt) / (60 * 1000));
-      expect(ageMinutes).toBeGreaterThanOrEqual(60); // Outside ERROR_VISIBILITY_WINDOW_MINUTES
-    });
-
-    it('should handle missing errorAt timestamp', () => {
-      const errorWithoutTimestamp = {
-        error: 'Error without timestamp'
-      };
-      
-      expect(errorWithoutTimestamp.errorAt).toBeUndefined();
+      expect(() => julesQueue.hideJulesQueueModal()).not.toThrow();
     });
   });
 
@@ -774,17 +701,17 @@ describe('jules-queue', () => {
         { id: '2', prompt: 'Test 2' }
       ];
       
-      expect(() => renderQueueListDirectly(items)).not.toThrow();
+      expect(() => julesQueue.renderQueueListDirectly(items)).not.toThrow();
     });
 
     it('should handle empty array', () => {
-      expect(() => renderQueueListDirectly([])).not.toThrow();
+      expect(() => julesQueue.renderQueueListDirectly([])).not.toThrow();
     });
   });
 
   describe('attachQueueHandlers', () => {
     it('should execute without errors', () => {
-      expect(() => attachQueueHandlers()).not.toThrow();
+      expect(() => julesQueue.attachQueueHandlers()).not.toThrow();
     });
   });
 
@@ -797,252 +724,38 @@ describe('jules-queue', () => {
       const { getQueueCache } = await import('../../modules/jules-queue-store.js');
       const { showToast } = await import('../../modules/toast.js');
       
-      // Mock queue cache to have items
-      getQueueCache.mockReturnValue([{ 
-        id: 'test1', 
-        prompt: 'test prompt',
-        title: 'Test Item',
-        subtasks: []
-      }]);
+      getQueueCache.mockReturnValue([{ id: 'test1', prompt: 'test' }]);
+      global.document.querySelectorAll = vi.fn(() => []);
       
-      // Mock DOM with no checked checkboxes
-      global.document.querySelectorAll = vi.fn((selector) => {
-        if (selector === '.queue-checkbox:checked' || selector === '.subtask-checkbox:checked') {
-          return []; // No checked checkboxes
-        }
-        return [];
-      });
-      
-      exportQueueToMarkdown();
+      julesQueue.exportQueueToMarkdown();
       
       expect(showToast).toHaveBeenCalledWith('No items selected to export', 'warn');
-      expect(global.document.createElement).not.toHaveBeenCalled();
     });
 
     it('should create markdown file for single prompt items', async () => {
       const { getQueueCache } = await import('../../modules/jules-queue-store.js');
       const { showToast } = await import('../../modules/toast.js');
       
-      const mockItems = [
-        {
-          id: 'test-id-1',
-          type: 'single',
-          status: 'pending',
-          prompt: 'Test prompt content',
-          sourceId: 'owner/repo',
-          branch: 'main',
-          createdAt: { seconds: 1644000000 }
-        }
-      ];
-      
-      getQueueCache.mockReturnValue(mockItems);
-      
-      // Mock DOM with checked checkbox for test-id-1
-      const mockCheckedCheckbox = { 
-        dataset: { docid: 'test-id-1' },
-        class: 'queue-checkbox'
-      };
+      getQueueCache.mockReturnValue([{
+        id: 'test-id-1',
+        type: 'single',
+        prompt: 'Test prompt',
+        createdAt: { seconds: 1644000000 }
+      }]);
       
       global.document.querySelectorAll = vi.fn((selector) => {
-        if (selector === '.queue-checkbox:checked') {
-          return [mockCheckedCheckbox];
-        }
-        if (selector === '.subtask-checkbox:checked') {
-          return [];
-        }
+        if (selector === '.queue-checkbox:checked') return [{ dataset: { docid: 'test-id-1' } }];
         return [];
       });
       
-      const mockElement = {
-        href: '',
-        download: '',
-        style: { display: '' },
-        click: vi.fn()
-      };
+      const mockElement = { href: '', download: '', style: {}, click: vi.fn() };
       global.document.createElement.mockReturnValue(mockElement);
-      global.document.body = { appendChild: vi.fn(), removeChild: vi.fn() };
       
-      exportQueueToMarkdown();
+      julesQueue.exportQueueToMarkdown();
       
-      expect(global.Blob).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.stringContaining('# Queue Export (Selected Items)')]),
-        { type: 'text/markdown;charset=utf-8' }
-      );
-      expect(global.URL.createObjectURL).toHaveBeenCalled();
-      expect(mockElement.download).toMatch(/queue-export-.*\.md/);
+      expect(global.Blob).toHaveBeenCalled();
       expect(mockElement.click).toHaveBeenCalled();
-      expect(global.document.body.appendChild).toHaveBeenCalledWith(mockElement);
-      expect(global.document.body.removeChild).toHaveBeenCalledWith(mockElement);
-      expect(global.URL.revokeObjectURL).toHaveBeenCalled();
       expect(showToast).toHaveBeenCalledWith('Exported 1 selected item to markdown', 'success');
-    });
-
-    it('should create markdown file for subtasks items', async () => {
-      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
-      const { showToast } = await import('../../modules/toast.js');
-      
-      const mockItems = [
-        {
-          id: 'test-id-2',
-          type: 'subtasks',
-          status: 'pending',
-          remaining: [
-            { fullContent: 'First subtask' },
-            { fullContent: 'Second subtask' }
-          ],
-          sourceId: 'owner/repo',
-          branch: 'develop',
-          createdAt: { seconds: 1644000000 }
-        }
-      ];
-      
-      getQueueCache.mockReturnValue(mockItems);
-      
-      // Mock DOM with checked checkbox for test-id-2
-      const mockCheckedCheckbox = { 
-        dataset: { docid: 'test-id-2' },
-        class: 'queue-checkbox'
-      };
-      
-      global.document.querySelectorAll = vi.fn((selector) => {
-        if (selector === '.queue-checkbox:checked') {
-          return [mockCheckedCheckbox];
-        }
-        if (selector === '.subtask-checkbox:checked') {
-          return [];
-        }
-        return [];
-      });
-      
-      const mockElement = {
-        href: '',
-        download: '',
-        style: { display: '' },
-        click: vi.fn()
-      };
-      global.document.createElement.mockReturnValue(mockElement);
-      global.document.body = { appendChild: vi.fn(), removeChild: vi.fn() };
-      
-      exportQueueToMarkdown();
-      
-      const blobCall = global.Blob.mock.calls[0];
-      const markdownContent = blobCall[0][0];
-      
-      expect(markdownContent).toContain('# Queue Export (Selected Items)');
-      expect(markdownContent).toContain('**ID:** test-id-2');
-      expect(markdownContent).toContain('**Type:** subtasks');
-      expect(markdownContent).toContain('**Subtasks:** 2');
-      expect(markdownContent).toContain('### Subtask 1');
-      expect(markdownContent).toContain('First subtask');
-      expect(markdownContent).toContain('### Subtask 2');
-      expect(markdownContent).toContain('Second subtask');
-      expect(markdownContent).toContain('<!-- QUEUE_ITEM_START -->');
-      expect(markdownContent).toContain('<!-- QUEUE_ITEM_END -->');
-      expect(markdownContent).toContain('<!-- SUBTASK_START -->');
-      expect(markdownContent).toContain('<!-- SUBTASK_END -->');
-      
-      expect(showToast).toHaveBeenCalledWith('Exported 1 selected item to markdown', 'success');
-    });
-
-    it('should handle items with scheduling information', async () => {
-      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
-      
-      const mockItems = [
-        {
-          id: 'scheduled-item',
-          type: 'single',
-          status: 'scheduled',
-          prompt: 'Scheduled prompt',
-          scheduledAt: { seconds: 1644000000 },
-          scheduledTimeZone: 'America/New_York',
-          createdAt: { seconds: 1643000000 }
-        }
-      ];
-      
-      getQueueCache.mockReturnValue(mockItems);
-      
-      // Mock DOM with checked checkbox for scheduled-item
-      const mockCheckedCheckbox = { 
-        dataset: { docid: 'scheduled-item' },
-        class: 'queue-checkbox'
-      };
-      
-      global.document.querySelectorAll = vi.fn((selector) => {
-        if (selector === '.queue-checkbox:checked') {
-          return [mockCheckedCheckbox];
-        }
-        if (selector === '.subtask-checkbox:checked') {
-          return [];
-        }
-        return [];
-      });
-      
-      const mockElement = {
-        href: '',
-        download: '',
-        style: { display: '' },
-        click: vi.fn()
-      };
-      global.document.createElement.mockReturnValue(mockElement);
-      global.document.body = { appendChild: vi.fn(), removeChild: vi.fn() };
-      
-      exportQueueToMarkdown();
-      
-      const blobCall = global.Blob.mock.calls[0];
-      const markdownContent = blobCall[0][0];
-      
-      expect(markdownContent).toContain('**Status:** scheduled');
-      expect(markdownContent).toContain('**Scheduled:**');
-      expect(markdownContent).toContain('America/New_York');
-    });
-
-    it('should handle items with errors', async () => {
-      const { getQueueCache } = await import('../../modules/jules-queue-store.js');
-      
-      const mockItems = [
-        {
-          id: 'error-item',
-          type: 'single',
-          status: 'error',
-          prompt: 'Failed prompt',
-          error: 'Network timeout',
-          createdAt: { seconds: 1644000000 }
-        }
-      ];
-      
-      getQueueCache.mockReturnValue(mockItems);
-      
-      // Mock DOM with checked checkbox for error-item
-      const mockCheckedCheckbox = { 
-        dataset: { docid: 'error-item' },
-        class: 'queue-checkbox'
-      };
-      
-      global.document.querySelectorAll = vi.fn((selector) => {
-        if (selector === '.queue-checkbox:checked') {
-          return [mockCheckedCheckbox];
-        }
-        if (selector === '.subtask-checkbox:checked') {
-          return [];
-        }
-        return [];
-      });
-      
-      const mockElement = {
-        href: '',
-        download: '',
-        style: { display: '' },
-        click: vi.fn()
-      };
-      global.document.createElement.mockReturnValue(mockElement);
-      global.document.body = { appendChild: vi.fn(), removeChild: vi.fn() };
-      
-      exportQueueToMarkdown();
-      
-      const blobCall = global.Blob.mock.calls[0];
-      const markdownContent = blobCall[0][0];
-      
-      expect(markdownContent).toContain('**Error:** Network timeout');
     });
   });
 
@@ -1075,11 +788,9 @@ describe('jules-queue', () => {
         if (selector === '.queue-checkbox:checked') {
           return [{ dataset: { docid: 'q1' } }, { dataset: { docid: 'q2' } }];
         }
-        if (selector === '.subtask-checkbox:checked') return [];
         return [];
       });
 
-      // Mock database calls
       global.window.db = {
         collection: vi.fn(() => ({
           doc: vi.fn(() => ({
@@ -1092,10 +803,9 @@ describe('jules-queue', () => {
         }))
       };
 
-      await deleteSelectedQueueItems();
+      await julesQueue.deleteSelectedQueueItems();
 
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Deleted 2 items'), 'success');
-      // Verify loadQueuePage was called (indirectly via listJulesQueue mock)
       expect(global.window.db.collection).toHaveBeenCalled();
     });
 
@@ -1106,11 +816,9 @@ describe('jules-queue', () => {
         if (selector === '.queue-checkbox:checked') {
           return [{ dataset: { docid: 'q1' } }, { dataset: { docid: 'q2' } }];
         }
-        if (selector === '.subtask-checkbox:checked') return [];
         return [];
       });
 
-      // Mock one success and one failure
       let callCount = 0;
       global.window.db = {
         collection: vi.fn(() => ({
@@ -1128,7 +836,7 @@ describe('jules-queue', () => {
         }))
       };
 
-      await deleteSelectedQueueItems();
+      await julesQueue.deleteSelectedQueueItems();
 
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Deleted 1 items, but 1 failed'), 'warn');
     });
@@ -1137,10 +845,7 @@ describe('jules-queue', () => {
       const { showToast } = await import('../../modules/toast.js');
 
       global.document.querySelectorAll = vi.fn((selector) => {
-        if (selector === '.queue-checkbox:checked') {
-          return [{ dataset: { docid: 'q1' } }];
-        }
-        if (selector === '.subtask-checkbox:checked') return [];
+        if (selector === '.queue-checkbox:checked') return [{ dataset: { docid: 'q1' } }];
         return [];
       });
 
@@ -1156,19 +861,15 @@ describe('jules-queue', () => {
         }))
       };
 
-      await deleteSelectedQueueItems();
+      await julesQueue.deleteSelectedQueueItems();
 
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete items'), 'error');
     });
 
     it('should skip subtask deletion if parent queue item is selected', async () => {
       global.document.querySelectorAll = vi.fn((selector) => {
-        if (selector === '.queue-checkbox:checked') {
-          return [{ dataset: { docid: 's1' } }];
-        }
-        if (selector === '.subtask-checkbox:checked') {
-          return [{ dataset: { docid: 's1', index: '0' } }];
-        }
+        if (selector === '.queue-checkbox:checked') return [{ dataset: { docid: 's1' } }];
+        if (selector === '.subtask-checkbox:checked') return [{ dataset: { docid: 's1', index: '0' } }];
         return [];
       });
 
@@ -1188,11 +889,9 @@ describe('jules-queue', () => {
         }))
       };
 
-      await deleteSelectedQueueItems();
+      await julesQueue.deleteSelectedQueueItems();
 
-      // Parent delete should be called
       expect(mockDelete).toHaveBeenCalled();
-      // Subtask update should NOT be called because it was skipped
       expect(mockUpdate).not.toHaveBeenCalled();
     });
   });

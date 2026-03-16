@@ -1836,7 +1836,7 @@ async function unscheduleSelectedQueueItems() {
   }
 }
 
-async function deleteSelectedQueueItems() {
+export async function deleteSelectedQueueItems() {
   const user = getAuth()?.currentUser;
   if (!user) { handleError(JULES_MESSAGES.NOT_SIGNED_IN, { source: 'deleteSelectedQueueItems' }, { category: ErrorCategory.AUTH }); return; }
   

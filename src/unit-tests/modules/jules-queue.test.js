@@ -63,6 +63,11 @@ vi.mock('../../utils/constants.js', () => ({
     deleted: (n) => `Deleted ${n} items`,
     QUEUE_FAILED: (msg) => `Failed to add to queue: ${msg}`
   },
+  JULES_UI_TEXT: {
+    SUBTASKS_BATCH: 'Subtasks Batch',
+    SINGLE_PROMPT: 'Single Prompt',
+    REMAINING_COUNT: (n) => `(${n} remaining)`
+  },
   TIMEOUTS: {
     SHORT: 1000,
     MEDIUM: 3000,
@@ -782,6 +787,25 @@ describe('jules-queue', () => {
       ];
       getQueueCacheMock.mockReturnValue(mockQueueCache);
       showConfirm.mockResolvedValue(true);
+
+      // Provide a more complete DB mock to prevent loadQueuePage from hanging/retrying
+      global.window.db = {
+        collection: vi.fn(() => ({
+          doc: vi.fn(() => ({
+            collection: vi.fn(() => ({
+              orderBy: vi.fn(() => ({
+                limit: vi.fn(() => ({
+                  get: vi.fn().mockResolvedValue({ docs: [] })
+                }))
+              })),
+              doc: vi.fn(() => ({
+                delete: vi.fn().mockResolvedValue(),
+                update: vi.fn().mockResolvedValue()
+              }))
+            }))
+          }))
+        }))
+      };
     });
 
     it('should delete selected items and refresh UI on full success', async () => {

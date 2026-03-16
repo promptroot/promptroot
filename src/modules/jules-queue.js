@@ -1207,33 +1207,43 @@ async function confirmScheduleItems() {
     const scheduledAt = firebase.firestore.Timestamp.fromDate(scheduledDate);
     const retryOnFailure = retryCheckbox ? retryCheckbox.checked : false;
     
-    for (const docId of queueSelections) {
-      await updateJulesQueueItem(user.uid, docId, {
+    const results = await Promise.allSettled(queueSelections.map(docId =>
+      updateJulesQueueItem(user.uid, docId, {
         status: 'scheduled',
         scheduledAt: scheduledAt,
         scheduledTimeZone: selectedTimeZone,
         retryOnFailure: retryOnFailure,
         retryCount: 0,
         updatedAt: getServerTimestamp()
-      });
-    }
+      })
+    ));
     
     const totalScheduled = queueSelections.length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+    const successCount = totalScheduled - failed;
     
-    const formattedScheduledAt = new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: selectedTimeZone,
-      timeZoneName: 'short'
-    }).format(scheduledDate);
-    
-    const itemText = totalScheduled === 1 ? 'item' : 'items';
-    showToast(`Scheduled ${totalScheduled} ${itemText} for ${formattedScheduledAt}`, 'success');
-    hideScheduleModal();
-    await loadQueuePage();
+    if (failed > 0) {
+      errorDiv.textContent = `Scheduled ${successCount} items, ${failed} failed`;
+      errorDiv.classList.remove('hidden');
+      if (successCount > 0) {
+        await loadQueuePage();
+      }
+    } else {
+      const formattedScheduledAt = new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: selectedTimeZone,
+        timeZoneName: 'short'
+      }).format(scheduledDate);
+
+      const itemText = totalScheduled === 1 ? 'item' : 'items';
+      showToast(`Scheduled ${totalScheduled} ${itemText} for ${formattedScheduledAt}`, 'success');
+      hideScheduleModal();
+      await loadQueuePage();
+    }
   } catch (err) {
     const errorInfo = handleError(err, { source: 'confirmScheduleItems' }, { showDisplay: false });
     errorDiv.textContent = `Failed to schedule items: ${errorInfo.message}`;

@@ -1888,12 +1888,21 @@ async function deleteSelectedQueueItems() {
       deletePromises.push(deleteSelectedSubtasks(docId, indices));
     }
 
-    await Promise.all(deletePromises);
-    
-    showToast(JULES_MESSAGES.deleted(totalCount), 'success');
-    await loadQueuePage();
+    const results = await Promise.allSettled(deletePromises);
+    const succeeded = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+
+    if (failed === 0) {
+      showToast(JULES_MESSAGES.deleted(totalCount), 'success');
+    } else if (succeeded > 0) {
+      showToast(`Deleted ${succeeded} items, but ${failed} failed.`, 'warn');
+    } else {
+      showToast(`Failed to delete items.`, 'error');
+    }
   } catch (err) {
     handleError(err, { source: 'deleteSelectedQueueItems' });
+  } finally {
+    await loadQueuePage();
   }
 }
 

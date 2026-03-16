@@ -28,7 +28,8 @@ import {
   renderQueueListDirectly,
   attachQueueHandlers,
   exportQueueToMarkdown,
-  getSelectedQueueIds
+  getSelectedQueueIds,
+  deleteSelectedQueueItems
 } from '../../modules/jules-queue.js';
 import { getCache } from '../../utils/session-cache.js';
 import * as julesQueueStore from '../../modules/jules-queue-store.js';
@@ -1042,6 +1043,157 @@ describe('jules-queue', () => {
       const markdownContent = blobCall[0][0];
       
       expect(markdownContent).toContain('**Error:** Network timeout');
+    });
+  });
+
+  describe('deleteSelectedQueueItems', () => {
+    let mockAuthUser;
+    let mockQueueCache;
+
+    beforeEach(async () => {
+      const { getAuth } = await import('../../modules/firebase-service.js');
+      const { getQueueCache: getQueueCacheMock } = await import('../../modules/jules-queue-store.js');
+      const { showConfirm } = await import('../../modules/confirm-modal.js');
+
+      mockAuthUser = { uid: 'user123' };
+      getAuth.mockReturnValue({ currentUser: mockAuthUser });
+      global.window.auth.currentUser = mockAuthUser;
+
+      mockQueueCache = [
+        { id: 'q1', type: 'single' },
+        { id: 'q2', type: 'single' },
+        { id: 's1', type: 'subtasks', remaining: [{}, {}] }
+      ];
+      getQueueCacheMock.mockReturnValue(mockQueueCache);
+      showConfirm.mockResolvedValue(true);
+    });
+
+    it('should delete selected items and refresh UI on full success', async () => {
+      const { showToast } = await import('../../modules/toast.js');
+
+      global.document.querySelectorAll = vi.fn((selector) => {
+        if (selector === '.queue-checkbox:checked') {
+          return [{ dataset: { docid: 'q1' } }, { dataset: { docid: 'q2' } }];
+        }
+        if (selector === '.subtask-checkbox:checked') return [];
+        return [];
+      });
+
+      // Mock database calls
+      global.window.db = {
+        collection: vi.fn(() => ({
+          doc: vi.fn(() => ({
+            collection: vi.fn(() => ({
+              doc: vi.fn(() => ({
+                delete: vi.fn().mockResolvedValue()
+              }))
+            }))
+          }))
+        }))
+      };
+
+      await deleteSelectedQueueItems();
+
+      expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Deleted 2 items'), 'success');
+      // Verify loadQueuePage was called (indirectly via listJulesQueue mock)
+      expect(global.window.db.collection).toHaveBeenCalled();
+    });
+
+    it('should show warn toast and refresh UI on partial failure', async () => {
+      const { showToast } = await import('../../modules/toast.js');
+
+      global.document.querySelectorAll = vi.fn((selector) => {
+        if (selector === '.queue-checkbox:checked') {
+          return [{ dataset: { docid: 'q1' } }, { dataset: { docid: 'q2' } }];
+        }
+        if (selector === '.subtask-checkbox:checked') return [];
+        return [];
+      });
+
+      // Mock one success and one failure
+      let callCount = 0;
+      global.window.db = {
+        collection: vi.fn(() => ({
+          doc: vi.fn(() => ({
+            collection: vi.fn(() => ({
+              doc: vi.fn(() => ({
+                delete: vi.fn(() => {
+                  callCount++;
+                  if (callCount === 1) return Promise.resolve();
+                  return Promise.reject(new Error('Delete failed'));
+                })
+              }))
+            }))
+          }))
+        }))
+      };
+
+      await deleteSelectedQueueItems();
+
+      expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Deleted 1 items, but 1 failed'), 'warn');
+    });
+
+    it('should show error toast and refresh UI on full failure', async () => {
+      const { showToast } = await import('../../modules/toast.js');
+
+      global.document.querySelectorAll = vi.fn((selector) => {
+        if (selector === '.queue-checkbox:checked') {
+          return [{ dataset: { docid: 'q1' } }];
+        }
+        if (selector === '.subtask-checkbox:checked') return [];
+        return [];
+      });
+
+      global.window.db = {
+        collection: vi.fn(() => ({
+          doc: vi.fn(() => ({
+            collection: vi.fn(() => ({
+              doc: vi.fn(() => ({
+                delete: vi.fn().mockRejectedValue(new Error('Delete failed'))
+              }))
+            }))
+          }))
+        }))
+      };
+
+      await deleteSelectedQueueItems();
+
+      expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete items'), 'error');
+    });
+
+    it('should skip subtask deletion if parent queue item is selected', async () => {
+      global.document.querySelectorAll = vi.fn((selector) => {
+        if (selector === '.queue-checkbox:checked') {
+          return [{ dataset: { docid: 's1' } }];
+        }
+        if (selector === '.subtask-checkbox:checked') {
+          return [{ dataset: { docid: 's1', index: '0' } }];
+        }
+        return [];
+      });
+
+      const mockDelete = vi.fn().mockResolvedValue();
+      const mockUpdate = vi.fn().mockResolvedValue();
+
+      global.window.db = {
+        collection: vi.fn(() => ({
+          doc: vi.fn(() => ({
+            collection: vi.fn(() => ({
+              doc: vi.fn(() => ({
+                delete: mockDelete,
+                update: mockUpdate
+              }))
+            }))
+          }))
+        }))
+      };
+
+      await deleteSelectedQueueItems();
+
+      // Parent delete should be called
+      expect(mockDelete).toHaveBeenCalled();
+      // Subtask update should NOT be called because it was skipped
+      expect(mockUpdate).not.toHaveBeenCalled();
     });
   });
 });

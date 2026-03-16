@@ -46,7 +46,7 @@ describe('Auth Module', () => {
     });
 
     it('should update current user from auth instance', () => {
-      const user = { uid: '123' };
+      const user = { uid: '123', providerData: [] };
       mockAuth.currentUser = user;
       expect(getCurrentUser()).toBe(user);
     });
@@ -89,7 +89,7 @@ describe('Auth Module', () => {
 
   describe('signOutUser', () => {
     it('should sign out user and clear token', async () => {
-      mockAuth.currentUser = { uid: '123' };
+      mockAuth.currentUser = { uid: '123', providerData: [] };
       
       await signOutUser();
 

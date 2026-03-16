@@ -84,6 +84,15 @@ const createMockElement = (id) => ({
       this.textContent += child.textContent;
     }
   }),
+  setAttribute: vi.fn(function(name, value) {
+    this[name] = value;
+  }),
+  getAttribute: vi.fn(function(name) {
+    return this[name];
+  }),
+  removeAttribute: vi.fn(function(name) {
+    delete this[name];
+  }),
   src: '',
   alt: '',
   onclick: null,
@@ -637,7 +646,7 @@ describe('auth', () => {
 
       const promise = initAuthStateListener();
       
-      const mockUser = { uid: 'user-123', displayName: 'Test' };
+      const mockUser = { uid: 'user-123', displayName: 'Test', providerData: [] };
       authCallback(mockUser);
       
       await promise;

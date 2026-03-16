@@ -43,7 +43,7 @@ export async function signInWithGitHub(forceAccountSelection = false) {
         token: result.credential.accessToken,
         timestamp: Date.now()
       };
-      localStorage.setItem('github_access_token', JSON.stringify(tokenData));
+      sessionStorage.setItem('github_access_token', JSON.stringify(tokenData));
     } else {
       console.warn('GitHub sign-in succeeded but no access token was returned. Falling back to unauthenticated GitHub requests.', {
         hasCredential: !!result.credential
@@ -81,7 +81,7 @@ export async function signOutUser() {
         clearJulesKeyCache(auth.currentUser.uid);
       }
       await auth.signOut();
-      localStorage.removeItem('github_access_token');
+      sessionStorage.removeItem('github_access_token');
       
       updateAuthUI(null);
     }
@@ -113,6 +113,21 @@ export async function updateAuthUI(user) {
 
   if (user) {
     const displayName = user.displayName || user.email || 'User';
+
+    // Check if we need to reconnect GitHub (user is signed in but session token is missing)
+    const providerData = user.providerData || [];
+    const hasGitHubProvider = providerData.some(p => p.providerId === 'github.com');
+    const hasToken = !!sessionStorage.getItem('github_access_token');
+    const needsReconnect = hasGitHubProvider && !hasToken;
+
+    if (needsReconnect) {
+      console.warn('User is signed in but GitHub access token is missing from sessionStorage. Reconnect required.');
+      // Only show toast once per session to avoid spamming
+      if (!getCache('RECONNECT_TOAST_SHOWN', user.uid)) {
+        showToast('GitHub session expired. Please reconnect to enable all features.', 'info');
+        setCache('RECONNECT_TOAST_SHOWN', true, user.uid);
+      }
+    }
     
     if (userAvatar && user.photoURL) {
       const cachedAvatar = getCache('USER_AVATAR', user.uid);
@@ -160,8 +175,20 @@ export async function updateAuthUI(user) {
       profileItem.onclick = () => window.location.href = '/pages/profile/profile.html';
     }
     if (signInItem) {
-      signInItem.classList.add('hidden');
-      signInItem.onclick = null;
+      if (needsReconnect) {
+        signInItem.classList.remove('hidden');
+        signInItem.replaceChildren();
+        const icon = document.createElement('span');
+        icon.className = 'icon icon-inline';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = 'key';
+        signInItem.appendChild(icon);
+        signInItem.appendChild(document.createTextNode(' Reconnect GitHub'));
+        signInItem.onclick = () => signInWithGitHub();
+      } else {
+        signInItem.classList.add('hidden');
+        signInItem.onclick = null;
+      }
     }
     if (switchAccountItem) {
       switchAccountItem.classList.remove('hidden');

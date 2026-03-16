@@ -22,12 +22,6 @@ vi.mock('../../modules/status-bar.js', () => ({
   }
 }));
 
-global.sessionStorage = {
-  getItem: vi.fn((key) => null),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn()
-};
 
 global.console = {
   error: vi.fn(),

@@ -42,17 +42,51 @@ global.window.db = {
 // Mock console.warn for tests that check for it
 global.console.warn = vi.fn();
 
-// Mock localStorage more realistically
-const localStorageMock = (() => {
+// Mock localStorage and sessionStorage more realistically
+const createStorageMock = () => {
   let store = {};
-  return {
+  const mock = {
     getItem: vi.fn((key) => store[key] || null),
     setItem: vi.fn((key, value) => { store[key] = value.toString(); }),
     removeItem: vi.fn((key) => { delete store[key]; }),
     clear: vi.fn(() => { store = {}; }),
+    key: vi.fn((index) => Object.keys(store)[index] || null),
   };
-})();
 
-Object.defineProperty(global.window, 'localStorage', {
+  Object.defineProperty(mock, 'length', {
+    get: () => Object.keys(store).length,
+    configurable: true
+  });
+
+  return mock;
+};
+
+const localStorageMock = createStorageMock();
+const sessionStorageMock = createStorageMock();
+
+// Define on both global and window to ensure consistency
+Object.defineProperty(global, 'localStorage', {
   value: localStorageMock,
+  configurable: true,
+  writable: true
 });
+
+Object.defineProperty(global, 'sessionStorage', {
+  value: sessionStorageMock,
+  configurable: true,
+  writable: true
+});
+
+if (global.window) {
+  Object.defineProperty(global.window, 'localStorage', {
+    value: localStorageMock,
+    configurable: true,
+    writable: true
+  });
+
+  Object.defineProperty(global.window, 'sessionStorage', {
+    value: sessionStorageMock,
+    configurable: true,
+    writable: true
+  });
+}

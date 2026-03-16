@@ -18,7 +18,7 @@ describe('GitHub API Module', () => {
         global.fetch = vi.fn();
         mockAuth.currentUser = null;
         window.auth = mockAuth;
-        localStorage.removeItem('github_access_token');
+        sessionStorage.removeItem('github_access_token');
     });
 
     afterEach(() => {
@@ -43,7 +43,7 @@ describe('GitHub API Module', () => {
         it('should include auth token if present', async () => {
             mockAuth.currentUser = { providerData: [{ providerId: 'github.com' }] };
             window.auth.currentUser = mockAuth.currentUser;
-            localStorage.setItem('github_access_token', JSON.stringify({
+            sessionStorage.setItem('github_access_token', JSON.stringify({
                 token: 'gh_token',
                 timestamp: Date.now()
             }));

@@ -56,14 +56,6 @@ global.firebase = {
   }
 };
 
-Object.defineProperty(global, 'localStorage', {
-  value: {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn()
-  },
-  writable: true
-});
 
 global.console = {
   error: vi.fn(),
@@ -84,6 +76,23 @@ const createMockElement = (id) => ({
     display: ''
   },
   textContent: '',
+  replaceChildren: vi.fn(),
+  appendChild: vi.fn(function(child) {
+    if (child.nodeType === 3) {
+      this.textContent += child.textContent;
+    } else if (child.textContent) {
+      this.textContent += child.textContent;
+    }
+  }),
+  setAttribute: vi.fn(function(name, value) {
+    this[name] = value;
+  }),
+  getAttribute: vi.fn(function(name) {
+    return this[name];
+  }),
+  removeAttribute: vi.fn(function(name) {
+    delete this[name];
+  }),
   src: '',
   alt: '',
   onclick: null,
@@ -95,7 +104,9 @@ const createMockElement = (id) => ({
 });
 
 global.document = {
-  getElementById: vi.fn()
+  getElementById: vi.fn(),
+  createElement: vi.fn((tag) => createMockElement(null)),
+  createTextNode: vi.fn((text) => ({ nodeType: 3, textContent: text }))
 };
 
 function mockReset() {
@@ -114,10 +125,8 @@ function mockReset() {
   global.window.populateFreeInputRepoSelection = vi.fn().mockResolvedValue();
   global.window.populateFreeInputBranchSelection = vi.fn().mockResolvedValue();
   
-  // Reset localStorage
-  global.localStorage.getItem.mockReturnValue(null);
-  global.localStorage.setItem.mockImplementation(() => {});
-  global.localStorage.removeItem.mockImplementation(() => {});
+  // Reset sessionStorage
+  global.sessionStorage.clear();
   
   // Reset document.getElementById
   global.document.getElementById.mockImplementation((id) => {
@@ -142,7 +151,7 @@ describe('auth', () => {
     });
 
     it('should return the current user from auth service if available', () => {
-      const mockUser = { uid: '123', email: 'test@example.com' };
+      const mockUser = { uid: '123', email: 'test@example.com', providerData: [] };
       mockFirebaseAuth.currentUser = mockUser;
       // getAuth returns mockFirebaseAuth which has currentUser
       
@@ -152,7 +161,7 @@ describe('auth', () => {
     });
 
     it('should cache the user once retrieved', () => {
-      const mockUser = { uid: '123', email: 'test@example.com' };
+      const mockUser = { uid: '123', email: 'test@example.com', providerData: [] };
       mockFirebaseAuth.currentUser = mockUser;
       
       getCurrentUser();
@@ -179,7 +188,7 @@ describe('auth', () => {
 
   describe('setCurrentUser', () => {
     it('should set the current user', () => {
-      const mockUser = { uid: '456', email: 'user@test.com' };
+      const mockUser = { uid: '456', email: 'user@test.com', providerData: [] };
       
       setCurrentUser(mockUser);
       
@@ -250,7 +259,7 @@ describe('auth', () => {
       expect(mockFirebaseAuth.signInWithPopup).toHaveBeenCalledWith(mockProvider);
     });
 
-    it('should store access token in localStorage on success', async () => {
+    it('should store access token in sessionStorage on success', async () => {
       const mockProvider = { addScope: vi.fn() };
       mockGithubAuthProvider.mockReturnValue(mockProvider);
       mockFirebaseAuth.signInWithPopup.mockResolvedValue({
@@ -261,7 +270,7 @@ describe('auth', () => {
 
       await signInWithGitHub();
       
-      expect(global.localStorage.setItem).toHaveBeenCalledWith(
+      expect(sessionStorage.setItem).toHaveBeenCalledWith(
         'github_access_token',
         expect.stringContaining('github-token-123')
       );
@@ -277,7 +286,7 @@ describe('auth', () => {
       await signInWithGitHub();
       
       expect(global.console.warn).toHaveBeenCalled();
-      expect(global.localStorage.setItem).not.toHaveBeenCalled();
+      expect(sessionStorage.setItem).not.toHaveBeenCalled();
     });
 
     it('should show error toast on sign-in failure', async () => {
@@ -315,12 +324,12 @@ describe('auth', () => {
       expect(mockFirebaseAuth.signOut).toHaveBeenCalled();
     });
 
-    it('should remove GitHub access token from localStorage', async () => {
+    it('should remove GitHub access token from sessionStorage', async () => {
       mockFirebaseAuth.signOut.mockResolvedValue();
 
       await signOutUser();
       
-      expect(global.localStorage.removeItem).toHaveBeenCalledWith('github_access_token');
+      expect(sessionStorage.removeItem).toHaveBeenCalledWith('github_access_token');
     });
 
     it('should clear Jules key cache if user is signed in', async () => {
@@ -365,7 +374,8 @@ describe('auth', () => {
         uid: 'user-123',
         displayName: 'Test User',
         email: 'test@example.com',
-        photoURL: 'https://example.com/avatar.jpg'
+        photoURL: 'https://example.com/avatar.jpg',
+        providerData: []
       };
 
       await updateAuthUI(mockUser);
@@ -377,7 +387,8 @@ describe('auth', () => {
       const mockUser = {
         uid: 'user-123',
         displayName: 'Test User',
-        photoURL: 'https://example.com/avatar.jpg'
+        photoURL: 'https://example.com/avatar.jpg',
+        providerData: []
       };
       const mockAvatar = createMockElement('userAvatar');
       global.document.getElementById.mockImplementation((id) => {
@@ -392,7 +403,7 @@ describe('auth', () => {
     });
 
     it('should hide sign-in and show sign-out when user is signed in', async () => {
-      const mockUser = { uid: 'user-123', displayName: 'Test' };
+      const mockUser = { uid: 'user-123', displayName: 'Test', providerData: [] };
       const mockSignIn = createMockElement('headerSignIn');
       const mockSignOut = createMockElement('headerSignOut');
       
@@ -408,8 +419,29 @@ describe('auth', () => {
       expect(mockSignOut.classList.remove).toHaveBeenCalledWith('hidden');
     });
 
+    it('should show reconnect button when user is signed in but token is missing', async () => {
+      const mockUser = {
+        uid: 'user-123',
+        providerData: [{ providerId: 'github.com' }]
+      };
+      const mockSignIn = createMockElement('headerSignIn');
+
+      global.document.getElementById.mockImplementation((id) => {
+        if (id === 'headerSignIn') return mockSignIn;
+        return createMockElement(id);
+      });
+
+      // Token missing from sessionStorage
+      global.sessionStorage.getItem.mockReturnValue(null);
+
+      await updateAuthUI(mockUser);
+
+      expect(mockSignIn.classList.remove).toHaveBeenCalledWith('hidden');
+      expect(mockSignIn.textContent).toContain('Reconnect GitHub');
+    });
+
     it('should set sign-out onclick handler', async () => {
-      const mockUser = { uid: 'user-123' };
+      const mockUser = { uid: 'user-123', providerData: [] };
       const mockSignOut = createMockElement('headerSignOut');
       
       global.document.getElementById.mockImplementation((id) => {
@@ -460,7 +492,8 @@ describe('auth', () => {
     it('should update dropdown user name', async () => {
       const mockUser = {
         displayName: 'John Doe',
-        email: 'john@example.com'
+        email: 'john@example.com',
+        providerData: []
       };
       const mockDropdownName = createMockElement('dropdownUserName');
       
@@ -491,7 +524,8 @@ describe('auth', () => {
       const mockUser = {
         uid: 'user-123',
         displayName: 'Test User',
-        photoURL: 'https://example.com/avatar.jpg'
+        photoURL: 'https://example.com/avatar.jpg',
+        providerData: []
       };
       const mockAvatar = createMockElement('userAvatar');
       const { getCache } = await import('../../utils/session-cache.js');
@@ -508,7 +542,7 @@ describe('auth', () => {
     });
 
     it('should call populateFreeInputRepoSelection if available', async () => {
-      const mockUser = { uid: 'user-123' };
+      const mockUser = { uid: 'user-123', providerData: [] };
       
       await updateAuthUI(mockUser);
       
@@ -517,14 +551,14 @@ describe('auth', () => {
 
     it('should throw error with missing DOM elements', async () => {
       global.document.getElementById.mockReturnValue(null);
-      const mockUser = { uid: 'user-123', displayName: 'Test' };
+      const mockUser = { uid: 'user-123', displayName: 'Test', providerData: [] };
 
       await expect(updateAuthUI(mockUser)).rejects.toThrow();
     });
 
     it('should handle dropdown population errors', async () => {
       window.populateFreeInputRepoSelection = vi.fn().mockRejectedValue(new Error('Failed'));
-      const mockUser = { uid: 'user-123' };
+      const mockUser = { uid: 'user-123', providerData: [] };
 
       await updateAuthUI(mockUser);
       
@@ -586,7 +620,7 @@ describe('auth', () => {
       await signInWithGitHub();
       
       expect(mockFirebaseAuth.signInWithPopup).toHaveBeenCalled();
-      expect(global.localStorage.setItem).toHaveBeenCalled();
+      expect(sessionStorage.setItem).toHaveBeenCalled();
     });
 
     it('should handle complete sign-out workflow', async () => {
@@ -599,7 +633,7 @@ describe('auth', () => {
       
       expect(clearJulesKeyCache).toHaveBeenCalledWith('user-123');
       expect(mockFirebaseAuth.signOut).toHaveBeenCalled();
-      expect(global.localStorage.removeItem).toHaveBeenCalled();
+      expect(sessionStorage.removeItem).toHaveBeenCalled();
     });
 
     it('should handle auth state listener with user changes', async () => {
@@ -612,7 +646,7 @@ describe('auth', () => {
 
       const promise = initAuthStateListener();
       
-      const mockUser = { uid: 'user-123', displayName: 'Test' };
+      const mockUser = { uid: 'user-123', displayName: 'Test', providerData: [] };
       authCallback(mockUser);
       
       await promise;

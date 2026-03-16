@@ -227,7 +227,10 @@ describe('QueueManager', () => {
       mockFirestoreService.getQueueItems.mockResolvedValue([queueItem]);
       mockJulesConfig.getApiKey.mockResolvedValue('api-key');
       mockJulesClient.listAllSources.mockResolvedValue([{ name: 'repo1', displayName: 'Repo 1' }]);
-      (vscode.window.showQuickPick as any).mockResolvedValue('Yes'); // For repository confirmation
+      // First call for repo confirmation, second for branch selection
+      (vscode.window.showQuickPick as any)
+        .mockResolvedValueOnce('Yes')
+        .mockResolvedValueOnce({ label: 'main' });
       mockJulesClient.createSession.mockResolvedValue({ name: 'session1' });
 
       await queueManager.runQueueItem(itemId);

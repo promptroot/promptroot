@@ -842,6 +842,8 @@ async function saveQueueItemEdit(docId, closeModalCallback) {
 async function loadQueuePage() {
   const user = getAuth()?.currentUser;
   const listDiv = document.getElementById('allQueueList');
+  if (!listDiv) return;
+
   if (!user) {
     const msg = document.createElement('div');
     msg.className = 'panel text-center pad-xl muted-text';

@@ -192,7 +192,10 @@ function mockReset() {
   global.firebase.firestore.FieldValue.serverTimestamp.mockImplementation(() => 'TIMESTAMP');
   global.firebase.firestore.FieldValue.delete.mockImplementation(() => 'DELETE_FIELD');
   
-  global.document.getElementById.mockReturnValue(null);
+  global.document.getElementById.mockImplementation((id) => {
+    if (id === 'allQueueList') return createMockElement('allQueueList');
+    return null;
+  });
   global.document.createElement.mockImplementation((tag) => createMockElement(tag));
   global.document.querySelectorAll.mockReturnValue([]);
 }

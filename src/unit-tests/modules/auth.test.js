@@ -76,6 +76,14 @@ const createMockElement = (id) => ({
     display: ''
   },
   textContent: '',
+  replaceChildren: vi.fn(),
+  appendChild: vi.fn(function(child) {
+    if (child.nodeType === 3) {
+      this.textContent += child.textContent;
+    } else if (child.textContent) {
+      this.textContent += child.textContent;
+    }
+  }),
   src: '',
   alt: '',
   onclick: null,
@@ -396,6 +404,27 @@ describe('auth', () => {
       
       expect(mockSignIn.classList.add).toHaveBeenCalledWith('hidden');
       expect(mockSignOut.classList.remove).toHaveBeenCalledWith('hidden');
+    });
+
+    it('should show reconnect button when user is signed in but token is missing', async () => {
+      const mockUser = {
+        uid: 'user-123',
+        providerData: [{ providerId: 'github.com' }]
+      };
+      const mockSignIn = createMockElement('headerSignIn');
+
+      global.document.getElementById.mockImplementation((id) => {
+        if (id === 'headerSignIn') return mockSignIn;
+        return createMockElement(id);
+      });
+
+      // Token missing from sessionStorage
+      global.sessionStorage.getItem.mockReturnValue(null);
+
+      await updateAuthUI(mockUser);
+
+      expect(mockSignIn.classList.remove).toHaveBeenCalledWith('hidden');
+      expect(mockSignIn.textContent).toContain('Reconnect GitHub');
     });
 
     it('should set sign-out onclick handler', async () => {

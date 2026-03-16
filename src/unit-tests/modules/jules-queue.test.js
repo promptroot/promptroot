@@ -158,6 +158,7 @@ global.firebase = {
 global.document = {
   getElementById: vi.fn(),
   createElement: vi.fn(() => createMockElement()),
+  createTextNode: vi.fn((text) => ({ textContent: text })),
   querySelectorAll: vi.fn(() => []),
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
@@ -202,6 +203,7 @@ function mockReset() {
     return null;
   });
   global.document.createElement.mockImplementation((tag) => createMockElement(tag));
+  global.document.createTextNode.mockImplementation((text) => ({ textContent: text }));
   global.document.querySelectorAll.mockReturnValue([]);
 }
 

@@ -286,7 +286,8 @@ function buildTree(items, folder = 'prompts') {
   return root;
 }
 
-function renderTree(node, container, forcedExpanded, owner, repo, branch) {
+function renderTree(node, container, options) {
+  const { forcedExpanded } = options;
   const entries = Array.from(node.children.values());
   entries.sort((a, b) => {
     if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
@@ -362,7 +363,7 @@ function renderTree(node, container, forcedExpanded, owner, repo, branch) {
         childList.classList.add('d-none');
       }
       li.appendChild(childList);
-      renderTree(entry, childList, forcedExpanded, owner, repo, branch);
+      renderTree(entry, childList, options);
       if (!childList.children.length) {
         continue;
       }
@@ -505,7 +506,7 @@ export async function renderList(items, owner, repo, branch) {
   listEl.appendChild(rootList);
   const folder = getPromptFolder(branch);
   const tree = buildTree(filtered, folder);
-  renderTree(tree, rootList, forcedExpanded, owner, repo, branch);
+  renderTree(tree, rootList, { forcedExpanded });
   updateActiveItem();
 }
 

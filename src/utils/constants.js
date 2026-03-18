@@ -214,6 +214,37 @@ export const JULES_MESSAGES = {
   FINAL_RETRY_FAILED: "Failed to submit task after multiple retries. Please try again later."
 };
 
+// Agent API constants
+export const AGENT_API = {
+  TOKEN_PREFIX: 'pra_',
+  KEY_COLLECTION: 'agentKeys',
+  HASH_COLLECTION: 'agentKeysByHash',
+  RATE_LIMIT_PER_MINUTE: 60,
+  TOKEN_BYTES: 32
+};
+
+// Agent API key management UI text
+export const AGENT_KEY_UI_TEXT = {
+  PAGE_TITLE: 'Agent API',
+  GENERATE_BTN: 'Generate Token',
+  REVOKE_BTN: 'Revoke',
+  COPY_TOKEN: 'Copy Token',
+  TOKEN_LABEL_PLACEHOLDER: 'Token label (e.g., "OpenClaw dev")',
+  NO_TOKENS: 'No API tokens yet. Generate one to get started.',
+  LOADING: 'Loading tokens...',
+  NOT_SIGNED_IN: 'Please sign in to manage API tokens.',
+  TOKEN_GENERATED_NOTICE: 'Token generated. Copy it now — it will not be shown again.',
+  TOKEN_REVOKED: 'Token revoked.',
+  REVOKE_CONFIRM: 'Revoke this token? Any services using it will immediately lose access.',
+  GENERATE_ERROR: 'Failed to generate token.',
+  REVOKE_ERROR: 'Failed to revoke token.',
+  LOAD_ERROR: 'Failed to load tokens.',
+  LABEL_REQUIRED: 'Please enter a label for this token.',
+  NEVER_USED: 'Never used',
+  CREATED_AT: (dateStr) => `Created ${dateStr}`,
+  LAST_USED: (dateStr) => `Last used ${dateStr}`
+};
+
 // UI text
 export const UI_TEXT = {
   LOADING: "Loading...",

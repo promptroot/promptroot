@@ -59,6 +59,16 @@ service cloud.firestore {
       allow list: if request.auth != null;
     }
     
+    // Agent API Keys - admin SDK only, no client direct access
+    match /agentKeys/{userId} {
+      allow read, write: if false;
+    }
+
+    // Agent API Key reverse-lookup index - admin SDK only, no client direct access
+    match /agentKeysByHash/{tokenHash} {
+      allow read, write: if false;
+    }
+
     // Deny all other access by default
     match /{document=**} {
       allow read, write: if false;

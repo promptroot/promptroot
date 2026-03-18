@@ -788,13 +788,49 @@ describe('branch-selector', () => {
 
     it('should save new branch to storage', async () => {
       mockSelect.value = 'feature-x';
-      
+
       await mockSelect._changeHandler();
-      
+
       expect(global.localStorage.setItem).toHaveBeenCalledWith(
         'selectedBranch',
         expect.stringContaining('feature-x')
       );
     });
+
+    it('should use explicit branchName param when provided, ignoring branchSelect.value', async () => {
+      // Simulate the custom dropdown case: branchSelect.value is '' because the
+      // branch is not in the native select options (e.g. feature branches are collapsed)
+      mockSelect.value = '';
+
+      await mockSelect._changeHandler(null, '768-modular-prompt-templates');
+
+      const urlCall = global.history.replaceState.mock.calls[0][2];
+      expect(urlCall).toContain('branch=768-modular-prompt-templates');
+    });
+
+    it('should dispatch branchChanged event with explicit branchName param', async () => {
+      mockSelect.value = '';
+
+      await mockSelect._changeHandler(null, 'feature/some-feature');
+
+      expect(global.window.dispatchEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'branchChanged',
+          detail: { branch: 'feature/some-feature' }
+        })
+      );
+    });
+
+    it('should save explicit branchName to storage when select value is empty', async () => {
+      mockSelect.value = '';
+
+      await mockSelect._changeHandler(null, 'fix/some-bug');
+
+      expect(global.localStorage.setItem).toHaveBeenCalledWith(
+        'selectedBranch',
+        expect.stringContaining('fix/some-bug')
+      );
+    });
+
   });
 });

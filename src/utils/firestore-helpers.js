@@ -163,10 +163,15 @@ export async function queryCollection(collectionOrRef, options = {}, cacheKey = 
 export async function setDoc(collectionOrRef, docId, data, options = { merge: true }, cacheKey = null) {
   const resolvedCache = resolveCacheKey(cacheKey);
 
-  // Optimistic update
+  // Optimistic update — track previous value so we can roll back on failure
+  let previousCacheValue = null;
+  let hadPreviousCache = false;
+
   if (resolvedCache) {
     const cached = getCache(resolvedCache.key, resolvedCache.userId);
     if (cached) {
+        hadPreviousCache = true;
+        previousCacheValue = cached;
         if (Array.isArray(cached)) {
             // It's a list. We could try to find and update the item, or add it.
             // But query constraints might make it invalid (e.g. filter by status).
@@ -180,10 +185,22 @@ export async function setDoc(collectionOrRef, docId, data, options = { merge: tr
     }
   }
 
-  return retryOperation(async () => {
-    const colRef = getCollectionRef(collectionOrRef);
-    await colRef.doc(docId).set(data, options);
-  });
+  try {
+    return await retryOperation(async () => {
+      const colRef = getCollectionRef(collectionOrRef);
+      await colRef.doc(docId).set(data, options);
+    });
+  } catch (error) {
+    // Rollback optimistic cache update so cache stays consistent with Firestore
+    if (resolvedCache) {
+      if (hadPreviousCache) {
+        setCache(resolvedCache.key, previousCacheValue, resolvedCache.userId);
+      } else {
+        clearCache(resolvedCache.key, resolvedCache.userId);
+      }
+    }
+    throw error;
+  }
 }
 
 /**

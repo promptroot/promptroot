@@ -218,21 +218,11 @@ describe('jules-keys', () => {
         data: () => mockData
       });
 
-      // We need to differentiate legacy decrypt vs new decrypt if possible,
-      // or just ensure the flow works.
-      // In legacy, we don't use deriveKey (PBKDF2), we use importKey with AES-GCM directly.
-      // But we mock importKey to always return 'mock-imported-key'.
-
-      // We can check the arguments to importKey.
-      // Legacy: { name: 'AES-GCM' }
-      // New: { name: 'PBKDF2' } then deriveKey
-
       const result = await getDecryptedJulesKey(uid);
 
       expect(result).toBe('decrypted-api-key');
 
       // Verify migration happened (encryptAndStoreKey called)
-      // This means setDoc was called
       expect(mockDocSet).toHaveBeenCalled();
 
       // Verify migration uses new scheme

@@ -275,6 +275,11 @@ async function handleRepoSelect(sourceId, branch, promptText, suppressPopups = f
       }
       submitted = true;
     } catch (error) {
+      if (error.message === JULES_MESSAGES.KEY_DECRYPTION_ERROR) {
+        showToast(JULES_MESSAGES.KEY_DECRYPTION_TOAST, 'warn');
+        showJulesKeyModal(() => showJulesEnvModal(promptText));
+        return;
+      }
       retryCount++;
 
       if (retryCount < RETRY_CONFIG.maxRetries) {

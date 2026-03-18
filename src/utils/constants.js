@@ -211,7 +211,9 @@ export const JULES_MESSAGES = {
   UNEXPECTED_ERROR: (error) => `Unexpected error: ${error}`,
   GENERAL_ERROR: "An error occurred. Please try again.",
   ERROR_WITH_MESSAGE: (message) => `An error occurred: ${message}`,
-  FINAL_RETRY_FAILED: "Failed to submit task after multiple retries. Please try again later."
+  FINAL_RETRY_FAILED: "Failed to submit task after multiple retries. Please try again later.",
+  KEY_DECRYPTION_ERROR: "Failed to decrypt Jules API key",
+  KEY_DECRYPTION_TOAST: "Your Jules API key could not be read. Please re-enter it to continue."
 };
 
 // UI text

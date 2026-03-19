@@ -1,0 +1,52 @@
+/* OpenClaw settings page styles */
+
+.openclaw-mode-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.openclaw-mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.openclaw-mode-option:has(input:checked) {
+  border-color: var(--primary-color, #1a73e8);
+  background: var(--primary-bg-light, #f0f6ff);
+}
+
+.openclaw-mode-option input[type="radio"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.openclaw-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.openclaw-setup-steps {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.openclaw-setup-steps li {
+  padding: 3px 0;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--primary-color, #1a73e8);
+  color: #fff;
+  vertical-align: middle;
+}

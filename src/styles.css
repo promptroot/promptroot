@@ -36,3 +36,5 @@
 @import url('./styles/pages/analytics.css');
 @import url('./styles/pages/privacy.css');
 @import url('./styles/pages/agent-api.css');
+@import url('./styles/pages/openclaw.css');
+@import url('./styles/components/bliz-response-panel.css');

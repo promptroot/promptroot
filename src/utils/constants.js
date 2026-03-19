@@ -223,6 +223,47 @@ export const AGENT_API = {
   TOKEN_BYTES: 32
 };
 
+// OpenClaw integration constants
+export const OPENCLAW = {
+  KEY_COLLECTION: 'openclawKeys',
+  POLL_INTERVAL_MS: 3000,
+  POLL_TIMEOUT_MS: 5 * 60 * 1000, // 5 minutes
+  JOB_TTL_MS: 24 * 60 * 60 * 1000, // 24 hours
+  SESSION_KEY_PREFIX: 'bliz_job_'
+};
+
+// OpenClaw UI text
+export const OPENCLAW_UI_TEXT = {
+  PAGE_TITLE: 'OpenClaw Settings',
+  RELAY_MODE_LABEL: 'Use PromptRoot Relay',
+  CUSTOM_URL_MODE_LABEL: 'Use my own URL',
+  TOKEN_PLACEHOLDER: 'Paste your pra_... agent token',
+  GATEWAY_URL_PLACEHOLDER: 'https://gateway.example.com',
+  GATEWAY_TOKEN_PLACEHOLDER: 'Your OpenClaw gateway token',
+  SAVE_BUTTON: 'Save',
+  CANCEL_BUTTON: 'Cancel',
+  SAVING: 'Saving...',
+  SAVED: 'OpenClaw settings saved.',
+  SAVE_ERROR: 'Failed to save OpenClaw settings.',
+  DELETE_CONFIRM: 'Remove your OpenClaw configuration?',
+  DELETED: 'OpenClaw settings removed.',
+  NOT_CONFIGURED: 'No OpenClaw connection configured.',
+  NOT_SIGNED_IN: 'Please sign in to configure OpenClaw.',
+  TOKEN_REQUIRED: 'Please enter a token.',
+  URL_REQUIRED: 'Please enter a gateway URL.',
+  RUN_IN_BLIZ: '🦞 Run in Bliz',
+  RUNNING: 'Running...',
+  PENDING: 'Waiting for Bliz…',
+  COPY_RESPONSE: 'Copy response',
+  CLOSE_PANEL: 'Close',
+  TIMEOUT_MSG: 'Bliz took too long. The job may still complete — check back later.',
+  ERROR_UNREACHABLE: 'Bliz is unreachable. Is your tunnel running?',
+  ERROR_CREDENTIALS: 'Could not load credentials. Check your connection.',
+  ERROR_GENERIC: 'Something went wrong. Try again.',
+  RESULT_EXPIRED: 'Result expired (>24h). Re-run the prompt.',
+  GENERATE_TOKEN_LINK: 'Generate a token first →'
+};
+
 // Agent API key management UI text
 export const AGENT_KEY_UI_TEXT = {
   PAGE_TITLE: 'Agent API',

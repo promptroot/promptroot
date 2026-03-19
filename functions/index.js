@@ -1222,3 +1222,141 @@ exports.exchangeVSCodeGitHubToken = onCall(async (request) => {
     );
   }
 });
+
+// ===== OpenClaw Gateway Functions =====
+
+/**
+ * Decrypt the OpenClaw gateway token from Firestore.
+ * Reuses the same PBKDF2 + AES-GCM scheme as decryptJulesKey.
+ */
+async function decryptOpenclawToken(docData, uid) {
+  return decryptJulesKey(docData, uid);
+}
+
+/**
+ * Verify Firebase ID token from Authorization header and return uid.
+ */
+async function verifyIdToken(req) {
+  const authHeader = req.headers['authorization'] || '';
+  const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!idToken) throw new Error('Missing authorization token');
+  const decoded = await admin.auth().verifyIdToken(idToken);
+  return decoded.uid;
+}
+
+/**
+ * callOpenclawGateway — proxies a prompt to the user's OpenClaw gateway.
+ * Reads openclawKeys/{uid}, decrypts token, routes via relay or direct URL.
+ * Returns { jobId }.
+ */
+exports.callOpenclawGateway = functions.https.onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+  if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+  try {
+    const uid = await verifyIdToken(req);
+    const { text, slug } = req.body || {};
+    if (!text) { res.status(400).json({ error: 'text is required' }); return; }
+
+    const firestore = admin.firestore();
+    const snap = await firestore.doc(`openclawKeys/${uid}`).get();
+    if (!snap.exists) { res.status(412).json({ error: 'OpenClaw not configured' }); return; }
+
+    const docData = snap.data();
+    const token = await decryptOpenclawToken(docData, uid);
+
+    let gatewayUrl;
+    let authToken = token;
+
+    if (docData.useRelay) {
+      // Phase 3b: route via relay
+      const relaySecret = process.env.RELAY_SHARED_SECRET;
+      if (!relaySecret) { res.status(503).json({ error: 'Relay not configured on server' }); return; }
+      gatewayUrl = `https://relay.promptroot.io/${uid}/prompt`;
+      authToken = relaySecret;
+    } else {
+      // Phase 3a: direct Cloudflare Tunnel
+      gatewayUrl = docData.gatewayUrl;
+      if (!gatewayUrl) { res.status(412).json({ error: 'Gateway URL not configured' }); return; }
+      gatewayUrl = gatewayUrl.replace(/\/$/, '') + '/api/prompt';
+    }
+
+    const gwRes = await fetch(gatewayUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({ text, source: 'promptroot', slug: slug || null })
+    });
+
+    if (!gwRes.ok) {
+      const errText = await gwRes.text().catch(() => '');
+      logger.error('Gateway error', gwRes.status, errText);
+      if (gwRes.status === 401) { res.status(401).json({ error: 'Gateway rejected token. Re-enter your credentials.' }); return; }
+      if (gwRes.status === 503) { res.status(503).json({ error: 'Bliz is unreachable. Is your tunnel running?' }); return; }
+      res.status(502).json({ error: `Gateway returned ${gwRes.status}` }); return;
+    }
+
+    const gwData = await gwRes.json();
+    if (!gwData.jobId) { res.status(502).json({ error: 'Gateway did not return a jobId' }); return; }
+
+    res.json({ jobId: gwData.jobId });
+  } catch (err) {
+    logger.error('callOpenclawGateway error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal error' });
+  }
+});
+
+/**
+ * pollOpenclawJob — polls the OpenClaw gateway for a job result.
+ * Returns { status: 'pending'|'complete'|'error'|'not_found', output? }.
+ */
+exports.pollOpenclawJob = functions.https.onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+  if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+  try {
+    const uid = await verifyIdToken(req);
+    const { jobId } = req.body || {};
+    if (!jobId) { res.status(400).json({ error: 'jobId is required' }); return; }
+
+    const firestore2 = admin.firestore();
+    const snap = await firestore2.doc(`openclawKeys/${uid}`).get();
+    if (!snap.exists) { res.status(412).json({ error: 'OpenClaw not configured' }); return; }
+
+    const docData = snap.data();
+    const token = await decryptOpenclawToken(docData, uid);
+
+    let pollUrl;
+    let authToken = token;
+
+    if (docData.useRelay) {
+      const relaySecret = process.env.RELAY_SHARED_SECRET;
+      if (!relaySecret) { res.status(503).json({ error: 'Relay not configured on server' }); return; }
+      pollUrl = `https://relay.promptroot.io/${uid}/prompt/${jobId}`;
+      authToken = relaySecret;
+    } else {
+      const gatewayUrl = (docData.gatewayUrl || '').replace(/\/$/, '');
+      if (!gatewayUrl) { res.status(412).json({ error: 'Gateway URL not configured' }); return; }
+      pollUrl = `${gatewayUrl}/api/prompt/${encodeURIComponent(jobId)}`;
+    }
+
+    const gwRes = await fetch(pollUrl, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    if (gwRes.status === 404) { res.json({ status: 'not_found' }); return; }
+    if (!gwRes.ok) { res.status(502).json({ error: `Gateway returned ${gwRes.status}` }); return; }
+
+    const gwData = await gwRes.json();
+    res.json({
+      status: gwData.status || 'pending',
+      output: gwData.output || null
+    });
+  } catch (err) {
+    logger.error('pollOpenclawJob error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal error' });
+  }
+});

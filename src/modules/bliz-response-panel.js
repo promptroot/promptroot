@@ -4,7 +4,6 @@
 // Polls every 3s, times out at 5 minutes.
 // jobId stored in sessionStorage to resume across panel closes.
 
-import { showToast } from './toast.js';
 import { copyText } from '../utils/clipboard.js';
 import { OPENCLAW, OPENCLAW_UI_TEXT } from '../utils/constants.js';
 

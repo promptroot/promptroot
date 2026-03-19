@@ -3,7 +3,7 @@
 // Mode selector: "Use PromptRoot Relay" (default) vs "Use my own URL".
 
 import { getAuth } from './firebase-service.js';
-import { encryptAndStoreOpenclawKey, getOpenclawConfig, deleteStoredOpenclawKey } from './openclaw-keys.js';
+import { encryptAndStoreOpenclawKey, getOpenclawConfig } from './openclaw-keys.js';
 import { showToast } from './toast.js';
 import { OPENCLAW_UI_TEXT } from '../utils/constants.js';
 

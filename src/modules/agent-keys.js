@@ -1,4 +1,3 @@
-import { getAuth } from './firebase-service.js';
 import { showToast } from './toast.js';
 import { copyText } from '../utils/clipboard.js';
 import { AGENT_API, AGENT_KEY_UI_TEXT, TIMEOUTS } from '../utils/constants.js';

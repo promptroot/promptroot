@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src {{CSP_SOURCE}}; script-src {{CSP_SOURCE}}; img-src {{CSP_SOURCE}}">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Promptroot</title>
+	<link rel="stylesheet" href="{{CSS_URI}}">
+</head>
+<body>
+	<div class="shell">
+		<div class="brand">
+			<img class="brand__logo" src="{{LOGO_URI}}" alt="Promptroot">
+			<span class="brand__name">Promptroot</span>
+			<div class="brand__badge-wrap">{{AUTH_BADGE}}</div>
+		</div>
+
+		<div class="card">
+			<p class="card__title">Status</p>
+			<p class="card__body">{{STATUS_BODY}}</p>
+		</div>
+
+		<div class="actions">
+			{{AUTH_BUTTON}}
+			<div class="divider"></div>
+			<button class="btn btn--ghost" data-command="openDocs">Open promptroot.ai</button>
+			{{QUEUE_BUTTON}}
+		</div>
+	</div>
+	<script src="{{JS_URI}}"></script>
+</body>
+</html>

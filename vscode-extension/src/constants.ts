@@ -52,6 +52,7 @@ export const COMMANDS = {
 } as const;
 
 export const VIEWS = {
+  dashboard: 'promptroot.dashboardView',
   assets: 'promptroot.assetsView',
   queue: 'promptroot.queueView',
   sessions: 'promptroot.sessionsView',

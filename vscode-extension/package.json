@@ -2,7 +2,7 @@
   "name": "promptroot-vscode",
   "displayName": "Promptroot",
   "description": "VS Code extension for Promptroot workflows and asset management",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "promptroot",
   "icon": "icon.png",
   "homepage": "https://promptroot.ai",
@@ -45,7 +45,7 @@
   "activationEvents": [
     "workspaceContains:**/prompts/**"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {

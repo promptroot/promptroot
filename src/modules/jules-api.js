@@ -227,7 +227,6 @@ async function runJulesAPI(promptText, sourceId, branch, title, user) {
       const parts = sourceId.split('/');
       if (parts.length === 2 && parts[0] && parts[1]) {
         normalizedSourceId = `sources/github/${sourceId}`;
-        console.log(`Converted sourceId from "${sourceId}" to "${normalizedSourceId}"`);
       } else {
         console.error('Invalid sourceId format:', sourceId);
         throw new Error(`Invalid repository format: "${sourceId}". Expected either "owner/repo" or "sources/github/owner/repo".`);

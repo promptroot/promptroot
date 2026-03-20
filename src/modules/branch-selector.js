@@ -329,8 +329,7 @@ async function filterAndRenderBranches() {
         branch.name,
         false,
         async (branchName) => {
-          branchSelect.value = branchName;
-          await handleBranchChange();
+          await handleBranchChange(null, branchName);
           if (dropdownControl) dropdownControl.close();
           await populateCustomDropdownMenu(allBranches);
         },
@@ -435,8 +434,7 @@ function addBranchGroup(groupName, branches) {
       branch.name,
       false,
       async (branchName) => {
-        branchSelect.value = branchName;
-        await handleBranchChange();
+        await handleBranchChange(null, branchName);
         if (dropdownControl) dropdownControl.close();
         await populateCustomDropdownMenu(allBranches);
       },
@@ -543,21 +541,23 @@ function toggleUserBranches() {
   loadBranches();
 }
 
-async function handleBranchChange(e) {
+async function handleBranchChange(e, branchName) {
   if (!branchSelect) return;
 
-  if (branchSelect.value === '__toggle_features__') {
+  const selectedValue = branchName || branchSelect.value;
+
+  if (selectedValue === '__toggle_features__') {
     toggleFeatureBranches();
     return;
   }
 
-  if (branchSelect.value === '__toggle_users__') {
+  if (selectedValue === '__toggle_users__') {
     toggleUserBranches();
     return;
   }
 
   const oldBranch = currentBranch;
-  currentBranch = branchSelect.value;
+  currentBranch = selectedValue;
   
   saveBranchToStorage(currentBranch, currentOwner, currentRepo);
 
@@ -751,8 +751,7 @@ async function populateCustomDropdownMenu(branches) {
         branch.name,
         false,
         async (branchName) => {
-          branchSelect.value = branchName;
-          await handleBranchChange();
+          await handleBranchChange(null, branchName);
           if (dropdownControl) dropdownControl.close();
           await populateCustomDropdownMenu(allBranches);
         },

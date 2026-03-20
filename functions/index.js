@@ -1,7 +1,9 @@
 const functions = require("firebase-functions");
 const logger = require("firebase-functions/logger");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
-const {onCall} = require("firebase-functions/v2/https");
+const {onCall, onRequest} = require("firebase-functions/v2/https");
+const {defineSecret} = require("firebase-functions/params");
+const relaySharedSecret = defineSecret('RELAY_SHARED_SECRET');
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
 const { webcrypto: crypto } = require('crypto');
@@ -1249,7 +1251,7 @@ async function verifyIdToken(req) {
  * Reads openclawKeys/{uid}, decrypts token, routes via relay or direct URL.
  * Returns { jobId }.
  */
-exports.callOpenclawGateway = functions.https.onRequest(async (req, res) => {
+exports.callOpenclawGateway = onRequest({ secrets: [relaySharedSecret] }, async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
@@ -1272,9 +1274,9 @@ exports.callOpenclawGateway = functions.https.onRequest(async (req, res) => {
 
     if (docData.useRelay) {
       // Phase 3b: route via relay
-      const relaySecret = process.env.RELAY_SHARED_SECRET;
+      const relaySecret = relaySharedSecret.value();
       if (!relaySecret) { res.status(503).json({ error: 'Relay not configured on server' }); return; }
-      gatewayUrl = `https://relay.promptroot.io/${uid}/prompt`;
+      gatewayUrl = `https://promptroot-relay.fly.dev/${uid}/prompt`;
       authToken = relaySecret;
     } else {
       // Phase 3a: direct Cloudflare Tunnel
@@ -1311,7 +1313,7 @@ exports.callOpenclawGateway = functions.https.onRequest(async (req, res) => {
  * pollOpenclawJob — polls the OpenClaw gateway for a job result.
  * Returns { status: 'pending'|'complete'|'error'|'not_found', output? }.
  */
-exports.pollOpenclawJob = functions.https.onRequest(async (req, res) => {
+exports.pollOpenclawJob = onRequest({ secrets: [relaySharedSecret] }, async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
@@ -1333,9 +1335,9 @@ exports.pollOpenclawJob = functions.https.onRequest(async (req, res) => {
     let authToken = token;
 
     if (docData.useRelay) {
-      const relaySecret = process.env.RELAY_SHARED_SECRET;
+      const relaySecret = relaySharedSecret.value();
       if (!relaySecret) { res.status(503).json({ error: 'Relay not configured on server' }); return; }
-      pollUrl = `https://relay.promptroot.io/${uid}/prompt/${jobId}`;
+      pollUrl = `https://promptroot-relay.fly.dev/${uid}/prompt/${jobId}`;
       authToken = relaySecret;
     } else {
       const gatewayUrl = (docData.gatewayUrl || '').replace(/\/$/, '');

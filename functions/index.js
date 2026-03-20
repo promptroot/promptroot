@@ -1355,7 +1355,7 @@ exports.pollOpenclawJob = onRequest({ secrets: [relaySharedSecret] }, async (req
     const gwData = await gwRes.json();
     res.json({
       status: gwData.status || 'pending',
-      output: gwData.output || null
+      output: gwData.result || gwData.output || null
     });
   } catch (err) {
     logger.error('pollOpenclawJob error:', err.message);

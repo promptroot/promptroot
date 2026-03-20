@@ -5,12 +5,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as vscode from 'vscode';
 import { QueueManager } from './queue-manager';
-import { FirestoreService } from './firestore-service';
-import { AuthManager } from './auth-manager';
-import { JulesClient } from './jules-client';
-import { JulesConfig } from './jules-config';
-import { GitHubService } from './github-service';
-import { Timestamp } from 'firebase/firestore';
 import * as path from 'path';
 import * as fs from 'fs';
 

@@ -1,6 +1,6 @@
 # SDD-0002: PromptRoot × OpenClaw Integration
 
-**Version:** 1.9
+**Version:** 2.1
 **Date:** 2026-03-20
 **Author:** Brace
 **Status:** In Progress
@@ -19,6 +19,8 @@
 | 1.7 | 2026-03-18 | Phase 6 implementation complete: multiple named tokens per user (not single token); `pra_` token prefix; separate `manageAgentKeys` HTTP function (Firebase ID token auth) vs `agentApi` (bearer token auth); actual Cloud Function URLs; mark Phase 6 tasks done; update UI changes to match actual implementation; top-nav placement (not user dropdown) |
 | 1.8 | 2026-03-19 | Phase 3a/3b PromptRoot-side implementation complete (PR #777)
 | 1.9 | 2026-03-20 | Rename Bliz → Brace throughout; Phase 0 complete: gateway audited, `promptroot-gateway` OpenClaw plugin implemented (`POST /api/prompt` + `GET /api/prompt/:jobId` via `subagent.run`); Phase 0 tasks marked done; Phase 3a unblocked pending tunnel setup (Q6): `openclaw-keys.js`, `openclaw-api.js`, `brace-modal.js`, `brace-response-panel.js`, `callOpenclawGateway` + `pollOpenclawJob` Cloud Functions, `/openclaw` settings page, "Run in Brace" button in prompt action bar; mark Phase 3a PromptRoot tasks done; update Phase 3b tasks (PromptRoot side done, relay service + OpenClaw plugin still pending); update Notes |
+| 2.0 | 2026-03-20 | Phase 3b relay service built: `relay/index.js` (Node.js WebSocket + HTTP), `relay/Dockerfile`, `relay/fly.toml` (Fly.io, 1 shared-CPU 256MB instance, `iad`); answers Q4 (Fly.io chosen over Cloud Run — no sticky session complexity); relay validates `pra_...` tokens via `agentKeysByHash` Firestore lookup; in-memory job store with 10min TTL; `RELAY_SHARED_SECRET` + `FIREBASE_SERVICE_ACCOUNT` env vars required at deploy; mark Phase 3b relay tasks done pending deploy + OpenClaw plugin |
+| 2.1 | 2026-03-20 | Phase 3b end-to-end deployed and verified: relay live at `promptroot-relay.fly.dev` (scaled to 1 machine, `auto_stop_machines=off`); `promptroot-relay` OpenClaw plugin deployed at `~/.openclaw/extensions/promptroot-relay/index.js`; fixes: add `type:'job'` to relay dispatch, trim `RELAY_SHARED_SECRET` trailing newline, code 4000 → no reconnect, add `idempotencyKey`, store env in `~/.openclaw/.env`; end-to-end "Run in Brace" flow confirmed working |
 
 ---
 
@@ -532,9 +534,10 @@ The plugin:
 - Jesse's Phase 3a Cloudflare Tunnel setup continues to work unchanged
 
 **Tasks:**
-- [ ] Build `relay.promptroot.io` Node.js service (WebSocket server + HTTP POST endpoint)
-- [ ] Deploy relay to Cloud Run (or VPS)
-- [ ] Write OpenClaw `promptroot-relay` plugin
+- [x] Build `relay.promptroot.io` Node.js service (`relay/index.js` — WebSocket server + HTTP job endpoints)
+- [x] Fly.io deployment config (`relay/Dockerfile`, `relay/fly.toml` — 1 shared-CPU 1GB, `iad`, always-on)
+- [x] Deployed to Fly.io as `promptroot-relay` app (`promptroot-relay.fly.dev`); scaled to 1 machine to avoid split-brain; `RELAY_SHARED_SECRET` + `FIREBASE_SERVICE_ACCOUNT` set as Fly secrets
+- [x] Write OpenClaw `promptroot-relay` plugin (`~/.openclaw/extensions/promptroot-relay/index.js` — connects to `wss://promptroot-relay.fly.dev/connect` with `PROMPTROOT_AGENT_TOKEN`; does not reconnect on close code 4000)
 - [x] `callOpenclawGateway` Cloud Function routes to relay when `useRelay: true` (503s until relay service is deployed)
 - [ ] Add relay connection status indicator to OpenClaw settings page (`GET /{uid}/status`)
 - [x] `brace-modal.js` offers relay vs custom-URL mode selector
@@ -1189,7 +1192,7 @@ Use `request` (Playwright API testing) against the deployed or emulated Cloud Fu
 | 1 | Does the OpenClaw gateway expose `POST /api/prompt` and `GET /api/prompt/{jobId}` today? | Phase 3a |
 | 2 | Cloudflare Tunnel or Tailscale for Phase 3a (Jesse's own setup)? | Phase 3a Cloud Function config |
 | 3 | Does the current GitHub OAuth flow request `contents: write` scope? | `POST /webclips` |
-| 4 | Cloud Run or VPS for `relay.promptroot.io`? Cloud Run doesn't support sticky sessions natively — needs session affinity config or a single-instance deployment for MVP. | Phase 3b |
+| 4 | ~~Cloud Run or VPS for `relay.promptroot.io`?~~ **Resolved:** Fly.io — single shared-CPU 256MB instance, `iad`. No sticky session complexity; in-memory state is fine for MVP. | Phase 3b |
 | 5 | Does the OpenClaw `promptroot-relay` plugin need to be upstreamed to OpenClaw repo, or is it a local plugin only? | Phase 3b |
 | 6 | Does Jesse have a domain on Cloudflare for the named tunnel? If not, decide: accept URL-update friction of quick tunnel, or get a domain. | Phase 3a |
 | 7 | What is `RELAY_SHARED_SECRET` rotation plan? If the secret leaks, the relay inbound is open. Document rotation procedure before Phase 3b ships. | Phase 3b |
@@ -1200,7 +1203,7 @@ Use `request` (Playwright API testing) against the deployed or emulated Cloud Fu
 - Phase 1 is pure read — zero risk, high value, start here in parallel with Phase 0
 - Phase 3a (Cloudflare Tunnel) ships fast for Jesse; Phase 3b (relay) is the multi-user path — build 3a first
 - Phase 3a: use a **named tunnel** (not quick tunnel) to avoid URL churn on restart — requires a Cloudflare account and domain
-- Phase 3b requires a small always-on relay service (`relay.promptroot.io`) — Cloud Run single-instance for MVP (sticky sessions not needed at one instance), migrate to multi-instance + session affinity if needed later
+- **Phase 3b relay service is built** (`relay/` in repo) — Fly.io (`promptroot-relay` app, `iad`, 1 shared-CPU 256MB, always-on). Pending: `fly deploy` + OpenClaw plugin
 - Relay is in-memory, not stateless — relay restarts drop in-flight jobs; this is acceptable for MVP
 - `RELAY_SHARED_SECRET` must be set at deploy time on both Cloud Function and relay; document rotation procedure before Phase 3b ships
 - Phase 5 (service account queue) is interim only — do not build it if Phase 6 is <4 weeks away

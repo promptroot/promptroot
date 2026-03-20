@@ -117,7 +117,7 @@ const server = createServer(async (req, res) => {
     const jobId = generateJobId();
     jobs.set(jobId, { uid, status: 'pending', result: null, error: null, createdAt: Date.now() });
 
-    ws.send(JSON.stringify({ jobId, text, slug: slug || null }));
+    ws.send(JSON.stringify({ type: 'job', jobId, text, slug: slug || null }));
     console.log(`[relay] Job ${jobId} dispatched to uid=${uid}`);
     return json(res, 202, { jobId, status: 'pending' });
   }

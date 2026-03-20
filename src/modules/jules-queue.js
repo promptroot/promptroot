@@ -1897,7 +1897,8 @@ export async function deleteSelectedQueueItems() {
     if (failed === 0) {
       showToast(JULES_MESSAGES.deleted(totalCount), 'success');
     } else if (succeeded > 0) {
-      showToast(`Deleted ${succeeded} items, but ${failed} failed.`, 'warn');
+      const succeededText = succeeded === 1 ? 'item' : 'items';
+      showToast(`Deleted ${succeeded} ${succeededText}, but ${failed} failed.`, 'warn');
     } else {
       showToast(`Failed to delete items.`, 'error');
     }

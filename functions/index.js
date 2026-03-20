@@ -1274,7 +1274,7 @@ exports.callOpenclawGateway = onRequest({ secrets: [relaySharedSecret] }, async 
 
     if (docData.useRelay) {
       // Phase 3b: route via relay
-      const relaySecret = relaySharedSecret.value();
+      const relaySecret = relaySharedSecret.value().trim();
       if (!relaySecret) { res.status(503).json({ error: 'Relay not configured on server' }); return; }
       gatewayUrl = `https://promptroot-relay.fly.dev/${uid}/prompt`;
       authToken = relaySecret;
@@ -1335,7 +1335,7 @@ exports.pollOpenclawJob = onRequest({ secrets: [relaySharedSecret] }, async (req
     let authToken = token;
 
     if (docData.useRelay) {
-      const relaySecret = relaySharedSecret.value();
+      const relaySecret = relaySharedSecret.value().trim();
       if (!relaySecret) { res.status(503).json({ error: 'Relay not configured on server' }); return; }
       pollUrl = `https://promptroot-relay.fly.dev/${uid}/prompt/${jobId}`;
       authToken = relaySecret;

@@ -646,7 +646,7 @@ async function authenticateAgentToken(authHeader) {
     const tokens = keySnap.data().tokens || [];
     const updated = tokens.map(t =>
       t.tokenHash === tokenHash
-        ? { ...t, lastUsedAt: admin.firestore.FieldValue.serverTimestamp() }
+        ? { ...t, lastUsedAt: admin.firestore.Timestamp.now() }
         : t
     );
     return keySnap.ref.update({ tokens: updated });
@@ -729,7 +729,7 @@ exports.manageAgentKeys = functions.https.onRequest(async (req, res) => {
         res.status(400).json({ error: 'tokenHash and label are required' });
         return;
       }
-      const now = admin.firestore.FieldValue.serverTimestamp();
+      const now = admin.firestore.Timestamp.now();
       const newToken = { tokenHash, label, createdAt: now, lastUsedAt: null };
 
       // Batch write: add to agentKeys array + create agentKeysByHash doc

@@ -74,6 +74,12 @@
   gap: 6px;
 }
 
+.variable-modal__field--checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
 /* Label */
 .variable-modal__label {
   font-size: 13px;
@@ -104,6 +110,20 @@
 .variable-modal__input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-bg-medium);
+}
+
+.variable-modal__checkbox {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.variable-modal__checkbox-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
 }
 
 /* Error state */

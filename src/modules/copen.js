@@ -1,4 +1,5 @@
 import { showToast } from './toast.js';
+import { copyText } from '../utils/clipboard.js';
 import { getUserCopens } from './copen-manager.js';
 import { getAuth } from './firebase-service.js';
 import { clearCopenOptionsCache } from '../utils/copen-config.js';
@@ -43,7 +44,7 @@ export async function copyAndOpen(target, promptText) {
   }
 
   try {
-    await navigator.clipboard.writeText(promptText);
+    await copyText(promptText);
 
     const url = await getCopenUrl(target);
     window.open(url, '_blank', 'noopener,noreferrer');

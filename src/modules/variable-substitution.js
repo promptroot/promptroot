@@ -9,9 +9,32 @@ import { initSplitButton, destroySplitButton } from './split-button.js';
 import { getCopenOptions, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_ICON } from '../utils/copen-config.js';
 import { showToast } from './toast.js';
 import { getCurrentBranch, getCurrentRepo } from './branch-selector.js';
+import { copyText } from '../utils/clipboard.js';
 
 let activeVariableModal = null;
 let activeCopenButton = null;
+
+function isIncludeFlag(name) {
+  return typeof name === 'string' && name.startsWith('INCLUDE_');
+}
+
+function formatIncludeFlagLabel(flagName) {
+  if (!flagName || typeof flagName !== 'string') {
+    return '';
+  }
+
+  return flagName
+    .replace(/^INCLUDE_/, '')
+    .split('_')
+    .filter(Boolean)
+    .map((word) => {
+      if (word === 'UI' || word === 'API' || word === 'E2E') {
+        return word;
+      }
+      return `${word.charAt(0)}${word.slice(1).toLowerCase()}`;
+    })
+    .join(' ');
+}
 
 /**
  * Downloads the provided text as a markdown file
@@ -85,6 +108,46 @@ export function detectPlaceholders(text) {
 }
 
 /**
+ * Detects conditional include flags in {{#if FLAG_NAME}} blocks.
+ * @param {string} text - The template text to scan
+ * @returns {string[]} Array of unique include flag names
+ */
+export function detectConditionalFlags(text) {
+  if (!text || typeof text !== 'string') {
+    return [];
+  }
+
+  const regex = /\{\{#if\s+([A-Z0-9_-]+)\}\}/g;
+  const matches = text.matchAll(regex);
+  const unique = new Set();
+
+  for (const match of matches) {
+    unique.add(match[1]);
+  }
+
+  return Array.from(unique);
+}
+
+/**
+ * Renders conditional blocks using boolean values.
+ * Unsupported or missing flags evaluate to false.
+ * @param {string} text - The template text containing conditional blocks
+ * @param {Object} values - Key-value pairs including include flags
+ * @returns {string} Text with conditional blocks rendered
+ */
+export function renderConditionalBlocks(text, values = {}) {
+  if (!text || typeof text !== 'string') {
+    return text;
+  }
+
+  const conditionalBlockRegex = /\{\{#if\s+([A-Z0-9_-]+)\}\}([\s\S]*?)\{\{\/if\}\}/g;
+
+  return text.replace(conditionalBlockRegex, (fullMatch, flagName, blockContent) => {
+    return values[flagName] === true ? blockContent : '';
+  });
+}
+
+/**
  * Sanitizes user input to prevent XSS attacks.
  * Strips all HTML tags but keeps text content.
  * @param {string} value - The user input value to sanitize
@@ -117,14 +180,14 @@ function sanitizeInputValue(value) {
  * @param {boolean} useDefaultNA - Whether to use 'N/A' for empty fields (default: false)
  * @returns {Object} Key-value pairs of placeholder names and their values
  */
-function getVariableValues(form, placeholders, useDefaultNA = false) {
+function getVariableValues(form, textPlaceholders, includeFlags, useDefaultNA = false) {
   const values = {};
   
-  if (!form || !placeholders) {
+  if (!form) {
     return values;
   }
   
-  placeholders.forEach(placeholder => {
+  (textPlaceholders || []).forEach(placeholder => {
     const input = form.querySelector(`#var_${placeholder}`);
     if (input) {
       const value = input.value.trim();
@@ -134,6 +197,11 @@ function getVariableValues(form, placeholders, useDefaultNA = false) {
         values[placeholder] = 'N/A';
       }
     }
+  });
+
+  (includeFlags || []).forEach((flagName) => {
+    const checkbox = form.querySelector(`#var_${flagName}`);
+    values[flagName] = Boolean(checkbox?.checked);
   });
   
   return values;
@@ -169,7 +237,7 @@ export function substitutePlaceholders(text, values) {
  * @param {string} promptText - The prompt text for the textarea
  * @returns {HTMLElement} The modal element
  */
-function buildVariableModalDOM(placeholders, promptText = '') {
+function buildVariableModalDOM(textPlaceholders, includeFlags, promptText = '') {
   const modal = createElement('div', 'modal variable-modal');
   modal.id = 'variableModal';
   modal.setAttribute('role', 'dialog');
@@ -192,8 +260,8 @@ function buildVariableModalDOM(placeholders, promptText = '') {
 
   const modalBody = createElement('div', 'modal-body');
   
-  // Show variables section if there are placeholders
-  if (placeholders && placeholders.length > 0) {
+  // Show variables section if there are inputs to render
+  if ((textPlaceholders && textPlaceholders.length > 0) || (includeFlags && includeFlags.length > 0)) {
     const variablesSection = createElement('div', 'variable-modal__variables-section');
     
     const varsTitle = createElement('h4', 'variable-modal__section-title', 'Variables');
@@ -206,8 +274,8 @@ function buildVariableModalDOM(placeholders, promptText = '') {
     const form = createElement('form', 'variable-modal__form');
     form.id = 'variableForm';
 
-    // Create input field for each placeholder
-    placeholders.forEach(placeholder => {
+    // Create input field for each text placeholder
+    (textPlaceholders || []).forEach(placeholder => {
       const fieldGroup = createElement('div', 'variable-modal__field');
       
       const label = createElement('label', 'variable-modal__label', placeholder);
@@ -222,6 +290,23 @@ function buildVariableModalDOM(placeholders, promptText = '') {
       
       fieldGroup.appendChild(label);
       fieldGroup.appendChild(input);
+      form.appendChild(fieldGroup);
+    });
+
+    // Create checkbox field for each INCLUDE_* flag
+    (includeFlags || []).forEach((flagName) => {
+      const fieldGroup = createElement('div', 'variable-modal__field variable-modal__field--checkbox');
+
+      const checkbox = createElement('input', 'variable-modal__checkbox');
+      checkbox.type = 'checkbox';
+      checkbox.id = `var_${flagName}`;
+      checkbox.name = flagName;
+
+      const label = createElement('label', 'variable-modal__checkbox-label', formatIncludeFlagLabel(flagName));
+      label.setAttribute('for', `var_${flagName}`);
+
+      fieldGroup.appendChild(checkbox);
+      fieldGroup.appendChild(label);
       form.appendChild(fieldGroup);
     });
 
@@ -265,6 +350,15 @@ function buildVariableModalDOM(placeholders, promptText = '') {
   downloadBtn.appendChild(downloadIcon);
   downloadBtn.appendChild(downloadText);
 
+  // Copy button
+  const copyBtn = createElement('button', 'btn');
+  copyBtn.id = 'variableModalCopy';
+  copyBtn.type = 'button';
+  const copyIcon = createIcon('content_copy', 'icon-inline');
+  const copyTextLabel = createElement('span', '', 'Copy');
+  copyBtn.appendChild(copyIcon);
+  copyBtn.appendChild(copyTextLabel);
+
   // Save to GitHub button
   const saveBtn = createElement('button', 'btn');
   saveBtn.id = 'variableModalSave';
@@ -304,6 +398,7 @@ function buildVariableModalDOM(placeholders, promptText = '') {
   continueBtn.appendChild(continueText);
 
   modalButtons.appendChild(cancelBtn);
+  modalButtons.appendChild(copyBtn);
   modalButtons.appendChild(downloadBtn);
   modalButtons.appendChild(saveBtn);
   modalButtons.appendChild(copenContainer);
@@ -338,11 +433,15 @@ export function showCustomizeModal(promptText) {
   }
 
   return new Promise((resolve) => {
-    // Detect placeholders
+    // Detect text placeholders and include flags
     const placeholders = detectPlaceholders(promptText);
+    const includeFlagsFromPlaceholders = placeholders.filter(isIncludeFlag);
+    const includeFlagsFromConditionals = detectConditionalFlags(promptText).filter(isIncludeFlag);
+    const includeFlags = Array.from(new Set([...includeFlagsFromPlaceholders, ...includeFlagsFromConditionals]));
+    const textPlaceholders = placeholders.filter((placeholder) => !isIncludeFlag(placeholder));
     
     // Build new DOM element
-    const modalElement = buildVariableModalDOM(placeholders, promptText);
+    const modalElement = buildVariableModalDOM(textPlaceholders, includeFlags, promptText);
     
     // Store active element for focus restoration
     const previouslyFocusedElement = document.activeElement;
@@ -352,6 +451,7 @@ export function showCustomizeModal(promptText) {
     const textarea = modalElement.querySelector('#variableModalTextarea');
     const continueBtn = modalElement.querySelector('#variableModalContinue');
     const cancelBtn = modalElement.querySelector('#variableModalCancel');
+    const copyBtn = modalElement.querySelector('#variableModalCopy');
     const downloadBtn = modalElement.querySelector('#variableModalDownload');
     const saveBtn = modalElement.querySelector('#variableModalSave');
     const copenContainer = modalElement.querySelector('#variableModalCopenContainer');
@@ -387,23 +487,20 @@ export function showCustomizeModal(promptText) {
     // Get current text with variable substitutions applied
     const getCurrentText = () => {
       const baseText = textarea ? textarea.value : promptText;
-      const values = getVariableValues(form, placeholders, false);
+      const values = getVariableValues(form, textPlaceholders, includeFlags, false);
       
-      // If any variables were filled in, apply substitutions
-      if (Object.keys(values).length > 0) {
-        return substitutePlaceholders(baseText, values);
-      }
-      
-      return baseText;
+      const substituted = substitutePlaceholders(baseText, values);
+      return renderConditionalBlocks(substituted, values);
     };
     
     // Apply variables to textarea
     const handleApplyVariables = () => {
       if (!form || !textarea) return;
       
-      const values = getVariableValues(form, placeholders, true);
+      const values = getVariableValues(form, textPlaceholders, includeFlags, true);
       const substitutedText = substitutePlaceholders(promptText, values);
-      textarea.value = substitutedText;
+      const renderedText = renderConditionalBlocks(substitutedText, values);
+      textarea.value = renderedText;
       showToast('Variables applied to text', 'success');
     };
     
@@ -455,6 +552,16 @@ export function showCustomizeModal(promptText) {
       resolve();
       modal.destroy();
     };
+
+    const handleCopy = async () => {
+      const text = getCurrentText();
+      const success = await copyText(text);
+      if (success) {
+        showToast('Copied to clipboard', 'success');
+      } else {
+        showToast('Clipboard blocked. Select and copy manually.', 'warn');
+      }
+    };
     
     const handleDownload = () => {
       const text = getCurrentText();
@@ -472,6 +579,7 @@ export function showCustomizeModal(promptText) {
     }
     modal.addListener(continueBtn, 'click', handleSendToJules);
     modal.addListener(cancelBtn, 'click', handleCancel);
+    modal.addListener(copyBtn, 'click', handleCopy);
     modal.addListener(downloadBtn, 'click', handleDownload);
     modal.addListener(saveBtn, 'click', handleSaveToGitHub);
     modal.addListener(closeBtn, 'click', handleCancel);

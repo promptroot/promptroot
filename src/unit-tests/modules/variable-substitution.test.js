@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { detectPlaceholders, substitutePlaceholders } from '../../modules/variable-substitution.js';
+import {
+  detectPlaceholders,
+  detectConditionalFlags,
+  renderConditionalBlocks,
+  substitutePlaceholders
+} from '../../modules/variable-substitution.js';
 
 describe('variable-substitution', () => {
   beforeEach(() => {
@@ -260,6 +265,81 @@ describe('variable-substitution', () => {
     });
   });
 
+  describe('detectConditionalFlags', () => {
+    it('should return empty array for text without conditionals', () => {
+      const text = 'Regular prompt text only.';
+      const result = detectConditionalFlags(text);
+      expect(result).toEqual([]);
+    });
+
+    it('should detect single include flag from conditional block', () => {
+      const text = '{{#if INCLUDE_UI_CHANGES}}UI section{{/if}}';
+      const result = detectConditionalFlags(text);
+      expect(result).toEqual(['INCLUDE_UI_CHANGES']);
+    });
+
+    it('should detect multiple unique include flags', () => {
+      const text = `
+        {{#if INCLUDE_UI_CHANGES}}UI{{/if}}
+        {{#if INCLUDE_AGENT_API}}API{{/if}}
+      `;
+      const result = detectConditionalFlags(text);
+      expect(result).toEqual(['INCLUDE_UI_CHANGES', 'INCLUDE_AGENT_API']);
+    });
+
+    it('should deduplicate repeated include flags', () => {
+      const text = `
+        {{#if INCLUDE_UNIT_TESTS}}First{{/if}}
+        {{#if INCLUDE_UNIT_TESTS}}Second{{/if}}
+      `;
+      const result = detectConditionalFlags(text);
+      expect(result).toEqual(['INCLUDE_UNIT_TESTS']);
+    });
+  });
+
+  describe('renderConditionalBlocks', () => {
+    it('should include block content when flag is true', () => {
+      const text = '{{#if INCLUDE_UI_CHANGES}}\n## UI Changes\n{{/if}}';
+      const result = renderConditionalBlocks(text, { INCLUDE_UI_CHANGES: true });
+      expect(result).toContain('## UI Changes');
+      expect(result).not.toContain('{{#if');
+    });
+
+    it('should remove block content when flag is false', () => {
+      const text = '{{#if INCLUDE_UI_CHANGES}}\n## UI Changes\n{{/if}}';
+      const result = renderConditionalBlocks(text, { INCLUDE_UI_CHANGES: false });
+      expect(result).toBe('');
+    });
+
+    it('should remove block content when flag is missing', () => {
+      const text = '{{#if INCLUDE_E2E_TESTS}}\n## E2E\n{{/if}}';
+      const result = renderConditionalBlocks(text, {});
+      expect(result).toBe('');
+    });
+
+    it('should handle mixed true and false flags', () => {
+      const text = `
+        {{#if INCLUDE_UI_CHANGES}}UI{{/if}}
+        {{#if INCLUDE_AGENT_API}}API{{/if}}
+      `;
+      const result = renderConditionalBlocks(text, {
+        INCLUDE_UI_CHANGES: true,
+        INCLUDE_AGENT_API: false
+      });
+      expect(result).toContain('UI');
+      expect(result).not.toContain('API');
+      expect(result).not.toContain('{{#if');
+    });
+
+    it('should preserve non-conditional text', () => {
+      const text = 'Header\n{{#if INCLUDE_UNIT_TESTS}}Unit Tests\n{{/if}}Footer';
+      const result = renderConditionalBlocks(text, { INCLUDE_UNIT_TESTS: true });
+      expect(result).toContain('Header');
+      expect(result).toContain('Unit Tests');
+      expect(result).toContain('Footer');
+    });
+  });
+
   describe('sanitization integration', () => {
     it('should call DOMPurify.sanitize with correct config', () => {
       const text = 'Value: {VAL}';
@@ -323,6 +403,37 @@ describe('variable-substitution', () => {
       expect(result).toContain('handleClick');
       expect(result).toContain('123');
       expect(result).toContain('HIGH');
+    });
+
+    it('should support mixed placeholders and conditionals for modular templates', () => {
+      const template = `
+# SDD {PLAN_VERSION}
+{FEATURE_REQUEST_TEXT}
+
+{{#if INCLUDE_UI_CHANGES}}
+## UI
+{{/if}}
+
+{{#if INCLUDE_E2E_TESTS}}
+## E2E
+{{/if}}
+`;
+
+      const substituted = substitutePlaceholders(template, {
+        PLAN_VERSION: 'v1.2.0',
+        FEATURE_REQUEST_TEXT: 'Implement modular template generation.'
+      });
+
+      const rendered = renderConditionalBlocks(substituted, {
+        INCLUDE_UI_CHANGES: true,
+        INCLUDE_E2E_TESTS: false
+      });
+
+      expect(rendered).toContain('v1.2.0');
+      expect(rendered).toContain('Implement modular template generation.');
+      expect(rendered).toContain('## UI');
+      expect(rendered).not.toContain('## E2E');
+      expect(rendered).not.toContain('{{#if');
     });
   });
 });

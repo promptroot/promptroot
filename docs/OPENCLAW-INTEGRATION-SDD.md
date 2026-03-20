@@ -1,8 +1,8 @@
 # SDD-0002: PromptRoot × OpenClaw Integration
 
-**Version:** 1.8
-**Date:** 2026-03-19
-**Author:** Bliz
+**Version:** 1.9
+**Date:** 2026-03-20
+**Author:** Brace
 **Status:** In Progress
 
 ## Changelog
@@ -13,20 +13,21 @@
 | 1.1 | 2026-03-18 | Design spike: Phase 3 gateway API + key management; acceptance criteria per phase; error handling for Vector 1; fix branch references |
 | 1.2 | 2026-03-18 | Add Vector 8: PromptRoot Agent API — full REST API so OpenClaw can interact with the app without browser automation; Phase 6 spec |
 | 1.3 | 2026-03-18 | Add UI changes, unit test plan, and E2E test plan |
-| 1.4 | 2026-03-18 | Address Bliz review: add Phase 0 gateway spike; resolve Phase 5/6 queue overlap; fix polling terminology; add error handling for Phases 2–6; add phase dependency graph; add job persistence model; define Phase 2 trigger criteria; evaluate heartbeat latency; verify GitHub write scope; add shell script tests; add missing CSS/nav items; make owner/repo configurable; document PROMPTROOT_AGENT_TOKEN storage |
+| 1.4 | 2026-03-18 | Address Brace review: add Phase 0 gateway spike; resolve Phase 5/6 queue overlap; fix polling terminology; add error handling for Phases 2–6; add phase dependency graph; add job persistence model; define Phase 2 trigger criteria; evaluate heartbeat latency; verify GitHub write scope; add shell script tests; add missing CSS/nav items; make owner/repo configurable; document PROMPTROOT_AGENT_TOKEN storage |
 | 1.5 | 2026-03-18 | Multi-user architecture: split Phase 3 into 3a (Cloudflare Tunnel, Jesse onl``y) and 3b (PromptRoot relay service, multi-user); relay architecture design; OpenClaw plugin spec |
-| 1.6 | 2026-03-18 | Address Bliz review: design token→uid reverse lookup index; warn on ephemeral tunnel URLs; add relay inbound auth (shared secret); clarify relay is in-memory (not stateless); specify concurrent job behavior; design response buffer; fix Firestore rate limit approach; fix POST /queue path; update bliz-modal UI for relay mode selector; add Phase 6 prerequisite to Phase 3b user instructions |
+| 1.6 | 2026-03-18 | Address Brace review: design token→uid reverse lookup index; warn on ephemeral tunnel URLs; add relay inbound auth (shared secret); clarify relay is in-memory (not stateless); specify concurrent job behavior; design response buffer; fix Firestore rate limit approach; fix POST /queue path; update brace-modal UI for relay mode selector; add Phase 6 prerequisite to Phase 3b user instructions |
 | 1.7 | 2026-03-18 | Phase 6 implementation complete: multiple named tokens per user (not single token); `pra_` token prefix; separate `manageAgentKeys` HTTP function (Firebase ID token auth) vs `agentApi` (bearer token auth); actual Cloud Function URLs; mark Phase 6 tasks done; update UI changes to match actual implementation; top-nav placement (not user dropdown) |
-| 1.8 | 2026-03-19 | Phase 3a/3b PromptRoot-side implementation complete (PR #777): `openclaw-keys.js`, `openclaw-api.js`, `bliz-modal.js`, `bliz-response-panel.js`, `callOpenclawGateway` + `pollOpenclawJob` Cloud Functions, `/openclaw` settings page, "Run in Bliz" button in prompt action bar; mark Phase 3a PromptRoot tasks done; update Phase 3b tasks (PromptRoot side done, relay service + OpenClaw plugin still pending); update Notes |
+| 1.8 | 2026-03-19 | Phase 3a/3b PromptRoot-side implementation complete (PR #777)
+| 1.9 | 2026-03-20 | Rename Bliz → Brace throughout; Phase 0 complete: gateway audited, `promptroot-gateway` OpenClaw plugin implemented (`POST /api/prompt` + `GET /api/prompt/:jobId` via `subagent.run`); Phase 0 tasks marked done; Phase 3a unblocked pending tunnel setup (Q6): `openclaw-keys.js`, `openclaw-api.js`, `brace-modal.js`, `brace-response-panel.js`, `callOpenclawGateway` + `pollOpenclawJob` Cloud Functions, `/openclaw` settings page, "Run in Brace" button in prompt action bar; mark Phase 3a PromptRoot tasks done; update Phase 3b tasks (PromptRoot side done, relay service + OpenClaw plugin still pending); update Notes |
 
 ---
 
 ## Phase Dependency Graph
 
 ```
-Phase 0 (Gateway Spike) ──► Phase 3a (Run in Bliz, Jesse only — Cloudflare Tunnel)
+Phase 0 (Gateway Spike) ──► Phase 3a (Run in Brace, Jesse only — Cloudflare Tunnel)
 Phase 3a ────────────────────────────────────────────────────► Phase 3b (multi-user relay)
-Phase 1 (Read: PromptRoot skill) ──► Phase 2 (Write: Bliz → PromptRoot)
+Phase 1 (Read: PromptRoot skill) ──► Phase 2 (Write: Brace → PromptRoot)
 Phase 1 ─────────────────────────────────────────────────────► Phase 4 (Web Capture)
 Phase 6 (Agent API) ──► Phase 4 (replaces gh api polling)
 Phase 6 (Agent API) ──► Phase 5* (supersedes service-account approach)
@@ -48,7 +49,7 @@ PromptRoot is a prompt library + Jules workflow tool. OpenClaw is a persistent A
 
 - Let OpenClaw agents consume and execute PromptRoot prompts
 - Let PromptRoot trigger and manage OpenClaw sessions
-- Create a two-way sync: prompts authored in PromptRoot, executed by Bliz
+- Create a two-way sync: prompts authored in PromptRoot, executed by Brace
 - Surface OpenClaw session outputs back into PromptRoot
 
 ## Non-Goals
@@ -61,9 +62,9 @@ PromptRoot is a prompt library + Jules workflow tool. OpenClaw is a persistent A
 
 ## Integration Vectors
 
-### 1. PromptRoot as Bliz's Prompt Library
+### 1. PromptRoot as Brace's Prompt Library
 
-OpenClaw agents currently store prompts ad-hoc in workspace files. PromptRoot provides a structured, versioned, browsable library. Bliz could:
+OpenClaw agents currently store prompts ad-hoc in workspace files. PromptRoot provides a structured, versioned, browsable library. Brace could:
 
 - Pull prompts from PromptRoot by slug (`#p=slug`) on demand
 - Have a `promptroot` skill that fetches and executes prompts
@@ -83,9 +84,9 @@ OpenClaw agents currently store prompts ad-hoc in workspace files. PromptRoot pr
 
 ---
 
-### 2. "Run in Bliz" Button in PromptRoot
+### 2. "Run in Brace" Button in PromptRoot
 
-Similar to "⚡ Try in Jules", add a "🦞 Run in Bliz" button that:
+Similar to "⚡ Try in Jules", add a "🦞 Run in Brace" button that:
 - Sends the prompt + substituted variables to OpenClaw via the gateway API
 - Polls every 3 seconds for the response and displays it inline when complete
 
@@ -99,15 +100,15 @@ Two delivery modes:
 
 ### 3. SDD Workflow Integration
 
-PromptRoot has a versioned SDD prompt template (`prompts/tutorial/templates/versioned-modular-sdd-plan.md`). Bliz generates SDDs locally. Bridge them:
+PromptRoot has a versioned SDD prompt template (`prompts/tutorial/templates/versioned-modular-sdd-plan.md`). Brace generates SDDs locally. Bridge them:
 
-- Bliz pulls the versioned SDD template from PromptRoot
+- Brace pulls the versioned SDD template from PromptRoot
 - Fills in variables interactively with Jesse
 - Saves the completed SDD to `workspace/SDD/`
 - Optionally commits a new prompt back to PromptRoot's `prompts/` folder
 
 **Implementation:**
-- Update Bliz's `sdd` skill to fetch the template from PromptRoot (`main` branch)
+- Update Brace's `sdd` skill to fetch the template from PromptRoot (`main` branch)
 - Add PromptRoot as the canonical SDD template source
 - PR new SDDs back to `promptroot/promptroot` as sharable prompts
 
@@ -125,7 +126,7 @@ workspace/skills/promptroot/
     └── list-prompts.sh     # list available prompts
 ```
 
-Bliz could then respond to:
+Brace could then respond to:
 - "Run the code-review prompt on this file"
 - "What prompts do we have for onboarding?"
 - "Create a new prompt for X and push it"
@@ -134,22 +135,22 @@ Bliz could then respond to:
 
 ### 5. OpenClaw Session Logging → PromptRoot
 
-Every significant Bliz session generates insights and patterns. Feed those back:
+Every significant Brace session generates insights and patterns. Feed those back:
 
-- After completing a task, Bliz identifies reusable prompt patterns
+- After completing a task, Brace identifies reusable prompt patterns
 - Auto-drafts a new `.md` file and opens a PR to `promptroot/promptroot`
 - Jesse reviews and merges — crowdsourcing effective prompts
 
 **Implementation:**
 - Post-session hook in HEARTBEAT.md: "Review today's sessions for reusable prompts"
 - `gh pr create` to `promptroot/promptroot` with new prompt file
-- Tag PRs with `[bliz-generated]` label
+- Tag PRs with `[brace-generated]` label
 
 ---
 
-### 6. Web Capture → Bliz Context
+### 6. Web Capture → Brace Context
 
-PromptRoot's browser extension captures web pages as Markdown to `webclips/`. Bliz could:
+PromptRoot's browser extension captures web pages as Markdown to `webclips/`. Brace could:
 
 - Monitor `webclips/jessewashburn/` for new clips
 - Summarize them using the `summarize` skill
@@ -163,22 +164,22 @@ PromptRoot's browser extension captures web pages as Markdown to `webclips/`. Bl
 
 ---
 
-### 7. PromptRoot Queue → Bliz Task Queue
+### 7. PromptRoot Queue → Brace Task Queue
 
 PromptRoot has a Jules task queue. Add OpenClaw as a second execution target:
 
-- Queue items can be tagged `[bliz]` or `[jules]`
-- Bliz polls the queue (via heartbeat or webhook)
+- Queue items can be tagged `[brace]` or `[jules]`
+- Brace polls the queue (via heartbeat or webhook)
 - Executes tagged tasks and writes results back to Firestore
 
 **Implementation:**
-- Firestore read access for Bliz via **service account** (see Phase 5 notes)
+- Firestore read access for Brace via **service account** (see Phase 5 notes)
 - New `promptroot-queue` skill
 - Queue items processed as sub-agent tasks via `sessions_spawn`
 
 ---
 
-## Phase 3 Design Spike: "Run in Bliz" Button (3a + 3b)
+## Phase 3 Design Spike: "Run in Brace" Button (3a + 3b)
 
 ### Gateway API Contract
 
@@ -215,7 +216,7 @@ Authorization: Bearer {OPENCLAW_GATEWAY_TOKEN}
 → 200 OK (complete)
 {
   "status": "complete",
-  "output": "<Bliz response text>",
+  "output": "<Brace response text>",
   "completedAt": "2026-03-18T12:00:00Z"
 }
 ```
@@ -264,22 +265,22 @@ match /openclawKeys/{userId} {
 | File | Purpose |
 |------|---------|
 | `src/modules/openclaw-keys.js` | Encrypt/store/delete gateway token — mirrors `jules-keys.js` |
-| `src/modules/openclaw-api.js` | `sendToBliz(text)`, `pollJob(jobId)` — callable function wrappers |
-| `src/modules/bliz-modal.js` | Token entry modal — mirrors `jules-modal.js` |
-| `src/modules/bliz-response-panel.js` | In-prompt-viewer panel showing job status + streamed output |
+| `src/modules/openclaw-api.js` | `sendToBrace(text)`, `pollJob(jobId)` — callable function wrappers |
+| `src/modules/brace-modal.js` | Token entry modal — mirrors `jules-modal.js` |
+| `src/modules/brace-response-panel.js` | In-prompt-viewer panel showing job status + streamed output |
 
-### "Run in Bliz" Button Placement
+### "Run in Brace" Button Placement
 
 Added to the prompt viewer action bar alongside the Jules button. Disabled + tooltip "Set up OpenClaw token in Settings" if no token stored. On click:
 
 1. Check token exists (call `checkOpenclawKey`)
-2. If not: open `bliz-modal.js` to collect token, then proceed
+2. If not: open `brace-modal.js` to collect token, then proceed
 3. `getCurrentText()` from variable modal (same as copen)
 4. Check `sessionStorage` for an existing in-progress `jobId` for this prompt — if found and <24h old, resume polling instead of re-submitting
-5. Call `sendToBliz(text)` → get `jobId`; store in `sessionStorage`
-6. Open `bliz-response-panel.js` below prompt viewer
+5. Call `sendToBrace(text)` → get `jobId`; store in `sessionStorage`
+6. Open `brace-response-panel.js` below prompt viewer
 7. Poll `pollJob(jobId)` every 3s, update panel with status
-8. On complete: render Bliz's response as markdown (DOMPurify sanitized)
+8. On complete: render Brace's response as markdown (DOMPurify sanitized)
 9. On 5-minute UI timeout: show timeout state — job remains valid on gateway for 24h
 
 ### Security Notes
@@ -301,21 +302,27 @@ Added to the prompt viewer action bar alongside the Jules button. Disabled + too
 - Written answer to: does the OpenClaw gateway expose `POST /api/prompt` and `GET /api/prompt/{jobId}` today?
 - If not: implementation plan for adding them (scope, estimated effort)
 - Written decision: public HTTPS endpoint or Tailscale egress for the gateway? Document the networking consequences for Cloud Function config.
-- Written answer: what is the expected p50/p95 latency for a Bliz response? Does 5-minute timeout + 3-second polling make sense?
+- Written answer: what is the expected p50/p95 latency for a Brace response? Does 5-minute timeout + 3-second polling make sense?
 - Gateway reachability test: can a Firebase Cloud Function reach the chosen gateway URL?
 
 **Tasks:**
-- [ ] Audit existing OpenClaw gateway code for existing HTTP endpoints
-- [ ] Decide and document: public HTTPS vs Tailscale (this decision blocks Cloud Function networking config — cannot defer to Phase 3)
-- [ ] If gateway endpoints don't exist: write an OpenClaw-side implementation plan and add it as a subtask to Phase 3
-- [ ] Verify Firebase Cloud Function can reach the gateway (curl test from Functions emulator)
-- [ ] Document the decision and reachability result in this SDD before Phase 3 begins
+- [x] Audit existing OpenClaw gateway code for existing HTTP endpoints
+- [x] Decide and document: public HTTPS via Cloudflare Tunnel (loopback gateway + cloudflared; Cloud Function reaches tunnel URL)
+- [x] Gateway endpoints didn't exist — implemented `promptroot-gateway` OpenClaw plugin (`~/.openclaw/extensions/promptroot-gateway/`); registers `POST /api/prompt` and `GET /api/prompt/:jobId` using `subagent.run()` + `subagent.waitForRun()`
+- [ ] Verify Firebase Cloud Function can reach the gateway via tunnel URL (manual curl test — Jesse to run after tunnel is set up)
+- [x] Document decisions in workspace SDD-0002 v1.1 (2026-03-20)
+
+**Networking decision:** Cloudflare Tunnel (quick or named). Gateway stays on loopback. Cloud Function calls the tunnel URL. No firewall changes required. Named tunnel recommended for stable URL — see Phase 3a setup instructions.
+
+**p50/p95 latency:** ~15–30s / 60–90s. 5-minute timeout + 3-second polling is appropriate.
+
+**Open question Q6 still open:** Jesse needs to decide: accept URL churn of quick tunnel, or use a named tunnel with a Cloudflare-managed domain.
 
 ---
 
 ### Phase 1 — Read Access (PromptRoot Skill)
 
-**Goal:** Bliz can fetch and execute any prompt from PromptRoot
+**Goal:** Brace can fetch and execute any prompt from PromptRoot
 **Acceptance criteria:**
 - `fetch-prompt.sh promptroot/promptroot main versioned-modular-sdd-plan` returns the raw markdown
 - `list-prompts.sh promptroot/promptroot main` lists all `.md` files under `prompts/`
@@ -334,36 +341,36 @@ Added to the prompt viewer action bar alongside the Jules button. Disabled + too
 
 ---
 
-### Phase 2 — Write Access (Bliz → PromptRoot)
+### Phase 2 — Write Access (Brace → PromptRoot)
 
-**Goal:** Bliz can contribute prompts and SDDs back to PromptRoot
+**Goal:** Brace can contribute prompts and SDDs back to PromptRoot
 **Acceptance criteria:**
-- Bliz can create a PR to `promptroot/promptroot` with a new `.md` prompt file
-- PR is tagged `[bliz-generated]`
+- Brace can create a PR to `promptroot/promptroot` with a new `.md` prompt file
+- PR is tagged `[brace-generated]`
 - Jesse receives a Telegram notification linking to the PR
 - A session is only flagged for prompt extraction if it meets ≥1 trigger criterion (see below)
 
 **Trigger criteria — what makes a session pattern reusable:**
 A session qualifies for prompt extraction if it meets at least one of:
 1. Jesse explicitly says "save this as a prompt" or "add this to PromptRoot"
-2. Bliz used the same ad-hoc instruction pattern ≥2 times in the last 7 days (detected by comparing session memory entries)
+2. Brace used the same ad-hoc instruction pattern ≥2 times in the last 7 days (detected by comparing session memory entries)
 3. The session produced a standalone artifact (SDD, test plan, PR description) that didn't use an existing PromptRoot template
 
-Bliz does not auto-PR without Jesse's confirmation — it surfaces candidates and asks "Should I add this to PromptRoot?"
+Brace does not auto-PR without Jesse's confirmation — it surfaces candidates and asks "Should I add this to PromptRoot?"
 
 **Tasks:**
 - [ ] Define prompt extraction heuristic in HEARTBEAT.md (check session memory for repeat patterns)
 - [ ] Draft prompt contribution workflow (create branch, write `.md`, open PR)
-- [ ] Add confirmation step: Bliz proposes candidate prompts, Jesse approves before PR
-- [ ] Add `[bliz-generated]` label to `promptroot/promptroot` repo
+- [ ] Add confirmation step: Brace proposes candidate prompts, Jesse approves before PR
+- [ ] Add `[brace-generated]` label to `promptroot/promptroot` repo
 
 ---
 
-### Phase 3a — "Run in Bliz" Button (Jesse only, Cloudflare Tunnel)
+### Phase 3a — "Run in Brace" Button (Jesse only, Cloudflare Tunnel)
 
 **Depends on:** Phase 0 (gateway spike must be complete and gateway endpoints must exist)
 
-**Goal:** Jesse can invoke Bliz from PromptRoot using a Cloudflare Tunnel to expose the local OpenClaw gateway. Single-user shortcut — ship fast, avoid relay infrastructure.
+**Goal:** Jesse can invoke Brace from PromptRoot using a Cloudflare Tunnel to expose the local OpenClaw gateway. Single-user shortcut — ship fast, avoid relay infrastructure.
 
 **Gateway setup (Jesse):**
 
@@ -394,19 +401,19 @@ The tunnel URL is stored as the `gatewayUrl` field in `openclawKeys/{uid}` along
 
 **Acceptance criteria:**
 - Jesse can store his gateway URL + token via a settings modal
-- Clicking "Run in Bliz" sends the substituted prompt text to the Cloudflare Tunnel URL via Cloud Function proxy
+- Clicking "Run in Brace" sends the substituted prompt text to the Cloudflare Tunnel URL via Cloud Function proxy
 - A response panel polls every 3 seconds and displays the result when complete
-- Bliz's response renders as sanitized markdown in the panel
+- Brace's response renders as sanitized markdown in the panel
 - All error states handled with visible UI feedback — see error handling below
 - Token never transmitted from the browser directly
 - Job results retrievable for 24 hours (see Job Persistence)
 
 **Error handling:**
-- Gateway unreachable (tunnel down or Cloudflare URL expired): toast "Bliz is unreachable. Is your tunnel running?" Retry button in response panel.
-- Cloud Function timeout (>60s): toast "Request timed out. Bliz may still be processing." Panel shows timeout state with jobId.
+- Gateway unreachable (tunnel down or Cloudflare URL expired): toast "Brace is unreachable. Is your tunnel running?" Retry button in response panel.
+- Cloud Function timeout (>60s): toast "Request timed out. Brace may still be processing." Panel shows timeout state with jobId.
 - Firestore unavailable (can't read `openclawKeys`): toast "Could not load credentials. Check your connection."
 - Gateway returns 401 (bad token): prompt user to re-enter token.
-- UI timeout (5-minute poll limit): panel shows "Bliz took too long. The job may still complete — check back later."
+- UI timeout (5-minute poll limit): panel shows "Brace took too long. The job may still complete — check back later."
 - Rate limit hit on PromptRoot Cloud Function (1 req/s per uid): silently back off 2 seconds, retry; show error only after 3 consecutive failures.
 
 **Job persistence model:**
@@ -421,14 +428,14 @@ The tunnel URL is stored as the `gatewayUrl` field in `openclawKeys/{uid}` along
 - [x] Implement `openclaw-keys.js` (encrypt/store token + store gatewayUrl/useRelay)
 - [x] Implement `callOpenclawGateway` and `pollOpenclawJob` Cloud Functions (routes to relay or direct URL based on `useRelay`)
 - [x] Implement `openclaw-api.js` (polling wrappers via Firebase ID token fetch)
-- [x] Implement `bliz-modal.js` (relay vs custom-URL mode selector, token entry)
-- [x] Implement `bliz-response-panel.js` (polling UI + markdown render, all error states, jobId resume from sessionStorage)
-- [x] Add "Run in Bliz" button to prompt viewer action bar
+- [x] Implement `brace-modal.js` (relay vs custom-URL mode selector, token entry)
+- [x] Implement `brace-response-panel.js` (polling UI + markdown render, all error states, jobId resume from sessionStorage)
+- [x] Add "Run in Brace" button to prompt viewer action bar
 - [x] Add `/openclaw` settings page (`pages/openclaw/`, `src/pages/openclaw-page.js`)
 
 ---
 
-### Phase 3b — "Run in Bliz" Button (Multi-User, PromptRoot Relay)
+### Phase 3b — "Run in Brace" Button (Multi-User, PromptRoot Relay)
 
 **Depends on:** Phase 3a (button + Cloud Function infrastructure already exists), Phase 6 (Agent API — relay auth uses `PROMPTROOT_AGENT_TOKEN`)
 
@@ -482,7 +489,7 @@ A relay restart clears all in-memory state. Any in-flight jobs are dropped. The 
 **Response buffering for polling:** The relay receives the complete response from OpenClaw over WebSocket, stores it in `jobBuffer` (keyed by jobId), and returns it on the next `GET /{uid}/prompt/{jobId}` poll from the Cloud Function. Buffer entries expire after 5 minutes. The Cloud Function's 5-minute UI timeout aligns with this — if the user stops polling, the response is cleaned up automatically.
 
 - If no OpenClaw instance connected for `{uid}`: relay returns 503 "OpenClaw not connected"
-- Connection drops during job execution: relay returns 503 with `"job_lost": true` — Cloud Function surfaces "Bliz disconnected mid-response. Please retry." toast
+- Connection drops during job execution: relay returns 503 with `"job_lost": true` — Cloud Function surfaces "Brace disconnected mid-response. Please retry." toast
 - Auth: `PROMPTROOT_AGENT_TOKEN` verified against `agentKeysByHash/{tokenHash}` on WebSocket connect (one Firestore read, then cached in memory for connection lifetime)
 
 **OpenClaw plugin (`promptroot-relay`):**
@@ -502,7 +509,7 @@ A relay restart clears all in-memory state. Any in-flight jobs are dropped. The 
 The plugin:
 - Reads `PROMPTROOT_AGENT_TOKEN` from env on startup
 - Opens a WebSocket to `wss://relay.promptroot.io/connect` with token in header
-- Receives incoming prompt jobs, executes them via the existing Bliz runtime
+- Receives incoming prompt jobs, executes them via the existing Brace runtime
 - Streams response chunks back over the WebSocket
 - Reconnects automatically on disconnect (exponential backoff)
 
@@ -519,7 +526,7 @@ The plugin:
 - Horizontal scaling: stateful (WebSocket connections) — sticky sessions required if multi-instance
 
 **Acceptance criteria:**
-- New user: install OpenClaw, add one config line, "Run in Bliz" works in PromptRoot
+- New user: install OpenClaw, add one config line, "Run in Brace" works in PromptRoot
 - Relay status visible on OpenClaw settings page ("Connected" / "Not connected")
 - If OpenClaw is offline, 503 surfaced as toast "Your OpenClaw isn't connected. Is it running?"
 - Jesse's Phase 3a Cloudflare Tunnel setup continues to work unchanged
@@ -530,7 +537,7 @@ The plugin:
 - [ ] Write OpenClaw `promptroot-relay` plugin
 - [x] `callOpenclawGateway` Cloud Function routes to relay when `useRelay: true` (503s until relay service is deployed)
 - [ ] Add relay connection status indicator to OpenClaw settings page (`GET /{uid}/status`)
-- [x] `bliz-modal.js` offers relay vs custom-URL mode selector
+- [x] `brace-modal.js` offers relay vs custom-URL mode selector
 - [ ] Document relay setup in PromptRoot onboarding copy (hold until relay is live)
 
 ---
@@ -539,7 +546,7 @@ The plugin:
 
 **Depends on:** Phase 1 (for `gh api` polling approach) OR Phase 6 (preferred: use `GET /webclips` Agent API endpoint instead)
 
-**Goal:** Bliz monitors and summarizes Jesse's web clips
+**Goal:** Brace monitors and summarizes Jesse's web clips
 
 **Heartbeat latency decision:** Current heartbeat runs every 30 minutes. For web clip notifications, 30-minute latency is acceptable (clips are reference material, not urgent). No dedicated cron job needed. If this assumption changes, add a GitHub webhook to the repo that POSTs to an OpenClaw endpoint on push.
 
@@ -567,12 +574,12 @@ The plugin:
 
 **Depends on:** Phase 1 (skill infrastructure)
 
-**Goal:** Bliz can execute `[bliz]`-tagged queue items from PromptRoot without waiting for Phase 6
+**Goal:** Brace can execute `[brace]`-tagged queue items from PromptRoot without waiting for Phase 6
 
 **Heartbeat latency decision:** 30-minute heartbeat latency is acceptable for queue execution — these are batch tasks, not real-time. If sub-30-minute execution is needed, add a `every 5 minutes` cron job to HEARTBEAT.md specifically for queue polling.
 
 **Acceptance criteria:**
-- Bliz picks up `[bliz]`-tagged queue items within one heartbeat cycle
+- Brace picks up `[brace]`-tagged queue items within one heartbeat cycle
 - Completed tasks write a result summary back to the queue item in Firestore
 - Failed tasks set `status: 'error'` visible in the PromptRoot queue UI
 - Credential stored in OpenClaw secrets — not in any workspace file
@@ -582,7 +589,7 @@ The plugin:
 - [ ] Provision Firestore service account (least-privilege: read `julesQueues`, write `result` and `status` fields only)
 - [ ] Store service account JSON in OpenClaw secrets manager (not workspace files)
 - [ ] Build `promptroot-queue` skill
-- [ ] Process `[bliz]`-tagged queue items via sub-agents
+- [ ] Process `[brace]`-tagged queue items via sub-agents
 - [ ] Migrate to Phase 6 Agent API (`PATCH /queue/{itemId}`) once available; decommission service account
 
 ---
@@ -600,13 +607,13 @@ The plugin:
 - API key can be issued, rotated, and revoked from the PromptRoot UI
 - `PROMPTROOT_AGENT_TOKEN` stored in OpenClaw's env and available to all skills
 
-**Token storage on Bliz's side:**
+**Token storage on Brace's side:**
 The raw agent token is added to OpenClaw's shell environment after generation:
 ```bash
 # ~/.bashrc (or OpenClaw shellEnv config)
 export PROMPTROOT_AGENT_TOKEN="pra_abc123..."
 ```
-All Bliz scripts and skills reference `$PROMPTROOT_AGENT_TOKEN` — never hardcode the token. The token is also added to OpenClaw's secrets config so it persists across reinstalls.
+All Brace scripts and skills reference `$PROMPTROOT_AGENT_TOKEN` — never hardcode the token. The token is also added to OpenClaw's secrets config so it persists across reinstalls.
 
 **Tasks:**
 - [x] Design and document final API contract (this section)
@@ -621,7 +628,7 @@ All Bliz scripts and skills reference `$PROMPTROOT_AGENT_TOKEN` — never hardco
 - [x] Add `/agent-api` rewrite to `firebase.json`
 - [ ] Deploy Cloud Functions: `cd functions && npm run deploy`
 - [ ] After generating token: add `PROMPTROOT_AGENT_TOKEN` to `~/.bashrc` and OpenClaw secrets config
-- [ ] Write integration tests (Bliz calls each endpoint, verifies response shape)
+- [ ] Write integration tests (Brace calls each endpoint, verifies response shape)
 
 ---
 
@@ -725,7 +732,7 @@ Fetch the raw markdown for a prompt by slug. Proxies GitHub raw content.
 }
 ```
 
-Note: `placeholders` and `conditionalFlags` are detected server-side using the same regex as the frontend (`variable-substitution.js`), so Bliz doesn't have to parse them.
+Note: `placeholders` and `conditionalFlags` are detected server-side using the same regex as the frontend (`variable-substitution.js`), so Brace doesn't have to parse them.
 
 ---
 
@@ -746,7 +753,7 @@ Content-Type: application/json
 }
 ```
 
-Returns the fully rendered prompt with variables substituted and conditional blocks resolved — Bliz gets a ready-to-use string with no further processing needed.
+Returns the fully rendered prompt with variables substituted and conditional blocks resolved — Brace gets a ready-to-use string with no further processing needed.
 
 ```json
 {
@@ -772,7 +779,7 @@ List the authenticated user's Jules queue items.
       "status": "pending",
       "createdAt": "2026-03-18T10:00:00Z",
       "scheduledAt": null,
-      "tags": ["[bliz]"]
+      "tags": ["[brace]"]
     }
   ]
 }
@@ -786,7 +793,7 @@ Content-Type: application/json
 
 {
   "promptText": "Refactor auth module to use async/await",
-  "tags": ["[bliz]"],
+  "tags": ["[brace]"],
   "scheduledAt": null
 }
 
@@ -813,7 +820,7 @@ Content-Type: application/json
 }
 ```
 
-Update a queue item — used by Bliz to write results back after executing a task.
+Update a queue item — used by Brace to write results back after executing a task.
 
 Allowed field updates: `status`, `result`, `tags`, `scheduledAt`.
 
@@ -863,12 +870,12 @@ POST /webclips
 Content-Type: application/json
 
 {
-  "filename": "bliz-summary-2026-03-18.md",
+  "filename": "brace-summary-2026-03-18.md",
   "content": "# Summary\n..."
 }
 ```
 
-Commit a new file to `webclips/{username}/` via the GitHub Contents API. Useful for Bliz to write summaries or notes back into PromptRoot's repository.
+Commit a new file to `webclips/{username}/` via the GitHub Contents API. Useful for Brace to write summaries or notes back into PromptRoot's repository.
 
 > ⚠️ **Scope verification required:** This endpoint requires the stored GitHub OAuth token to have `contents: write` scope. The current PromptRoot OAuth flow must be audited to confirm this scope is requested. If it isn't, users will get a 403 from GitHub on this endpoint and the OAuth scopes will need to be updated in the Firebase OAuth config and `oauth-callback.html`. Verify before implementing `POST /webclips`.
 
@@ -952,31 +959,31 @@ Multiple tokens per user are supported. Each token is individually labeled and r
 
 ## UI Changes
 
-### Phase 3 — "Run in Bliz" Button
+### Phase 3 — "Run in Brace" Button
 
 **Prompt viewer action bar** (`src/modules/prompt-viewer.js`)
-- Add "🦞 Run in Bliz" button alongside the Jules "⚡ Try in Jules" button
+- Add "🦞 Run in Brace" button alongside the Jules "⚡ Try in Jules" button
 - Disabled state with tooltip `"Set up OpenClaw token in Settings"` when no token stored
-- Loading state (spinner) while `sendToBliz` is in flight
+- Loading state (spinner) while `sendToBrace` is in flight
 - On success: scrolls to response panel
 
-**Bliz response panel** (`src/modules/bliz-response-panel.js`)
+**Brace response panel** (`src/modules/brace-response-panel.js`)
 - Renders below the prompt viewer, hidden by default
-- States: `pending` (animated spinner + "Waiting for Bliz…"), `complete` (rendered markdown), `error` (error message + retry button), `timeout` (5-minute limit reached)
+- States: `pending` (animated spinner + "Waiting for Brace…"), `complete` (rendered markdown), `error` (error message + retry button), `timeout` (5-minute limit reached)
 - Response rendered via `marked.js` + DOMPurify (same pipeline as prompt renderer)
 - "Copy response" button (top-right corner of panel)
 - "Close" button collapses the panel
 - Polling interval: 3 seconds; timeout: 5 minutes
 
-**Token entry modal** (`src/modules/bliz-modal.js`)
-- Triggered automatically on first "Run in Bliz" click if no connection configured
+**Token entry modal** (`src/modules/brace-modal.js`)
+- Triggered automatically on first "Run in Brace" click if no connection configured
 - **Mode selector** (radio buttons at the top): "Use PromptRoot Relay" (default) / "Use my own URL"
   - **Relay mode:** shows only a password input for the gateway token (used as `PROMPTROOT_AGENT_TOKEN`). Copy-paste from the Agent API page. Note: requires Phase 6 — if no agent token has been generated, show an inline link "Generate a token first →" pointing to `pages/agent-api/`.
   - **Custom URL mode** (Phase 3a / advanced): shows two inputs — gateway URL (`https://...`) and gateway token. Intended for users running a Cloudflare Tunnel or self-hosted gateway.
 - "Save" and "Cancel" buttons
 - Mode selection and values persist to `openclawKeys/{uid}` (`useRelay` + optional `gatewayUrl`)
 
-**Bliz response panel styles** (`src/styles/components/bliz-response-panel.css`)
+**Brace response panel styles** (`src/styles/components/brace-response-panel.css`)
 - Styles for the panel container, all 4 states (pending/complete/error/timeout), copy button
 - Import added to `src/styles.css`
 
@@ -988,12 +995,12 @@ Multiple tokens per user are supported. Each token is individually labeled and r
 
 ---
 
-### Phase 5 — Queue: Bliz Tag + Result Display
+### Phase 5 — Queue: Brace Tag + Result Display
 
 **Queue item card** (`src/modules/jules-queue.js`)
-- `[bliz]` tag renders with a distinct style (e.g. teal badge) separate from Jules tags
-- When `status === 'complete'` and `result` field is present: expandable "Bliz result" section below the prompt text, rendered as plain text
-- Failed Bliz tasks (`status === 'error'`) show the same error state as Jules failures
+- `[brace]` tag renders with a distinct style (e.g. teal badge) separate from Jules tags
+- When `status === 'complete'` and `result` field is present: expandable "Brace result" section below the prompt text, rendered as plain text
+- Failed Brace tasks (`status === 'error'`) show the same error state as Jules failures
 
 ---
 
@@ -1052,13 +1059,13 @@ Mirrors `jules-keys.test.js`. Cover:
 
 ### `openclaw-api.test.js`
 
-- `sendToBliz(text)` — calls `callOpenclawGateway` Cloud Function, returns `jobId`
+- `sendToBrace(text)` — calls `callOpenclawGateway` Cloud Function, returns `jobId`
 - `pollJob(jobId)` — calls `pollOpenclawJob`, returns `{ status, output }`
 - No token stored → throws with actionable error
 - Cloud Function error → propagates as toast-friendly message
-- `sendToBliz` with empty text → returns early without calling function
+- `sendToBrace` with empty text → returns early without calling function
 
-### `bliz-modal.test.js`
+### `brace-modal.test.js`
 
 - Modal renders with a password input and Save/Cancel buttons
 - Cancel closes modal without saving
@@ -1067,7 +1074,7 @@ Mirrors `jules-keys.test.js`. Cover:
 - Modal is focus-trapped while open
 - ESC key closes modal (calls cancel handler)
 
-### `bliz-response-panel.test.js`
+### `brace-response-panel.test.js`
 
 - Panel is hidden on init
 - `showPanel()` makes panel visible and sets status to `pending`
@@ -1118,22 +1125,22 @@ Extract and test the server-side version of the substitution logic used by `POST
 
 All new E2E tests go in `e2e-tests/e2e/extended/` (not smoke — these require auth + token setup).
 
-### Phase 3: "Run in Bliz" flow (`bliz-button.spec.js`)
+### Phase 3: "Run in Brace" flow (`brace-button.spec.js`)
 
 **Setup:** Mock the `callOpenclawGateway` and `pollOpenclawJob` Cloud Functions to return fixture responses.
 
 | Test | Steps | Assert |
 |------|-------|--------|
-| Button visible when token stored | Store mock token in Firestore, load prompt viewer | "Run in Bliz" button is enabled |
+| Button visible when token stored | Store mock token in Firestore, load prompt viewer | "Run in Brace" button is enabled |
 | Button disabled when no token | Load prompt viewer with no token | Button is disabled, tooltip present |
-| First-click token setup | Click button with no token | Bliz modal opens |
+| First-click token setup | Click button with no token | Brace modal opens |
 | Token save flow | Enter token in modal, click Save | Modal closes, button enabled |
-| Successful run | Click "Run in Bliz", mock returns complete | Response panel shows rendered markdown |
+| Successful run | Click "Run in Brace", mock returns complete | Response panel shows rendered markdown |
 | Pending state | Mock returns `pending` for 2 polls | Panel shows spinner |
 | Error state | Mock returns error | Panel shows error message and retry button |
-| Retry button | Click retry after error | `sendToBliz` called again |
+| Retry button | Click retry after error | `sendToBrace` called again |
 | Timeout | Mock never returns complete | Panel shows timeout message after 5 min (use fake timers) |
-| Copy response | Successful run, click "Copy response" | Clipboard contains Bliz output text |
+| Copy response | Successful run, click "Copy response" | Clipboard contains Brace output text |
 | Close panel | Click Close on response panel | Panel collapses, button re-enabled |
 
 ---
@@ -1198,12 +1205,12 @@ Use `request` (Playwright API testing) against the deployed or emulated Cloud Fu
 - `RELAY_SHARED_SECRET` must be set at deploy time on both Cloud Function and relay; document rotation procedure before Phase 3b ships
 - Phase 5 (service account queue) is interim only — do not build it if Phase 6 is <4 weeks away
 - Implementation language: polling (3s interval), not streaming — relay uses WebSocket internally but PromptRoot side is still HTTP polling
-- Variable substitution (`{PLACEHOLDER}`) is shared syntax between PromptRoot's UI modal and Bliz's interactive prompting — keep in sync if syntax changes
-- All Bliz scripts must accept `owner/repo` and `branch` as parameters — never hardcode `promptroot/promptroot`
+- Variable substitution (`{PLACEHOLDER}`) is shared syntax between PromptRoot's UI modal and Brace's interactive prompting — keep in sync if syntax changes
+- All Brace scripts must accept `owner/repo` and `branch` as parameters — never hardcode `promptroot/promptroot`
 - `PROMPTROOT_AGENT_TOKEN` stored in `~/.bashrc` and OpenClaw secrets after Phase 6 key generation — format: `pra_` + 64 hex chars
 - PR #769 (`versioned-modular-sdd-plan.md` + conditional `{{#if}}` blocks) is the reference template for Phase 1 testing; pull from `main` once merged
 - **Phase 6 is complete** (PromptRoot side) — pending: Cloud Function deploy (`cd functions && npm run deploy`), then generate first token and add to `~/.bashrc`
 - **Phase 3a/3b PromptRoot side is complete** (PR #777) — `callOpenclawGateway` + `pollOpenclawJob` are built and route correctly; Phase 3a is usable once Phase 0 (gateway spike) is done and functions are deployed; Phase 3b relay mode returns 503 until `relay.promptroot.io` is deployed
 - Phase 5 (service account queue) should not be built — Phase 6 is already done
-- **Remaining unblocked work:** Phase 0 (Bliz audits gateway), Phase 1 (fetch-prompt.sh / list-prompts.sh), Phase 2 (prompt contribution workflow) — all Bliz-side, can start now
+- **Remaining unblocked work:** Phase 0 (Brace audits gateway), Phase 1 (fetch-prompt.sh / list-prompts.sh), Phase 2 (prompt contribution workflow) — all Brace-side, can start now
 - **Remaining blocked work:** Phase 3b relay service + OpenClaw plugin (blocked until relay is deployed); Phase 3a end-to-end test (blocked on Phase 0 + function deploy)

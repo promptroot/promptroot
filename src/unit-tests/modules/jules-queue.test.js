@@ -30,7 +30,20 @@ vi.mock('../../modules/firebase-service.js', () => ({
   getFunctions: vi.fn(() => null)
 }));
 
-import * as julesQueue from '../../modules/jules-queue.js';
+import {
+  handleQueueAction,
+  addToJulesQueue,
+  updateJulesQueueItem,
+  deleteFromJulesQueue,
+  listJulesQueue,
+  showJulesQueueModal,
+  hideJulesQueueModal,
+  renderQueueListDirectly,
+  attachQueueHandlers,
+  exportQueueToMarkdown,
+  getSelectedQueueIds,
+  deleteSelectedQueueItems
+} from '../../modules/jules-queue.js';
 import { getCache } from '../../utils/session-cache.js';
 import * as julesQueueStore from '../../modules/jules-queue-store.js';
 
@@ -81,7 +94,8 @@ vi.mock('../../utils/constants.js', () => ({
     QUEUED: 'Added to Jules queue',
     deleted: (n) => `Deleted ${n} items`,
     QUEUE_FAILED: (msg) => `Failed to add to queue: ${msg}`,
-    NOT_SIGNED_IN: 'Not signed in'
+    NOT_SIGNED_IN: 'Not signed in',
+    QUEUE_UPDATED: 'Queue item updated'
   },
   JULES_UI_TEXT: {
     SUBTASKS_BATCH: 'Subtasks Batch',
@@ -133,8 +147,9 @@ vi.mock('../../modules/jules-queue-store.js', () => ({
 }));
 
 // Mock DOM elements
-const createMockElement = (id = '') => ({
-  id,
+const createMockElement = (tag = '') => ({
+  tagName: tag.toUpperCase(),
+  id: tag === 'div' ? '' : tag,
   setAttribute: vi.fn(),
   getAttribute: vi.fn(),
   removeAttribute: vi.fn(),
@@ -149,12 +164,15 @@ const createMockElement = (id = '') => ({
   },
   dataset: {},
   replaceChildren: vi.fn(),
-  appendChild: vi.fn(),
+  appendChild: vi.fn(function(child) { return child; }),
+  append: vi.fn(),
   querySelectorAll: vi.fn(() => []),
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
   focus: vi.fn(),
-  value: ''
+  click: vi.fn(),
+  value: '',
+  removeChild: vi.fn()
 });
 
 // Setup global window
@@ -166,6 +184,9 @@ global.window = {
       FieldValue: {
         serverTimestamp: vi.fn(() => 'SERVER_TIMESTAMP'),
         delete: vi.fn(() => 'DELETE_FIELD')
+      },
+      Timestamp: {
+        fromDate: vi.fn((date) => ({ toDate: () => date }))
       }
     }
   }
@@ -175,7 +196,7 @@ global.firebase = global.window.firebase;
 
 global.document = {
   getElementById: vi.fn((id) => {
-    if (id === 'allQueueList') return createMockElement('allQueueList');
+    if (id === 'allQueueList') return createMockElement('div');
     return null;
   }),
   createElement: vi.fn((tag) => createMockElement(tag)),
@@ -221,7 +242,11 @@ function mockReset() {
   global.firebase.firestore.FieldValue.delete.mockImplementation(() => 'DELETE_FIELD');
   
   global.document.getElementById.mockImplementation((id) => {
-    if (id === 'allQueueList') return createMockElement('allQueueList');
+    if (id === 'allQueueList') {
+        const el = createMockElement('div');
+        el.id = 'allQueueList';
+        return el;
+    }
     return null;
   });
   global.document.createElement.mockImplementation((tag) => createMockElement(tag));
@@ -239,7 +264,7 @@ describe('jules-queue', () => {
       const { showToast } = await import('../../modules/toast.js');
       global.window.auth.currentUser = null;
       
-      const result = await julesQueue.handleQueueAction({ prompt: 'test' });
+      const result = await handleQueueAction({ prompt: 'test' });
       
       expect(result).toBe(false);
       expect(showToast).toHaveBeenCalledWith(
@@ -253,7 +278,7 @@ describe('jules-queue', () => {
       const { showToast } = await import('../../modules/toast.js');
       global.window.auth.currentUser = { uid: 'user123' };
       
-      const result = await julesQueue.handleQueueAction({ prompt: 'test prompt' });
+      const result = await handleQueueAction({ prompt: 'test prompt' });
       
       expect(result).toBe(true);
       expect(showToast).toHaveBeenCalledWith('Added to Jules queue', 'success');
@@ -262,11 +287,11 @@ describe('jules-queue', () => {
     it('should show error toast on failure', async () => {
       const { showToast } = await import('../../modules/toast.js');
       global.window.auth.currentUser = { uid: 'user123' };
-      
+
       // Force a rejection in the db mock
       global.window.db.add.mockRejectedValue(new Error('Network error'));
 
-      const result = await julesQueue.handleQueueAction({ prompt: 'test' });
+      const result = await handleQueueAction({ prompt: 'test' });
       
       expect(result).toBe(false);
       expect(showToast).toHaveBeenCalledWith(
@@ -280,13 +305,13 @@ describe('jules-queue', () => {
   describe('addToJulesQueue', () => {
     it('should throw error if Firestore not initialized', async () => {
       global.window.db = null;
-      await expect(julesQueue.addToJulesQueue('user123', {})).rejects.toThrow('Firestore not initialized');
+      await expect(addToJulesQueue('user123', {})).rejects.toThrow('Firestore not initialized');
     });
 
     it('should add item to queue collection', async () => {
       global.window.db.add.mockResolvedValue({ id: 'newDoc123' });
       
-      const docId = await julesQueue.addToJulesQueue('user123', { prompt: 'test', sourceId: 'repo1' });
+      const docId = await addToJulesQueue('user123', { prompt: 'test', sourceId: 'repo1' });
       
       expect(docId).toBe('newDoc123');
       expect(global.window.db.add).toHaveBeenCalledWith(
@@ -302,14 +327,14 @@ describe('jules-queue', () => {
 
   describe('updateJulesQueueItem', () => {
     it('should call service update', async () => {
-      await julesQueue.updateJulesQueueItem('user123', 'doc123', { status: 'done' });
+      await updateJulesQueueItem('user123', 'doc123', { status: 'done' });
       expect(global.window.db.update).toHaveBeenCalledWith(expect.objectContaining({ status: 'done' }));
     });
   });
 
   describe('deleteFromJulesQueue', () => {
     it('should call service delete', async () => {
-      await julesQueue.deleteFromJulesQueue('user123', 'doc123');
+      await deleteFromJulesQueue('user123', 'doc123');
       expect(global.window.db.delete).toHaveBeenCalled();
     });
   });
@@ -322,7 +347,7 @@ describe('jules-queue', () => {
       ];
       global.window.db.get.mockResolvedValue({ docs: mockDocs });
       
-      const result = await julesQueue.listJulesQueue('user123');
+      const result = await listJulesQueue('user123');
       expect(result).toHaveLength(2);
       expect(result[0].id).toBe('1');
     });
@@ -335,11 +360,11 @@ describe('jules-queue', () => {
         { id: '2', prompt: 'Test 2' }
       ];
       
-      expect(() => julesQueue.renderQueueListDirectly(items)).not.toThrow();
+      expect(() => renderQueueListDirectly(items)).not.toThrow();
     });
 
     it('should handle empty array', () => {
-      expect(() => julesQueue.renderQueueListDirectly([])).not.toThrow();
+      expect(() => renderQueueListDirectly([])).not.toThrow();
     });
   });
 
@@ -348,12 +373,9 @@ describe('jules-queue', () => {
     let mockQueueCache;
 
     beforeEach(async () => {
-      const { getAuth } = await import('../../modules/firebase-service.js');
-      const { getQueueCache: getQueueCacheMock } = await import('../../modules/jules-queue-store.js');
       const { showConfirm } = await import('../../modules/confirm-modal.js');
 
       mockAuthUser = { uid: 'user123' };
-      getAuth.mockReturnValue({ currentUser: mockAuthUser });
       global.window.auth.currentUser = mockAuthUser;
 
       mockQueueCache = [
@@ -361,7 +383,7 @@ describe('jules-queue', () => {
         { id: 'q2', type: 'single' },
         { id: 's1', type: 'subtasks', remaining: [{}, {}] }
       ];
-      getQueueCacheMock.mockReturnValue(mockQueueCache);
+      julesQueueStore.getQueueCache.mockReturnValue(mockQueueCache);
       showConfirm.mockResolvedValue(true);
 
       // Ensure DB mock is clean and has required methods for loadQueuePage
@@ -378,7 +400,7 @@ describe('jules-queue', () => {
         return [];
       });
 
-      await julesQueue.deleteSelectedQueueItems();
+      await deleteSelectedQueueItems();
 
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Deleted 2 items'), 'success');
       expect(global.window.db.get).toHaveBeenCalled();
@@ -401,7 +423,7 @@ describe('jules-queue', () => {
         return Promise.reject(new Error('Delete failed'));
       });
 
-      await julesQueue.deleteSelectedQueueItems();
+      await deleteSelectedQueueItems();
 
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Deleted 1 item, but 1 failed'), 'warn');
       expect(global.window.db.get).toHaveBeenCalled();
@@ -417,7 +439,7 @@ describe('jules-queue', () => {
 
       global.window.db.delete.mockRejectedValue(new Error('Delete failed'));
 
-      await julesQueue.deleteSelectedQueueItems();
+      await deleteSelectedQueueItems();
 
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete items'), 'error');
       expect(global.window.db.get).toHaveBeenCalled();
@@ -430,7 +452,7 @@ describe('jules-queue', () => {
         return [];
       });
 
-      await julesQueue.deleteSelectedQueueItems();
+      await deleteSelectedQueueItems();
 
       expect(global.window.db.delete).toHaveBeenCalled();
       expect(global.window.db.update).not.toHaveBeenCalled();
@@ -439,8 +461,7 @@ describe('jules-queue', () => {
 
   describe('exportQueueToMarkdown', () => {
     beforeEach(() => {
-      const { getQueueCache: getQueueCacheMock } = julesQueueStore;
-      getQueueCacheMock.mockReturnValue([
+      julesQueueStore.getQueueCache.mockReturnValue([
         { id: '1', type: 'single', prompt: 'Prompt 1' },
         { id: '2', type: 'subtasks', remaining: [{ fullContent: 'Sub 1' }] }
       ]);
@@ -452,21 +473,23 @@ describe('jules-queue', () => {
     });
 
     it('should create and download a markdown file', () => {
-      julesQueue.exportQueueToMarkdown();
+      const mockAnchor = createMockElement('a');
+      global.document.createElement.mockImplementation((tag) => {
+          if (tag === 'a') return mockAnchor;
+          return createMockElement(tag);
+      });
+
+      exportQueueToMarkdown();
 
       expect(global.URL.createObjectURL).toHaveBeenCalled();
-      expect(global.document.createElement).toHaveBeenCalledWith('a');
-      const mockAnchor = global.document.createElement.results.find(r => r.value.id === 'a')?.value;
-      if (mockAnchor) {
-        expect(mockAnchor.click).toHaveBeenCalled();
-      }
+      expect(mockAnchor.click).toHaveBeenCalled();
     });
 
     it('should show toast if no items selected', async () => {
       const { showToast } = await import('../../modules/toast.js');
       global.document.querySelectorAll.mockReturnValue([]);
 
-      julesQueue.exportQueueToMarkdown();
+      exportQueueToMarkdown();
 
       expect(showToast).toHaveBeenCalledWith('No items selected to export', 'warn');
     });
@@ -477,11 +500,11 @@ describe('jules-queue', () => {
       const mockModal = createMockElement('julesQueueModal');
       global.document.getElementById.mockImplementation((id) => {
         if (id === 'julesQueueModal') return mockModal;
-        if (id === 'allQueueList') return createMockElement('allQueueList');
+        if (id === 'allQueueList') return createMockElement('div');
         return null;
       });
 
-      julesQueue.showJulesQueueModal();
+      showJulesQueueModal();
 
       expect(mockModal.classList.add).toHaveBeenCalledWith('show');
     });
@@ -490,7 +513,7 @@ describe('jules-queue', () => {
       const mockModal = createMockElement('julesQueueModal');
       global.document.getElementById.mockReturnValue(mockModal);
 
-      julesQueue.hideJulesQueueModal();
+      hideJulesQueueModal();
 
       expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
     });

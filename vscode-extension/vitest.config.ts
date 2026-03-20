@@ -15,9 +15,6 @@ export default defineConfig({
         '**/*.test.ts',
       ],
     },
-    alias: {
-      vscode: 'vitest-mock',
-    },
     setupFiles: ['./src/test-setup.ts'],
   },
 });

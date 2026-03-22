@@ -364,10 +364,10 @@ A session qualifies for prompt extraction if it meets at least one of:
 Brace does not auto-PR without Jesse's confirmation — it surfaces candidates and asks "Should I add this to PromptRoot?"
 
 **Tasks:**
-- [ ] Define prompt extraction heuristic in HEARTBEAT.md (check session memory for repeat patterns)
-- [ ] Draft prompt contribution workflow (create branch, write `.md`, open PR)
-- [ ] Add confirmation step: Brace proposes candidate prompts, Jesse approves before PR
-- [ ] Add `[brace-generated]` label to `promptroot/promptroot` repo
+- [x] Define prompt extraction heuristic in HEARTBEAT.md (check session memory for repeat patterns)
+- [x] Draft prompt contribution workflow (create branch, write `.md`, open PR) — in SKILL.md
+- [x] Add confirmation step: Brace proposes candidate prompts, Jesse approves before PR — in SKILL.md and HEARTBEAT.md
+- [x] Add `[brace-generated]` label to `promptroot/promptroot` repo
 
 ---
 
@@ -1319,8 +1319,8 @@ Use `request` (Playwright API testing) against the deployed or emulated Cloud Fu
 - **Phase 6 is complete** (PromptRoot side) — pending: Cloud Function deploy (`cd functions && npm run deploy`), then generate first token and add to `~/.bashrc`
 - **Phase 3a/3b PromptRoot side is complete** (PR #777) — `callOpenclawGateway` + `pollOpenclawJob` are built and route correctly; Phase 3a is usable once Phase 0 (gateway spike) is done and functions are deployed; Phase 3b relay mode returns 503 until `relay.promptroot.io` is deployed
 - Phase 5 (service account queue) should not be built — Phase 6 is already done
-- **Phase 1 complete** — scripts + SKILL.md + Bats tests all passing (12/12)
-- **Remaining unblocked work:** Phase 2 (prompt contribution workflow), logo upload (cosmetic)
+- **Phases 1 and 2 complete** — scripts, SKILL.md, Bats tests (12/12), extraction heuristic in HEARTBEAT.md, contribution workflow in SKILL.md, `[brace-generated]` label created
+- **Remaining unblocked work:** logo upload (cosmetic), Phase 2 end-to-end test (trigger a real contribution)
 - **Cloud Functions deployed 2026-03-22** — all 12 functions live; Phase 3a curl test and Phase 6 token UI now unblocked
 - **Remaining blocked work:** Phase 3a end-to-end test (blocked on Cloud Function deploy + tunnel setup)
 - **Phase 7 is functionally complete** — "Run in Brace" opens new tab, chat routes through relay to Claude, verified end-to-end

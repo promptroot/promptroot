@@ -1,5 +1,5 @@
-// ===== Bliz Response Panel Module =====
-// Shows Bliz's response below the prompt viewer.
+// ===== Brace Response Panel Module =====
+// Shows Brace's response below the prompt viewer.
 // States: pending, complete, error, timeout.
 // Polls every 3s, times out at 5 minutes.
 // jobId stored in sessionStorage to resume across panel closes.
@@ -13,26 +13,26 @@ let timeoutTimer = null;
 
 function buildPanel() {
   const panel = document.createElement('div');
-  panel.id = 'blizResponsePanel';
-  panel.className = 'bliz-panel hidden';
+  panel.id = 'braceResponsePanel';
+  panel.className = 'brace-panel hidden';
 
   const header = document.createElement('div');
-  header.className = 'bliz-panel__header';
+  header.className = 'brace-panel__header';
 
   const titleEl = document.createElement('span');
-  titleEl.className = 'bliz-panel__title fw-600';
-  titleEl.textContent = '🦞 Bliz Response';
+  titleEl.className = 'brace-panel__title fw-600';
+  titleEl.textContent = '🦞 Brace Response';
 
   const headerActions = document.createElement('div');
-  headerActions.className = 'bliz-panel__header-actions';
+  headerActions.className = 'brace-panel__header-actions';
 
   const copyBtn = document.createElement('button');
-  copyBtn.id = 'blizPanelCopyBtn';
+  copyBtn.id = 'bracePanelCopyBtn';
   copyBtn.className = 'btn sm hidden';
   copyBtn.textContent = OPENCLAW_UI_TEXT.COPY_RESPONSE;
 
   const closeBtn = document.createElement('button');
-  closeBtn.id = 'blizPanelCloseBtn';
+  closeBtn.id = 'bracePanelCloseBtn';
   closeBtn.className = 'btn sm';
   closeBtn.textContent = OPENCLAW_UI_TEXT.CLOSE_PANEL;
 
@@ -42,8 +42,8 @@ function buildPanel() {
   header.appendChild(headerActions);
 
   const body = document.createElement('div');
-  body.id = 'blizPanelBody';
-  body.className = 'bliz-panel__body';
+  body.id = 'bracePanelBody';
+  body.className = 'brace-panel__body';
 
   panel.appendChild(header);
   panel.appendChild(body);
@@ -65,16 +65,16 @@ function getPanel() {
 }
 
 function setStatus(status, output = '') {
-  const body = document.getElementById('blizPanelBody');
-  const copyBtn = document.getElementById('blizPanelCopyBtn');
+  const body = document.getElementById('bracePanelBody');
+  const copyBtn = document.getElementById('bracePanelCopyBtn');
   if (!body) return;
 
-  body.className = `bliz-panel__body bliz-panel__body--${status}`;
+  body.className = `brace-panel__body brace-panel__body--${status}`;
   body.innerHTML = '';
 
   if (status === 'pending') {
     const spinner = document.createElement('div');
-    spinner.className = 'bliz-spinner';
+    spinner.className = 'brace-spinner';
     const msg = document.createElement('span');
     msg.className = 'muted-text small-text';
     msg.textContent = OPENCLAW_UI_TEXT.PENDING;
@@ -84,7 +84,7 @@ function setStatus(status, output = '') {
 
   } else if (status === 'complete') {
     const rendered = document.createElement('div');
-    rendered.className = 'bliz-output markdown-body';
+    rendered.className = 'brace-output markdown-body';
     // Sanitize with DOMPurify if available, else use textContent
     if (window.DOMPurify && window.marked) {
       rendered.innerHTML = window.DOMPurify.sanitize(window.marked.parse(output, { breaks: true }));
@@ -119,9 +119,9 @@ function setStatus(status, output = '') {
     retryBtn.className = 'btn sm mt-sm';
     retryBtn.textContent = 'Retry';
     retryBtn.onclick = () => {
-      // Trigger from the blizBtn
-      const blizBtn = document.getElementById('blizBtn');
-      if (blizBtn) blizBtn.click();
+      // Trigger from the braceBtn
+      const braceBtn = document.getElementById('braceBtn');
+      if (braceBtn) braceBtn.click();
     };
     body.appendChild(msg);
     body.appendChild(retryBtn);
@@ -138,7 +138,7 @@ export function showPanel(jobId, promptSlug = null) {
   const panel = getPanel();
   panel.classList.remove('hidden');
 
-  const closeBtn = document.getElementById('blizPanelCloseBtn');
+  const closeBtn = document.getElementById('bracePanelCloseBtn');
   if (closeBtn) {
     closeBtn.onclick = () => hidePanel();
   }
@@ -160,37 +160,37 @@ function startPolling(jobId, promptSlug) {
   timeoutTimer = setTimeout(() => {
     stopPolling();
     setStatus('timeout');
-    resetBlizBtn();
+    resetBraceBtn();
   }, OPENCLAW.POLL_TIMEOUT_MS);
 
   const poll = async () => {
     try {
-      const { pollBlizJob } = await import('./openclaw-api.js');
-      const result = await pollBlizJob(jobId);
+      const { pollBraceJob } = await import('./openclaw-api.js');
+      const result = await pollBraceJob(jobId);
 
       if (result.status === 'complete') {
         stopPolling();
         setStatus('complete', result.output || '');
-        resetBlizBtn();
+        resetBraceBtn();
         // Clear sessionStorage entry
         if (promptSlug) sessionStorage.removeItem(OPENCLAW.SESSION_KEY_PREFIX + promptSlug);
 
       } else if (result.status === 'error') {
         stopPolling();
         setStatus('error', result.output || OPENCLAW_UI_TEXT.ERROR_GENERIC);
-        resetBlizBtn();
+        resetBraceBtn();
         if (promptSlug) sessionStorage.removeItem(OPENCLAW.SESSION_KEY_PREFIX + promptSlug);
 
       } else if (result.status === 'not_found') {
         stopPolling();
         setStatus('error', OPENCLAW_UI_TEXT.RESULT_EXPIRED);
-        resetBlizBtn();
+        resetBraceBtn();
         if (promptSlug) sessionStorage.removeItem(OPENCLAW.SESSION_KEY_PREFIX + promptSlug);
       }
       // pending: keep polling
     } catch (err) {
       // Network error — keep trying until timeout
-      console.error('Bliz poll error:', err);
+      console.error('Brace poll error:', err);
     }
   };
 
@@ -201,20 +201,20 @@ function startPolling(jobId, promptSlug) {
 export function hidePanel() {
   stopPolling();
   if (panelEl) panelEl.classList.add('hidden');
-  resetBlizBtn();
+  resetBraceBtn();
 }
 
-function resetBlizBtn() {
-  const blizBtn = document.getElementById('blizBtn');
-  if (blizBtn) {
-    blizBtn.disabled = false;
-    blizBtn.textContent = '';
+function resetBraceBtn() {
+  const braceBtn = document.getElementById('braceBtn');
+  if (braceBtn) {
+    braceBtn.disabled = false;
+    braceBtn.textContent = '';
     const icon = document.createElement('span');
     icon.className = 'icon icon-inline';
     icon.setAttribute('aria-hidden', 'true');
     icon.textContent = 'bug_report';
-    blizBtn.appendChild(icon);
-    blizBtn.append(' Run in Bliz');
+    braceBtn.appendChild(icon);
+    braceBtn.append(' Run in Brace');
   }
 }
 

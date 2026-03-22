@@ -87,7 +87,7 @@ let ghBtn = null;
 let editBtn = null;
 let shareBtn = null;
 let julesBtn = null;
-let blizBtn = null;
+let braceBtn = null;
 let freeInputBtn = null;
 let queueBtn = null;
 let scheduleBtn = null;
@@ -138,7 +138,7 @@ export function initPromptRenderer() {
   editBtn = document.getElementById('editBtn');
   shareBtn = document.getElementById('shareBtn');
   julesBtn = document.getElementById('julesBtn');
-  blizBtn = document.getElementById('blizBtn');
+  braceBtn = document.getElementById('braceBtn');
   freeInputBtn = document.getElementById('freeInputBtn');
   queueBtn = document.getElementById('queueBtn');
   scheduleBtn = document.getElementById('scheduleBtn');
@@ -207,27 +207,27 @@ function handleDocumentClick(event) {
     return;
   }
 
-  if (target === blizBtn) {
+  if (target === braceBtn) {
     (async () => {
       try {
         const { checkOpenclawKey } = await import('./openclaw-keys.js');
-        const { showBlizModal } = await import('./bliz-modal.js');
-        const { showPanel, getResumableJob } = await import('./bliz-response-panel.js');
-        const { sendToBliz } = await import('./openclaw-api.js');
+        const { showBraceModal } = await import('./brace-modal.js');
+        const { showPanel, getResumableJob } = await import('./brace-response-panel.js');
+        const { sendToBrace } = await import('./openclaw-api.js');
         const { getAuth } = await import('./firebase-service.js');
 
         const user = getAuth()?.currentUser;
         if (!user) {
           const { showToast } = await import('./toast.js');
-          showToast('Please sign in to use Run in Bliz', 'warn');
+          showToast('Please sign in to use Run in Brace', 'warn');
           return;
         }
 
         const hasKey = await checkOpenclawKey(user.uid);
         if (!hasKey) {
-          showBlizModal(async () => {
+          showBraceModal(async () => {
             // After saving, re-run
-            blizBtn?.click();
+            braceBtn?.click();
           });
           return;
         }
@@ -242,18 +242,18 @@ function handleDocumentClick(event) {
         }
 
         // Submit new job
-        blizBtn.disabled = true;
-        blizBtn.textContent = 'Running…';
+        braceBtn.disabled = true;
+        braceBtn.textContent = 'Running…';
 
-        const jobId = await sendToBliz(currentPromptText, slug);
+        const jobId = await sendToBrace(currentPromptText, slug);
         showPanel(jobId, slug);
       } catch (err) {
-        console.error('Run in Bliz error:', err);
+        console.error('Run in Brace error:', err);
         const { showToast } = await import('./toast.js');
-        showToast('Failed to send to Bliz: ' + err.message, 'error');
-        if (blizBtn) {
-          blizBtn.disabled = false;
-          blizBtn.innerHTML = '<span class="icon icon-inline" aria-hidden="true">bug_report</span> Run in Bliz';
+        showToast('Failed to send to Brace: ' + err.message, 'error');
+        if (braceBtn) {
+          braceBtn.disabled = false;
+          braceBtn.innerHTML = '<span class="icon icon-inline" aria-hidden="true">bug_report</span> Run in Brace';
         }
       }
     })();

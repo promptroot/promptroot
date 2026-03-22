@@ -1295,7 +1295,7 @@ exports.callOpenclawGateway = onRequest({ secrets: [relaySharedSecret] }, async 
       const errText = await gwRes.text().catch(() => '');
       logger.error('Gateway error', gwRes.status, errText);
       if (gwRes.status === 401) { res.status(401).json({ error: 'Gateway rejected token. Re-enter your credentials.' }); return; }
-      if (gwRes.status === 503) { res.status(503).json({ error: 'Bliz is unreachable. Is your tunnel running?' }); return; }
+      if (gwRes.status === 503) { res.status(503).json({ error: 'Brace is unreachable. Is your tunnel running?' }); return; }
       res.status(502).json({ error: `Gateway returned ${gwRes.status}` }); return;
     }
 

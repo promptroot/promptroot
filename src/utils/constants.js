@@ -229,7 +229,7 @@ export const OPENCLAW = {
   POLL_INTERVAL_MS: 3000,
   POLL_TIMEOUT_MS: 5 * 60 * 1000, // 5 minutes
   JOB_TTL_MS: 24 * 60 * 60 * 1000, // 24 hours
-  SESSION_KEY_PREFIX: 'bliz_job_'
+  SESSION_KEY_PREFIX: 'brace_job_'
 };
 
 // OpenClaw UI text

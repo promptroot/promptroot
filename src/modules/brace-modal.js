@@ -1,4 +1,4 @@
-// ===== Bliz Modal Module =====
+// ===== Brace Modal Module =====
 // OpenClaw connection settings modal.
 // Mode selector: "Use PromptRoot Relay" (default) vs "Use my own URL".
 
@@ -12,7 +12,7 @@ let cleanup = null;
 
 function buildModal() {
   const modal = document.createElement('div');
-  modal.id = 'blizModal';
+  modal.id = 'braceModal';
   modal.className = 'modal';
 
   const content = document.createElement('div');
@@ -25,7 +25,7 @@ function buildModal() {
   title.textContent = 'Connect OpenClaw';
   const closeX = document.createElement('button');
   closeX.className = 'btn-icon close-modal';
-  closeX.id = 'blizModalClose';
+  closeX.id = 'braceModalClose';
   closeX.textContent = '✕';
   closeX.title = 'Close';
   header.appendChild(title);
@@ -37,26 +37,26 @@ function buildModal() {
 
   // Mode selector
   const modeSection = document.createElement('div');
-  modeSection.className = 'bliz-mode-selector mb-md';
+  modeSection.className = 'brace-mode-selector mb-md';
 
   const relayLabel = document.createElement('label');
-  relayLabel.className = 'bliz-mode-option';
+  relayLabel.className = 'brace-mode-option';
   const relayRadio = document.createElement('input');
   relayRadio.type = 'radio';
-  relayRadio.name = 'blizMode';
+  relayRadio.name = 'braceMode';
   relayRadio.value = 'relay';
-  relayRadio.id = 'blizModeRelay';
+  relayRadio.id = 'braceModeRelay';
   relayRadio.checked = true;
   relayLabel.appendChild(relayRadio);
   relayLabel.append(' ' + OPENCLAW_UI_TEXT.RELAY_MODE_LABEL);
 
   const customLabel = document.createElement('label');
-  customLabel.className = 'bliz-mode-option';
+  customLabel.className = 'brace-mode-option';
   const customRadio = document.createElement('input');
   customRadio.type = 'radio';
-  customRadio.name = 'blizMode';
+  customRadio.name = 'braceMode';
   customRadio.value = 'custom';
-  customRadio.id = 'blizModeCustom';
+  customRadio.id = 'braceModeCustom';
   customLabel.appendChild(customRadio);
   customLabel.append(' ' + OPENCLAW_UI_TEXT.CUSTOM_URL_MODE_LABEL);
 
@@ -66,15 +66,15 @@ function buildModal() {
 
   // Relay mode fields
   const relayFields = document.createElement('div');
-  relayFields.id = 'blizRelayFields';
+  relayFields.id = 'braceRelayFields';
 
   const relayHelp = document.createElement('p');
   relayHelp.className = 'small-text muted-text mb-sm';
   relayHelp.innerHTML = 'Paste your <code>pra_...</code> agent token. ' +
-    `<a href="/agent-api" target="_blank" rel="noopener" id="blizGenerateTokenLink">${OPENCLAW_UI_TEXT.GENERATE_TOKEN_LINK}</a>`;
+    `<a href="/agent-api" target="_blank" rel="noopener" id="braceGenerateTokenLink">${OPENCLAW_UI_TEXT.GENERATE_TOKEN_LINK}</a>`;
   const relayTokenInput = document.createElement('input');
   relayTokenInput.type = 'password';
-  relayTokenInput.id = 'blizRelayToken';
+  relayTokenInput.id = 'braceRelayToken';
   relayTokenInput.className = 'input-field';
   relayTokenInput.placeholder = OPENCLAW_UI_TEXT.TOKEN_PLACEHOLDER;
   relayFields.appendChild(relayHelp);
@@ -83,18 +83,18 @@ function buildModal() {
 
   // Custom URL mode fields
   const customFields = document.createElement('div');
-  customFields.id = 'blizCustomFields';
+  customFields.id = 'braceCustomFields';
   customFields.className = 'hidden';
 
   const urlInput = document.createElement('input');
   urlInput.type = 'url';
-  urlInput.id = 'blizGatewayUrl';
+  urlInput.id = 'braceGatewayUrl';
   urlInput.className = 'input-field mb-sm';
   urlInput.placeholder = OPENCLAW_UI_TEXT.GATEWAY_URL_PLACEHOLDER;
 
   const customTokenInput = document.createElement('input');
   customTokenInput.type = 'password';
-  customTokenInput.id = 'blizGatewayToken';
+  customTokenInput.id = 'braceGatewayToken';
   customTokenInput.className = 'input-field';
   customTokenInput.placeholder = OPENCLAW_UI_TEXT.GATEWAY_TOKEN_PLACEHOLDER;
 
@@ -107,12 +107,12 @@ function buildModal() {
   buttons.className = 'modal-buttons';
 
   const saveBtn = document.createElement('button');
-  saveBtn.id = 'blizSaveBtn';
+  saveBtn.id = 'braceSaveBtn';
   saveBtn.className = 'btn primary';
   saveBtn.textContent = OPENCLAW_UI_TEXT.SAVE_BUTTON;
 
   const cancelBtn = document.createElement('button');
-  cancelBtn.id = 'blizCancelBtn';
+  cancelBtn.id = 'braceCancelBtn';
   cancelBtn.className = 'btn';
   cancelBtn.textContent = OPENCLAW_UI_TEXT.CANCEL_BUTTON;
 
@@ -127,20 +127,20 @@ function buildModal() {
   return modal;
 }
 
-export async function showBlizModal(onSave) {
+export async function showBraceModal(onSave) {
   if (!modalEl) modalEl = buildModal();
 
   const modal = modalEl;
-  const relayRadio = document.getElementById('blizModeRelay');
-  const customRadio = document.getElementById('blizModeCustom');
-  const relayFields = document.getElementById('blizRelayFields');
-  const customFields = document.getElementById('blizCustomFields');
-  const relayTokenInput = document.getElementById('blizRelayToken');
-  const urlInput = document.getElementById('blizGatewayUrl');
-  const customTokenInput = document.getElementById('blizGatewayToken');
-  const saveBtn = document.getElementById('blizSaveBtn');
-  const cancelBtn = document.getElementById('blizCancelBtn');
-  const closeX = document.getElementById('blizModalClose');
+  const relayRadio = document.getElementById('braceModeRelay');
+  const customRadio = document.getElementById('braceModeCustom');
+  const relayFields = document.getElementById('braceRelayFields');
+  const customFields = document.getElementById('braceCustomFields');
+  const relayTokenInput = document.getElementById('braceRelayToken');
+  const urlInput = document.getElementById('braceGatewayUrl');
+  const customTokenInput = document.getElementById('braceGatewayToken');
+  const saveBtn = document.getElementById('braceSaveBtn');
+  const cancelBtn = document.getElementById('braceCancelBtn');
+  const closeX = document.getElementById('braceModalClose');
 
   // Pre-populate from existing config
   const user = getAuth()?.currentUser;
@@ -190,7 +190,7 @@ export async function showBlizModal(onSave) {
     try {
       await encryptAndStoreOpenclawKey(token, u.uid, { useRelay: isRelay, gatewayUrl: gatewayUrl || null });
       showToast(OPENCLAW_UI_TEXT.SAVED, 'success');
-      hideBlizModal();
+      hideBraceModal();
       if (onSave) onSave();
     } catch (err) {
       showToast(OPENCLAW_UI_TEXT.SAVE_ERROR, 'error');
@@ -200,7 +200,7 @@ export async function showBlizModal(onSave) {
     }
   };
 
-  const handleClose = () => hideBlizModal();
+  const handleClose = () => hideBraceModal();
 
   // Clean up previous listeners
   if (cleanup) cleanup();
@@ -231,7 +231,7 @@ export async function showBlizModal(onSave) {
   relayTokenInput.focus();
 }
 
-export function hideBlizModal() {
+export function hideBraceModal() {
   if (modalEl) modalEl.classList.remove('show');
   if (cleanup) cleanup();
 }

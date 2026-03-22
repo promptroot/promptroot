@@ -27,7 +27,7 @@ async function callFunction(name, payload) {
  * @param {string} [slug] - Optional prompt slug for logging
  * @returns {Promise<string>} jobId
  */
-export async function sendToBliz(promptText, slug = null) {
+export async function sendToBrace(promptText, slug = null) {
   const data = await callFunction('callOpenclawGateway', { text: promptText, slug });
   if (!data.jobId) throw new Error('No jobId returned from gateway');
   return data.jobId;
@@ -38,6 +38,6 @@ export async function sendToBliz(promptText, slug = null) {
  * @param {string} jobId
  * @returns {Promise<{ status: 'pending'|'complete'|'error', output?: string }>}
  */
-export async function pollBlizJob(jobId) {
+export async function pollBraceJob(jobId) {
   return callFunction('pollOpenclawJob', { jobId });
 }

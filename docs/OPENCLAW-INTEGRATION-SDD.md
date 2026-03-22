@@ -337,12 +337,12 @@ Added to the prompt viewer action bar alongside the Jules button. Disabled + too
 - Shell script smoke tests pass (see Unit Test Plan)
 
 **Tasks:**
-- [ ] Create `workspace/skills/promptroot/SKILL.md`
-- [ ] Write `scripts/fetch-prompt.sh <owner/repo> <branch> <slug>` — parameterized, not hardcoded to `promptroot/promptroot`
-- [ ] Write `scripts/list-prompts.sh <owner/repo> <branch>` — parameterized
-- [ ] Update SDD skill to pull template from PromptRoot (`main` branch, `promptroot/promptroot`)
-- [ ] Write Bats smoke tests for both scripts (see Unit Test Plan)
-- [ ] Test: "Run the versioned-modular-sdd-plan prompt"
+- [x] Create `workspace/skills/promptroot/SKILL.md`
+- [x] Write `scripts/fetch-prompt.sh <owner/repo> <branch> <slug>` — parameterized, not hardcoded to `promptroot/promptroot`
+- [x] Write `scripts/list-prompts.sh <owner/repo> <branch>` — parameterized
+- [x] Update SDD skill to pull template from PromptRoot (`main` branch, `promptroot/promptroot`)
+- [x] Write Bats smoke tests for both scripts — 12/12 passing
+- [x] Test: `fetch-prompt.sh promptroot/promptroot main tutorial/templates/versioned-modular-sdd-plan` returns raw markdown ✓
 
 ---
 
@@ -1319,7 +1319,8 @@ Use `request` (Playwright API testing) against the deployed or emulated Cloud Fu
 - **Phase 6 is complete** (PromptRoot side) — pending: Cloud Function deploy (`cd functions && npm run deploy`), then generate first token and add to `~/.bashrc`
 - **Phase 3a/3b PromptRoot side is complete** (PR #777) — `callOpenclawGateway` + `pollOpenclawJob` are built and route correctly; Phase 3a is usable once Phase 0 (gateway spike) is done and functions are deployed; Phase 3b relay mode returns 503 until `relay.promptroot.io` is deployed
 - Phase 5 (service account queue) should not be built — Phase 6 is already done
-- **Remaining unblocked work:** Phase 1 (fetch-prompt.sh / list-prompts.sh), Phase 2 (prompt contribution workflow), logo upload (cosmetic)
+- **Phase 1 complete** — scripts + SKILL.md + Bats tests all passing (12/12)
+- **Remaining unblocked work:** Phase 2 (prompt contribution workflow), logo upload (cosmetic)
 - **Cloud Functions deployed 2026-03-22** — all 12 functions live; Phase 3a curl test and Phase 6 token UI now unblocked
 - **Remaining blocked work:** Phase 3a end-to-end test (blocked on Cloud Function deploy + tunnel setup)
 - **Phase 7 is functionally complete** — "Run in Brace" opens new tab, chat routes through relay to Claude, verified end-to-end

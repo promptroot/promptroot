@@ -24,6 +24,7 @@
 | 2.2 | 2026-03-22 | `/openclaw` page redesigned: hero panel, 4-feature grid, 4-step relay setup guide (with `code-block` snippets), advanced custom-URL section, troubleshooting, live connection status card styled like webcapture extension detection; Agent API section moved to profile page; `input-field` → `form-control` for dark-mode; nav Agent API link removed; onboarding copy task marked done |
 | 2.3 | 2026-03-22 | Add Phase 7: Brace Web UI (Open WebUI on fly.io backed by `/v1/chat/completions`); "Run in Brace" button opens new tab instead of inline response panel; `deploy/brace-ui/` config committed (Brace repo PR #3); `gateway.openai.chatCompletions: true` enabled in `openclaw.json` |
 | 2.4 | 2026-03-22 | Phase 7 deployed and live: `brace-ui.fly.dev` serving 200 OK; document fly.io deployment learnings (2048MB required, `HF_HOME` on volume, `RAG_EMBEDDING_ENGINE=openai` must NOT be set, `auto_stop_machines='off'`, `strategy='immediate'`); mark deploy tasks done |
+| 2.5 | 2026-03-22 | Phase 7 complete: "Run in Brace" opens new tab at `brace-ui.fly.dev/?q=<prompt>` and works end-to-end; relay SSE streaming fixed (Uint8Array → Buffer.from().toString('utf8'), drop double data: prefix); gateway config fixed (`gateway.http.endpoints.chatCompletions.enabled` not `gateway.openai`); all Phase 7 core tasks done |
 
 ---
 
@@ -679,7 +680,7 @@ Each browser tab = an independent session. OpenClaw handles them in parallel via
 - [x] `fly deploy` — `brace-ui.fly.dev` live and serving 200 OK
 - [x] Admin account created (first-user signup flow)
 - [ ] Verify chat works end-to-end (requires Cloudflare tunnel to be running)
-- [ ] Update "Run in Brace" button: open new tab (`brace-ui.fly.dev/?q=<prompt>`) instead of inline panel
+- [x] Update "Run in Brace" button: open new tab (`brace-ui.fly.dev/?q=<prompt>`) instead of inline panel — verified working end-to-end
 - [ ] Set `WEBUI_URL=https://brace-ui.fly.dev` in Firebase Functions config
 - [ ] Branding: upload logo in Open WebUI admin settings (name "Brace" already set via env)
 
@@ -1318,9 +1319,10 @@ Use `request` (Playwright API testing) against the deployed or emulated Cloud Fu
 - **Phase 6 is complete** (PromptRoot side) — pending: Cloud Function deploy (`cd functions && npm run deploy`), then generate first token and add to `~/.bashrc`
 - **Phase 3a/3b PromptRoot side is complete** (PR #777) — `callOpenclawGateway` + `pollOpenclawJob` are built and route correctly; Phase 3a is usable once Phase 0 (gateway spike) is done and functions are deployed; Phase 3b relay mode returns 503 until `relay.promptroot.io` is deployed
 - Phase 5 (service account queue) should not be built — Phase 6 is already done
-- **Remaining unblocked work:** Phase 1 (fetch-prompt.sh / list-prompts.sh), Phase 2 (prompt contribution workflow), Phase 7 remaining tasks (Run in Brace button update, Firebase config, logo)
-- **Remaining blocked work:** Phase 3a end-to-end test (blocked on Cloud Function deploy + tunnel setup); Phase 7 end-to-end chat verify (blocked on Cloudflare tunnel running + Cloud Functions deployed)
+- **Remaining unblocked work:** Phase 1 (fetch-prompt.sh / list-prompts.sh), Phase 2 (prompt contribution workflow), Firebase config + logo (Phase 7 cosmetic)
+- **Remaining blocked work:** Phase 3a end-to-end test (blocked on Cloud Function deploy + tunnel setup)
+- **Phase 7 is functionally complete** — "Run in Brace" opens new tab, chat routes through relay to Claude, verified end-to-end
 - **Phase 7 supersedes Phase 3 inline panel for Jesse** — the new-tab Open WebUI path is the preferred "Run in Brace" experience. The inline panel is retained as the multi-user fallback path for users who don't have their own Brace UI.
-- **Brace Web UI config:** `deploy/brace-ui/fly.toml` + README committed in Brace repo (PR #3); `gateway.openai.chatCompletions: true` enabled in `openclaw.json`
+- **Brace Web UI config:** `deploy/brace-ui/fly.toml` + README committed in Brace repo; gateway config key is `gateway.http.endpoints.chatCompletions.enabled`
 - **Open WebUI chosen over custom React frontend** — handles multi-session, history, streaming, file attachments; connects to OpenClaw's existing `/v1/chat/completions` endpoint with no custom code
-- **`brace-ui.fly.dev` is live** — serving 200 OK; admin account created; chat not yet verified end-to-end (needs tunnel + functions deploy)
+- **`brace-ui.fly.dev` is live** — chat working end-to-end via promptroot-relay; relay SSE fix: use `Buffer.from(chunk).toString('utf8')` not `chunk.toString()` (Uint8Array in Node 22)

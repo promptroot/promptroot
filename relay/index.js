@@ -59,7 +59,23 @@ async function validateAgentToken(token) {
   const hash = createHash('sha256').update(token).digest('hex');
   const snap = await db.doc(`agentKeysByHash/${hash}`).get();
   if (!snap.exists) return null;
-  return snap.data().uid;
+  return { uid: snap.data().uid, tokenHash: hash };
+}
+
+async function updateLastUsed(uid, tokenHash) {
+  try {
+    const ref = db.doc(`agentKeys/${uid}`);
+    const snap = await ref.get();
+    if (!snap.exists) return;
+    const tokens = (snap.data().tokens || []).map(t =>
+      t.tokenHash === tokenHash
+        ? { ...t, lastUsedAt: admin.firestore.Timestamp.now() }
+        : t
+    );
+    await ref.update({ tokens });
+  } catch (err) {
+    console.error('[relay] Failed to update lastUsedAt:', err.message);
+  }
 }
 
 function parseBearer(req) {
@@ -107,8 +123,10 @@ const server = createServer(async (req, res) => {
   if (url.pathname === '/v1/models' && req.method === 'GET') {
     const token = parseBearer(req);
     if (!token) return json(res, 401, { error: 'Unauthorized' });
-    const uid = await validateAgentToken(token);
-    if (!uid) return json(res, 401, { error: 'Invalid token' });
+    const result = await validateAgentToken(token);
+    if (!result) return json(res, 401, { error: 'Invalid token' });
+    const { uid, tokenHash } = result;
+    updateLastUsed(uid, tokenHash);
     return json(res, 200, {
       object: 'list',
       data: [{ id: 'brace', object: 'model', owned_by: 'openclaw' }],
@@ -118,8 +136,10 @@ const server = createServer(async (req, res) => {
   if (url.pathname === '/v1/chat/completions' && req.method === 'POST') {
     const token = parseBearer(req);
     if (!token) return json(res, 401, { error: 'Unauthorized' });
-    const uid = await validateAgentToken(token);
-    if (!uid) return json(res, 401, { error: 'Invalid token' });
+    const result = await validateAgentToken(token);
+    if (!result) return json(res, 401, { error: 'Invalid token' });
+    const { uid, tokenHash } = result;
+    updateLastUsed(uid, tokenHash);
 
     const ws = connections.get(uid);
     if (!ws || ws.readyState !== 1 /* OPEN */) {
@@ -213,9 +233,10 @@ wss.on('connection', async (ws, req) => {
     return;
   }
 
-  let uid;
+  let uid, tokenHash;
   try {
-    uid = await validateAgentToken(token);
+    const result = await validateAgentToken(token);
+    if (result) ({ uid, tokenHash } = result);
   } catch (err) {
     console.error('[relay] Token validation error:', err.message);
     ws.close(4500, 'Server error');
@@ -234,6 +255,7 @@ wss.on('connection', async (ws, req) => {
   }
   connections.set(uid, ws);
   console.log(`[relay] Brace connected uid=${uid} (connections=${connections.size})`);
+  updateLastUsed(uid, tokenHash);
 
   ws.on('message', (data) => {
     try {

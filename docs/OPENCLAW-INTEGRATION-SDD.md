@@ -632,7 +632,7 @@ All Brace scripts and skills reference `$PROMPTROOT_AGENT_TOKEN` — never hardc
 - [x] Add `Agent API` nav link to header (desktop + mobile top nav)
 - [x] Add `src/styles/pages/agent-api.css` and import in `src/styles.css`
 - [x] Add `/agent-api` rewrite to `firebase.json`
-- [ ] Deploy Cloud Functions: `cd functions && npm run deploy`
+- [x] Deploy Cloud Functions: `cd functions && npm run deploy` (deployed 2026-03-22, all 12 functions updated)
 - [ ] After generating token: add `PROMPTROOT_AGENT_TOKEN` to `~/.bashrc` and OpenClaw secrets config
 - [ ] Write integration tests (Brace calls each endpoint, verifies response shape)
 
@@ -679,9 +679,9 @@ Each browser tab = an independent session. OpenClaw handles them in parallel via
 - [x] Set fly secrets: `OPENAI_API_KEY`, `OPENAI_API_BASE_URL`, `WEBUI_SECRET_KEY`
 - [x] `fly deploy` — `brace-ui.fly.dev` live and serving 200 OK
 - [x] Admin account created (first-user signup flow)
-- [ ] Verify chat works end-to-end (requires Cloudflare tunnel to be running)
+- [x] Verify chat works end-to-end — confirmed working via promptroot-relay
 - [x] Update "Run in Brace" button: open new tab (`brace-ui.fly.dev/?q=<prompt>`) instead of inline panel — verified working end-to-end
-- [ ] Set `WEBUI_URL=https://brace-ui.fly.dev` in Firebase Functions config
+- [x] Set `WEBUI_URL` — not needed; URL hardcoded client-side; `functions:config` API is deprecated
 - [ ] Branding: upload logo in Open WebUI admin settings (name "Brace" already set via env)
 
 **fly.toml (final working config):**
@@ -1319,7 +1319,8 @@ Use `request` (Playwright API testing) against the deployed or emulated Cloud Fu
 - **Phase 6 is complete** (PromptRoot side) — pending: Cloud Function deploy (`cd functions && npm run deploy`), then generate first token and add to `~/.bashrc`
 - **Phase 3a/3b PromptRoot side is complete** (PR #777) — `callOpenclawGateway` + `pollOpenclawJob` are built and route correctly; Phase 3a is usable once Phase 0 (gateway spike) is done and functions are deployed; Phase 3b relay mode returns 503 until `relay.promptroot.io` is deployed
 - Phase 5 (service account queue) should not be built — Phase 6 is already done
-- **Remaining unblocked work:** Phase 1 (fetch-prompt.sh / list-prompts.sh), Phase 2 (prompt contribution workflow), Firebase config + logo (Phase 7 cosmetic)
+- **Remaining unblocked work:** Phase 1 (fetch-prompt.sh / list-prompts.sh), Phase 2 (prompt contribution workflow), logo upload (cosmetic)
+- **Cloud Functions deployed 2026-03-22** — all 12 functions live; Phase 3a curl test and Phase 6 token UI now unblocked
 - **Remaining blocked work:** Phase 3a end-to-end test (blocked on Cloud Function deploy + tunnel setup)
 - **Phase 7 is functionally complete** — "Run in Brace" opens new tab, chat routes through relay to Claude, verified end-to-end
 - **Phase 7 supersedes Phase 3 inline panel for Jesse** — the new-tab Open WebUI path is the preferred "Run in Brace" experience. The inline panel is retained as the multi-user fallback path for users who don't have their own Brace UI.

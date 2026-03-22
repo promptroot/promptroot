@@ -208,55 +208,10 @@ function handleDocumentClick(event) {
   }
 
   if (target === braceBtn) {
-    (async () => {
-      try {
-        const { checkOpenclawKey } = await import('./openclaw-keys.js');
-        const { showBraceModal } = await import('./brace-modal.js');
-        const { showPanel, getResumableJob } = await import('./brace-response-panel.js');
-        const { sendToBrace } = await import('./openclaw-api.js');
-        const { getAuth } = await import('./firebase-service.js');
-
-        const user = getAuth()?.currentUser;
-        if (!user) {
-          const { showToast } = await import('./toast.js');
-          showToast('Please sign in to use Run in Brace', 'warn');
-          return;
-        }
-
-        const hasKey = await checkOpenclawKey(user.uid);
-        if (!hasKey) {
-          showBraceModal(async () => {
-            // After saving, re-run
-            braceBtn?.click();
-          });
-          return;
-        }
-
-        const slug = currentFile ? currentFile.path : null;
-
-        // Check for resumable job
-        const resumable = getResumableJob(slug);
-        if (resumable) {
-          showPanel(resumable.jobId, slug);
-          return;
-        }
-
-        // Submit new job
-        braceBtn.disabled = true;
-        braceBtn.textContent = 'Running…';
-
-        const jobId = await sendToBrace(currentPromptText, slug);
-        showPanel(jobId, slug);
-      } catch (err) {
-        console.error('Run in Brace error:', err);
-        const { showToast } = await import('./toast.js');
-        showToast('Failed to send to Brace: ' + err.message, 'error');
-        if (braceBtn) {
-          braceBtn.disabled = false;
-          braceBtn.innerHTML = '<span class="icon icon-inline" aria-hidden="true">bug_report</span> Run in Brace';
-        }
-      }
-    })();
+    window.open(
+      'https://brace-ui.fly.dev/?q=' + encodeURIComponent(currentPromptText),
+      '_blank',
+    );
     return;
   }
 

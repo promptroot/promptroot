@@ -23,6 +23,7 @@
 | 2.1 | 2026-03-20 | Phase 3b end-to-end deployed and verified: relay live at `promptroot-relay.fly.dev` (scaled to 1 machine, `auto_stop_machines=off`); `promptroot-relay` OpenClaw plugin deployed at `~/.openclaw/extensions/promptroot-relay/index.js`; fixes: add `type:'job'` to relay dispatch, trim `RELAY_SHARED_SECRET` trailing newline, code 4000 → no reconnect, add `idempotencyKey`, store env in `~/.openclaw/.env`; end-to-end "Run in Brace" flow confirmed working |
 | 2.2 | 2026-03-22 | `/openclaw` page redesigned: hero panel, 4-feature grid, 4-step relay setup guide (with `code-block` snippets), advanced custom-URL section, troubleshooting, live connection status card styled like webcapture extension detection; Agent API section moved to profile page; `input-field` → `form-control` for dark-mode; nav Agent API link removed; onboarding copy task marked done |
 | 2.3 | 2026-03-22 | Add Phase 7: Brace Web UI (Open WebUI on fly.io backed by `/v1/chat/completions`); "Run in Brace" button opens new tab instead of inline response panel; `deploy/brace-ui/` config committed (Brace repo PR #3); `gateway.openai.chatCompletions: true` enabled in `openclaw.json` |
+| 2.4 | 2026-03-22 | Phase 7 deployed and live: `brace-ui.fly.dev` serving 200 OK; document fly.io deployment learnings (2048MB required, `HF_HOME` on volume, `RAG_EMBEDDING_ENGINE=openai` must NOT be set, `auto_stop_machines='off'`, `strategy='immediate'`); mark deploy tasks done |
 
 ---
 
@@ -672,35 +673,68 @@ Each browser tab = an independent session. OpenClaw handles them in parallel via
 **Tasks:**
 - [x] Enable `gateway.openai.chatCompletions: true` in `openclaw.json` (Brace repo PR #3)
 - [x] Add `deploy/brace-ui/fly.toml` and `deploy/brace-ui/README.md` (Brace repo PR #3)
-- [ ] First deploy: `fly launch --no-deploy --copy-config --name brace-ui`
-- [ ] Create persistent volume: `fly volumes create brace_data --region iad --size 1`
-- [ ] Set fly secrets: `OPENAI_API_KEY`, `OPENAI_API_BASE_URL`, `WEBUI_SECRET_KEY`
-- [ ] `fly deploy` and verify chat works end-to-end
+- [x] First deploy: `fly launch --no-deploy --copy-config --name brace-ui`
+- [x] Create persistent volume: `fly volumes create brace_data --region iad --size 1`
+- [x] Set fly secrets: `OPENAI_API_KEY`, `OPENAI_API_BASE_URL`, `WEBUI_SECRET_KEY`
+- [x] `fly deploy` — `brace-ui.fly.dev` live and serving 200 OK
+- [x] Admin account created (first-user signup flow)
+- [ ] Verify chat works end-to-end (requires Cloudflare tunnel to be running)
 - [ ] Update "Run in Brace" button: open new tab (`brace-ui.fly.dev/?q=<prompt>`) instead of inline panel
 - [ ] Set `WEBUI_URL=https://brace-ui.fly.dev` in Firebase Functions config
-- [ ] Branding: set name to "Brace", upload logo in Open WebUI admin settings
+- [ ] Branding: upload logo in Open WebUI admin settings (name "Brace" already set via env)
 
-**fly.toml highlights (`deploy/brace-ui/fly.toml`):**
+**fly.toml (final working config):**
 ```toml
-app = "brace-ui"
-primary_region = "iad"
+app = 'brace-ui'
+primary_region = 'iad'
 
 [build]
-  image = "ghcr.io/open-webui/open-webui:main"
+  image = 'ghcr.io/open-webui/open-webui:main'
+
+[deploy]
+  strategy = 'immediate'   # required: Open WebUI takes ~2.5min to start; default deploy waits 15s and fails
 
 [env]
-  WEBUI_NAME = "Brace"
-  ENABLE_SIGNUP = "false"         # first user becomes admin; no open registration
-  ENABLE_IMAGE_GENERATION = "false"
+  WEBUI_NAME = 'Brace'
+  ENABLE_SIGNUP = 'false'          # first user becomes admin; no open registration
+  ENABLE_IMAGE_GENERATION = 'false'
+  ENABLE_COMMUNITY_SHARING = 'false'
+  ENABLE_MESSAGE_RATING = 'false'
+  DEFAULT_USER_ROLE = 'admin'
+  PORT = '8080'
+  ENABLE_RAG_WEB_SEARCH = 'false'
+  HF_HOME = '/app/backend/data/.cache/huggingface'   # persist embedding model on volume
 
 [[mounts]]
-  source = "brace_data"
-  destination = "/app/backend/data"   # SQLite history + config
+  source = 'brace_data'
+  destination = '/app/backend/data'   # SQLite history + config + model cache
 
 [http_service]
   force_https = true
-  auto_stop_machines = "stop"         # scales to zero when idle
+  auto_stop_machines = 'off'   # must be off: machine stops before slow first-boot completes otherwise
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '2048mb'   # 1024mb is not enough — OOM-killed during ML library startup
 ```
+
+**Deployment learnings (hard-won):**
+
+1. **Memory: 2048MB minimum.** Open WebUI loads PyTorch + sentence-transformers + LangChain at startup. On 1024MB the kernel OOM-kills the Python process at ~135s with no error log (exit code 137). The process crashes silently — no useful log output to diagnose it; use `fly machine status <id>` and look for `oom_killed=true` in the event log.
+
+2. **Do NOT set `RAG_EMBEDDING_ENGINE=openai`.** Despite sounding like it would prevent a local model download, this env var causes Open WebUI to call `{OPENAI_API_BASE_URL}/v1/embeddings` at startup. Our OpenClaw gateway doesn't implement `/v1/embeddings`, so the call fails after a ~80s timeout and crashes the process. Same silent crash at ~135s, no log.
+
+3. **Cache the HuggingFace model on the volume.** Open WebUI downloads `sentence-transformers/all-MiniLM-L6-v2` (30 files, ~68MB) from HuggingFace on first use. By default this goes to `/root/.cache/huggingface/` inside the container, which is ephemeral and re-downloaded every boot. Setting `HF_HOME=/app/backend/data/.cache/huggingface` stores it on the persistent volume. First boot: ~70 second download. Every subsequent boot: instant (`122164 it/s`).
+
+4. **First-boot crash+restart is normal.** On a freshly provisioned volume, Open WebUI's first Python process run crashes/restarts once (unknown reason — likely a DB initialization race). The second run always succeeds. This is not a config issue; don't chase it.
+
+5. **`strategy = 'immediate'` is required.** Fly's default deploy strategy waits for the app to respond before declaring success. Open WebUI takes ~2.5 minutes to fully start. Without `immediate`, `fly deploy` times out ("gave up after 15 attempts") even though the machine is fine.
+
+6. **`auto_stop_machines = 'off'` during initial setup.** With `auto_stop_machines = 'stop'`, fly stops the machine when no traffic arrives. On first boot the app isn't serving yet (no traffic), so fly stops it mid-initialization. Use `'off'` until confirmed stable; can re-enable later for cost savings, but expect the first request after a cold start to wait ~3 minutes.
+
+7. **Health check grace_period is capped at 60s.** `[http_service.checks]` grace_period > 60s is silently lowered to 60s with a warning. Open WebUI takes 150s+ to start, so this check will always fail until the app is up. Since `[[http_service.checks]]` is omitted from the current config, fly uses TCP-level routing (port open = healthy), which works correctly.
 
 ---
 
@@ -1284,8 +1318,9 @@ Use `request` (Playwright API testing) against the deployed or emulated Cloud Fu
 - **Phase 6 is complete** (PromptRoot side) — pending: Cloud Function deploy (`cd functions && npm run deploy`), then generate first token and add to `~/.bashrc`
 - **Phase 3a/3b PromptRoot side is complete** (PR #777) — `callOpenclawGateway` + `pollOpenclawJob` are built and route correctly; Phase 3a is usable once Phase 0 (gateway spike) is done and functions are deployed; Phase 3b relay mode returns 503 until `relay.promptroot.io` is deployed
 - Phase 5 (service account queue) should not be built — Phase 6 is already done
-- **Remaining unblocked work:** Phase 1 (fetch-prompt.sh / list-prompts.sh), Phase 2 (prompt contribution workflow), Phase 7 deploy (fly.io)
-- **Remaining blocked work:** Phase 3a end-to-end test (blocked on Cloud Function deploy + tunnel setup); Phase 7 "Run in Brace" new-tab update (blocked on `brace-ui.fly.dev` being live)
+- **Remaining unblocked work:** Phase 1 (fetch-prompt.sh / list-prompts.sh), Phase 2 (prompt contribution workflow), Phase 7 remaining tasks (Run in Brace button update, Firebase config, logo)
+- **Remaining blocked work:** Phase 3a end-to-end test (blocked on Cloud Function deploy + tunnel setup); Phase 7 end-to-end chat verify (blocked on Cloudflare tunnel running + Cloud Functions deployed)
 - **Phase 7 supersedes Phase 3 inline panel for Jesse** — the new-tab Open WebUI path is the preferred "Run in Brace" experience. The inline panel is retained as the multi-user fallback path for users who don't have their own Brace UI.
 - **Brace Web UI config:** `deploy/brace-ui/fly.toml` + README committed in Brace repo (PR #3); `gateway.openai.chatCompletions: true` enabled in `openclaw.json`
 - **Open WebUI chosen over custom React frontend** — handles multi-session, history, streaming, file attachments; connects to OpenClaw's existing `/v1/chat/completions` endpoint with no custom code
+- **`brace-ui.fly.dev` is live** — serving 200 OK; admin account created; chat not yet verified end-to-end (needs tunnel + functions deploy)

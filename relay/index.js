@@ -275,7 +275,8 @@ wss.on('connection', async (ws, req) => {
         const { requestId, data: chunk } = msg;
         const pending = oaiRequests.get(requestId);
         if (!pending || !pending.streaming) return;
-        pending.res.write(`data: ${chunk}\n\n`);
+        // chunk is already SSE-formatted from OpenClaw (e.g. "data: {...}\n\n")
+        pending.res.write(chunk);
         return;
       }
 
@@ -285,7 +286,7 @@ wss.on('connection', async (ws, req) => {
         const pending = oaiRequests.get(requestId);
         if (!pending || !pending.streaming) return;
         oaiRequests.delete(requestId);
-        pending.res.write('data: [DONE]\n\n');
+        // OpenClaw's stream already sent data: [DONE] as a chunk; just end the response
         pending.res.end();
         return;
       }

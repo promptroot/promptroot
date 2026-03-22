@@ -20,7 +20,8 @@ import admin from 'firebase-admin';
 
 const PORT = process.env.PORT || 8080;
 const RELAY_SECRET = process.env.RELAY_SHARED_SECRET;
-const JOB_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const JOB_TTL_MS = 10 * 60 * 1000;        // 10 minutes
+const OAI_TIMEOUT_MS = 5 * 60 * 1000;     // 5 minutes for non-streaming completions
 
 // --- Firebase init ---
 if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -42,6 +43,8 @@ const db = admin.firestore();
 const connections = new Map();
 // jobId → { uid, status, result, error, createdAt }
 const jobs = new Map();
+// requestId → { res, streaming, timer }
+const oaiRequests = new Map();
 
 // Purge stale jobs every minute
 setInterval(() => {
@@ -85,6 +88,10 @@ function generateJobId() {
   return `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function generateRequestId() {
+  return `oai_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 // --- HTTP server ---
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
@@ -94,6 +101,67 @@ const server = createServer(async (req, res) => {
   if (req.method === 'GET' && url.pathname === '/health') {
     return json(res, 200, { ok: true, connections: connections.size, jobs: jobs.size });
   }
+
+  // ── OpenAI-compatible proxy routes (auth: pra_... agent token) ───────────────
+
+  if (url.pathname === '/v1/models' && req.method === 'GET') {
+    const token = parseBearer(req);
+    if (!token) return json(res, 401, { error: 'Unauthorized' });
+    const uid = await validateAgentToken(token);
+    if (!uid) return json(res, 401, { error: 'Invalid token' });
+    return json(res, 200, {
+      object: 'list',
+      data: [{ id: 'brace', object: 'model', owned_by: 'openclaw' }],
+    });
+  }
+
+  if (url.pathname === '/v1/chat/completions' && req.method === 'POST') {
+    const token = parseBearer(req);
+    if (!token) return json(res, 401, { error: 'Unauthorized' });
+    const uid = await validateAgentToken(token);
+    if (!uid) return json(res, 401, { error: 'Invalid token' });
+
+    const ws = connections.get(uid);
+    if (!ws || ws.readyState !== 1 /* OPEN */) {
+      return json(res, 503, { error: 'No Brace instance connected' });
+    }
+
+    let body;
+    try { body = await readBody(req); } catch { return json(res, 400, { error: 'Invalid JSON' }); }
+
+    const requestId = generateRequestId();
+    const isStream = body.stream === true;
+
+    if (isStream) {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      });
+      // Store with no timer — streaming responses drive their own completion
+      oaiRequests.set(requestId, { res, streaming: true, timer: null, uid });
+      req.on('close', () => {
+        oaiRequests.delete(requestId);
+      });
+    } else {
+      const timer = setTimeout(() => {
+        const pending = oaiRequests.get(requestId);
+        if (pending) {
+          oaiRequests.delete(requestId);
+          json(res, 504, { error: 'Brace did not respond in time' });
+        }
+      }, OAI_TIMEOUT_MS);
+      oaiRequests.set(requestId, { res, streaming: false, timer, uid });
+    }
+
+    ws.send(JSON.stringify({ type: 'openai', requestId, body }));
+    console.log(`[relay] OpenAI request ${requestId} dispatched to uid=${uid} stream=${isStream}`);
+
+    if (!isStream) return; // response delivered asynchronously via WebSocket handler
+    return;
+  }
+
+  // ── Relay-secret routes (called by Cloud Functions) ──────────────────────────
 
   // All other routes require relay secret
   if (parseBearer(req) !== RELAY_SECRET) {
@@ -170,20 +238,58 @@ wss.on('connection', async (ws, req) => {
   ws.on('message', (data) => {
     try {
       const msg = JSON.parse(data.toString());
-      const { jobId, result, error } = msg;
-      const job = jobs.get(jobId);
-      if (!job) {
-        console.warn(`[relay] Result for unknown jobId=${jobId} from uid=${uid}`);
+
+      // ── Prompt job results ────────────────────────────────────────────────
+      if (msg.type === 'result' || (!msg.type && msg.jobId && 'result' in msg)) {
+        const { jobId, result, error } = msg;
+        const job = jobs.get(jobId);
+        if (!job) {
+          console.warn(`[relay] Result for unknown jobId=${jobId} from uid=${uid}`);
+          return;
+        }
+        if (job.uid !== uid) {
+          console.warn(`[relay] uid mismatch for jobId=${jobId}`);
+          return;
+        }
+        job.status = error ? 'error' : 'complete';
+        job.result = result ?? null;
+        job.error = error ?? null;
+        console.log(`[relay] Job ${jobId} ${job.status}`);
         return;
       }
-      if (job.uid !== uid) {
-        console.warn(`[relay] uid mismatch for jobId=${jobId}`);
+
+      // ── OpenAI non-streaming response ─────────────────────────────────────
+      if (msg.type === 'openai_response') {
+        const { requestId, body } = msg;
+        const pending = oaiRequests.get(requestId);
+        if (!pending) return;
+        clearTimeout(pending.timer);
+        oaiRequests.delete(requestId);
+        pending.res.writeHead(200, { 'Content-Type': 'application/json' });
+        pending.res.end(JSON.stringify(body));
         return;
       }
-      job.status = error ? 'error' : 'complete';
-      job.result = result ?? null;
-      job.error = error ?? null;
-      console.log(`[relay] Job ${jobId} ${job.status}`);
+
+      // ── OpenAI streaming chunk ────────────────────────────────────────────
+      if (msg.type === 'openai_chunk') {
+        const { requestId, data: chunk } = msg;
+        const pending = oaiRequests.get(requestId);
+        if (!pending || !pending.streaming) return;
+        pending.res.write(`data: ${chunk}\n\n`);
+        return;
+      }
+
+      // ── OpenAI streaming done ─────────────────────────────────────────────
+      if (msg.type === 'openai_done') {
+        const { requestId } = msg;
+        const pending = oaiRequests.get(requestId);
+        if (!pending || !pending.streaming) return;
+        oaiRequests.delete(requestId);
+        pending.res.write('data: [DONE]\n\n');
+        pending.res.end();
+        return;
+      }
+
     } catch (e) {
       console.error('[relay] Bad message from Brace:', e.message);
     }
@@ -192,6 +298,17 @@ wss.on('connection', async (ws, req) => {
   ws.on('close', () => {
     if (connections.get(uid) === ws) connections.delete(uid);
     console.log(`[relay] Brace disconnected uid=${uid} (connections=${connections.size})`);
+    // Fail any in-flight OpenAI requests belonging to this uid
+    for (const [requestId, pending] of oaiRequests) {
+      if (pending.uid !== uid) continue;
+      oaiRequests.delete(requestId);
+      if (pending.streaming) {
+        try { pending.res.end(); } catch {}
+      } else {
+        clearTimeout(pending.timer);
+        try { json(pending.res, 503, { error: 'Brace disconnected' }); } catch {}
+      }
+    }
   });
 
   ws.on('error', (err) => {

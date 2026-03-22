@@ -851,6 +851,8 @@ async function saveQueueItemEdit(docId, closeModalCallback) {
 async function loadQueuePage() {
   const user = getAuth()?.currentUser;
   const listDiv = document.getElementById('allQueueList');
+  if (!listDiv) return;
+
   if (!user) {
     const msg = document.createElement('div');
     msg.className = 'panel text-center pad-xl muted-text';
@@ -1855,7 +1857,7 @@ async function unscheduleSelectedQueueItems() {
   }
 }
 
-async function deleteSelectedQueueItems() {
+export async function deleteSelectedQueueItems() {
   const user = getAuth()?.currentUser;
   if (!user) { handleError(JULES_MESSAGES.NOT_SIGNED_IN, { source: 'deleteSelectedQueueItems' }, { category: ErrorCategory.AUTH }); return; }
   
@@ -1895,20 +1897,34 @@ async function deleteSelectedQueueItems() {
   if (!confirmed) return;
   
   try {
+    const deletePromises = [];
+
     for (const id of queueSelections) {
-      await deleteFromJulesQueue(user.uid, id);
+      deletePromises.push(deleteFromJulesQueue(user.uid, id));
     }
     
     for (const [docId, indices] of Object.entries(subtaskSelections)) {
       if (queueSelections.includes(docId)) continue;
       
-      await deleteSelectedSubtasks(docId, indices);
+      deletePromises.push(deleteSelectedSubtasks(docId, indices));
     }
-    
-    showToast(JULES_MESSAGES.deleted(totalCount), 'success');
-    await loadQueuePage();
+
+    const results = await Promise.allSettled(deletePromises);
+    const succeeded = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+
+    if (failed === 0) {
+      showToast(JULES_MESSAGES.deleted(totalCount), 'success');
+    } else if (succeeded > 0) {
+      const succeededText = succeeded === 1 ? 'item' : 'items';
+      showToast(`Deleted ${succeeded} ${succeededText}, but ${failed} failed.`, 'warn');
+    } else {
+      showToast(`Failed to delete items.`, 'error');
+    }
   } catch (err) {
     handleError(err, { source: 'deleteSelectedQueueItems' });
+  } finally {
+    await loadQueuePage();
   }
 }
 

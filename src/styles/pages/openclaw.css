@@ -32,12 +32,13 @@
 /* Code block (multi-line snippet) */
 .code-block {
   display: block;
-  background: var(--code-bg, #f5f5f5);
-  color: var(--text, inherit);
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 8px 12px;
   margin-top: 6px;
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
   white-space: pre;
   overflow-x: auto;

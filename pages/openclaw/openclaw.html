@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <title>OpenClaw Settings - PromptRoot</title>
+  <title>OpenClaw — PromptRoot</title>
   <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,51 +22,55 @@
 
   <div class="wrap">
     <main class="card pad-lg">
-      <div class="page-header">
-        <h2 class="section-title-lg"><span class="icon icon-inline" aria-hidden="true">bug_report</span> OpenClaw Settings</h2>
+      <h2 class="section-title-lg font-28 mb-lg"><span class="icon icon-inline" aria-hidden="true">bug_report</span> OpenClaw</h2>
+
+      <!-- Hero -->
+      <div class="hero-panel">
+        <h3 class="hero-title">Run Any Prompt in Brace</h3>
+        <p class="hero-desc">
+          Connect Brace — your personal AI assistant — to PromptRoot. Click "Run in Brace" on any prompt and get a response delivered inline, right in the browser. No copy-pasting. No switching tabs.
+        </p>
+        <p class="hero-note">
+          Powered by OpenClaw — Brace's open plugin framework. Relay mode requires no public domain or Cloudflare Tunnel.
+        </p>
       </div>
 
-      <p class="muted-text small-text mb-md">
-        Connect your OpenClaw instance to enable the "Run in Bliz" button on any prompt.
-        Your gateway token is encrypted before storage — it is never stored in plaintext.
-      </p>
-
-      <!-- Not signed in -->
-      <div id="openclawNotSignedIn" class="panel pad-xl text-center mb-md hidden">
-        <div class="muted-text font-16">Please sign in to configure OpenClaw.</div>
-      </div>
-
-      <!-- Loading -->
-      <div id="openclawLoading" class="panel pad-xl text-center mb-md">
+      <!-- Connection status (auth-gated) -->
+      <div id="openclawLoading" class="panel pad-xl text-center mb-lg">
         <div class="muted-text font-16">Loading...</div>
       </div>
 
-      <!-- Main content -->
+      <div id="openclawNotSignedIn" class="panel pad-xl text-center mb-lg hidden">
+        <div class="muted-text font-16">Sign in to connect OpenClaw.</div>
+      </div>
+
       <div id="openclawContent" class="hidden">
 
-        <!-- Current status -->
-        <div id="openclawStatus" class="panel pad-md mb-md hidden">
-          <div class="section-label mb-sm">
-            <span class="icon icon-inline" aria-hidden="true">check_circle</span>
-            OpenClaw connected
-          </div>
-          <div id="openclawStatusDetail" class="small-text muted-text"></div>
-          <div class="mt-sm">
-            <button id="openclawEditBtn" class="btn sm">Edit</button>
-            <button id="openclawDeleteBtn" class="btn sm danger">Disconnect</button>
+        <!-- Connected status card (styled like extension detection) -->
+        <div id="openclawStatus" class="panel pad-md mb-lg hidden">
+          <div class="openclaw-detect-status">
+            <span class="icon icon-lg openclaw-detect-status__icon" aria-hidden="true">check_circle</span>
+            <div class="openclaw-detect-status__info">
+              <div class="openclaw-detect-status__title">OpenClaw Connected</div>
+              <div id="openclawStatusDetail" class="small-text muted-text"></div>
+            </div>
+            <div class="openclaw-detect-status__actions">
+              <button id="openclawEditBtn" class="btn sm">Edit</button>
+              <button id="openclawDeleteBtn" class="btn sm danger">Disconnect</button>
+            </div>
           </div>
         </div>
 
-        <!-- Mode selector -->
-        <div id="openclawForm">
-          <div class="section-label mb-sm">Connection mode</div>
+        <!-- Connection form -->
+        <div id="openclawForm" class="panel pad-md mb-lg">
+          <div class="section-label mb-sm"><span class="icon icon-inline" aria-hidden="true">link</span> Connect OpenClaw</div>
 
           <div class="openclaw-mode-selector mb-md">
             <label class="openclaw-mode-option">
               <input type="radio" name="openclawMode" value="relay" id="openclawModeRelay" checked />
               <div>
                 <div class="fw-600">Use PromptRoot Relay <span class="badge">Recommended</span></div>
-                <div class="small-text muted-text">OpenClaw connects out — no tunnel or domain needed.</div>
+                <div class="small-text muted-text">OpenClaw connects outbound — no tunnel or domain needed.</div>
               </div>
             </label>
             <label class="openclaw-mode-option">
@@ -80,39 +84,21 @@
 
           <!-- Relay fields -->
           <div id="openclawRelayFields" class="mb-md">
-            <div class="section-label mb-sm">Agent Token</div>
+            <label class="section-label mb-sm" for="openclawRelayToken">Agent Token</label>
             <p class="small-text muted-text mb-sm">
-              Generate a <code>pra_...</code> token on the
-              <a href="/agent-api" target="_blank" rel="noopener">Agent API page</a>,
-              then paste it here. Add it to OpenClaw secrets as
-              <code>PROMPTROOT_AGENT_TOKEN</code>.
+              Generate a <code class="code-inline">pra_...</code> token on the
+              <a href="/pages/profile/profile.html#agentApiSection" rel="noopener">Agent API page</a>,
+              then add it to OpenClaw as <code class="code-inline">PROMPTROOT_AGENT_TOKEN</code>.
             </p>
-            <input
-              type="password"
-              id="openclawRelayToken"
-              class="input-field"
-              placeholder="pra_..."
-              autocomplete="off"
-            />
+            <input type="password" id="openclawRelayToken" class="form-control" placeholder="pra_..." autocomplete="off" />
           </div>
 
           <!-- Custom URL fields -->
           <div id="openclawCustomFields" class="mb-md hidden">
-            <div class="section-label mb-sm">Gateway URL</div>
-            <input
-              type="url"
-              id="openclawGatewayUrl"
-              class="input-field mb-sm"
-              placeholder="https://gateway.example.com"
-            />
-            <div class="section-label mb-sm mt-sm">Gateway Token</div>
-            <input
-              type="password"
-              id="openclawGatewayToken"
-              class="input-field"
-              placeholder="Your OpenClaw gateway token"
-              autocomplete="off"
-            />
+            <label class="section-label mb-sm" for="openclawGatewayUrl">Gateway URL</label>
+            <input type="url" id="openclawGatewayUrl" class="form-control mb-sm" placeholder="https://gateway.example.com" />
+            <label class="section-label mb-sm mt-sm" for="openclawGatewayToken">Gateway Token</label>
+            <input type="password" id="openclawGatewayToken" class="form-control" placeholder="Your OpenClaw gateway token" autocomplete="off" />
           </div>
 
           <div class="openclaw-form-actions">
@@ -120,20 +106,161 @@
           </div>
         </div>
 
-        <!-- Setup instructions -->
-        <div class="mt-lg">
-          <div class="section-label mb-sm"><span class="icon icon-inline" aria-hidden="true">book</span> OpenClaw Setup</div>
-          <div class="panel pad-md small-text">
-            <p class="mb-sm fw-600">Relay mode (3 steps):</p>
-            <ol class="openclaw-setup-steps">
-              <li>Generate a token on the <a href="/agent-api" rel="noopener">Agent API page</a></li>
-              <li>Add to <code>~/.bashrc</code>: <code>export PROMPTROOT_AGENT_TOKEN="pra_..."</code></li>
-              <li>Add to <code>openclaw.json</code>: <code>"plugins": &#123; "promptroot-relay": &#123; "enabled": true &#125; &#125;</code></li>
-            </ol>
+      </div>
+
+      <!-- Features (always visible) -->
+      <div class="section-mb">
+        <h3 class="section-heading"><span class="icon icon-inline" aria-hidden="true">auto_awesome</span> Features</h3>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">play_circle</span></div>
+            <div class="feature-content">
+              <div class="feature-title">Run in Brace</div>
+              <div class="feature-desc">One click sends any prompt to Brace — the response appears inline in PromptRoot, no tab switching needed</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">hub</span></div>
+            <div class="feature-content">
+              <div class="feature-title">No Tunnel Needed</div>
+              <div class="feature-desc">Relay mode — OpenClaw connects outbound to PromptRoot's relay. No public URL or Cloudflare Tunnel required</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">lock</span></div>
+            <div class="feature-content">
+              <div class="feature-title">Encrypted Credentials</div>
+              <div class="feature-desc">Your agent token is AES-GCM encrypted before being stored — never kept in plaintext</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">extension</span></div>
+            <div class="feature-content">
+              <div class="feature-title">Plugin-Based</div>
+              <div class="feature-desc">Built on OpenClaw's open plugin framework — self-hostable, extensible, and open source</div>
+            </div>
           </div>
         </div>
-
       </div>
+
+      <!-- Setup: Relay Mode -->
+      <div class="section-mb">
+        <h3 class="section-heading"><span class="icon icon-inline" aria-hidden="true">inventory_2</span> Setup — Relay Mode (Recommended)</h3>
+
+        <div class="instruction-panel">
+          <h4 class="section-subheading">Step 1 — Install OpenClaw</h4>
+          <ol class="instruction-list">
+            <li class="instruction-item">
+              <strong class="instruction-strong">Install the OpenClaw daemon</strong> on your machine and ensure Brace is configured
+            </li>
+            <li class="instruction-item">
+              <strong class="instruction-strong">Verify the gateway is running</strong><br/>
+              <code class="code-inline">systemctl --user status openclaw-gateway</code> should show <code class="code-inline">active (running)</code>
+            </li>
+          </ol>
+        </div>
+
+        <div class="instruction-panel">
+          <h4 class="section-subheading">Step 2 — Generate an Agent Token</h4>
+          <ol class="instruction-list">
+            <li class="instruction-item">
+              Open your <a href="/pages/profile/profile.html#agentApiSection" rel="noopener">Profile page</a> and scroll to the Agent API section
+            </li>
+            <li class="instruction-item">
+              Enter a label (e.g. <code class="code-inline">OpenClaw dev</code>) and click <strong>Generate Token</strong>
+            </li>
+            <li class="instruction-item">
+              <strong class="instruction-strong">Copy the token immediately</strong> — it is only shown once
+            </li>
+          </ol>
+        </div>
+
+        <div class="instruction-panel">
+          <h4 class="section-subheading">Step 3 — Configure OpenClaw</h4>
+          <ol class="instruction-list">
+            <li class="instruction-item">
+              <strong class="instruction-strong">Add the token to OpenClaw's environment</strong><br/>
+              Append to <code class="code-inline">~/.openclaw/.env</code>:
+              <pre class="code-block">PROMPTROOT_AGENT_TOKEN=pra_...</pre>
+            </li>
+            <li class="instruction-item">
+              <strong class="instruction-strong">Enable the promptroot-relay plugin</strong><br/>
+              In <code class="code-inline">~/.openclaw/openclaw.json</code>, add under <code class="code-inline">"plugins"</code>:
+              <pre class="code-block">"promptroot-relay": { "enabled": true }</pre>
+            </li>
+            <li class="instruction-item">
+              <strong class="instruction-strong">Restart the gateway</strong><br/>
+              <code class="code-inline">systemctl --user restart openclaw-gateway</code>
+            </li>
+          </ol>
+        </div>
+
+        <div class="instruction-panel">
+          <h4 class="section-subheading">Step 4 — Connect in PromptRoot</h4>
+          <ol class="instruction-list">
+            <li class="instruction-item">
+              Sign in above, paste your <code class="code-inline">pra_...</code> token into the Agent Token field, and click <strong>Save</strong>
+            </li>
+            <li class="instruction-item">
+              The status card above will update to <strong>OpenClaw Connected</strong>
+            </li>
+            <li class="instruction-item">
+              Open any prompt and click <strong>Run in Brace</strong> to verify the connection
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Advanced: Custom URL -->
+      <div class="section-mb">
+        <h3 class="section-heading"><span class="icon icon-inline" aria-hidden="true">settings</span> Advanced — Custom URL Mode</h3>
+        <div class="instruction-panel">
+          <p class="muted-text lh-16 mb-md">
+            For self-hosted setups using a Cloudflare Tunnel or static public URL pointing at your OpenClaw gateway. Requires a valid HTTPS endpoint.
+          </p>
+          <ol class="instruction-list">
+            <li class="instruction-item">
+              <strong class="instruction-strong">Set up a Cloudflare Tunnel</strong><br/>
+              Run <code class="code-inline">cloudflared tunnel run</code> pointed at your local OpenClaw gateway port
+            </li>
+            <li class="instruction-item">
+              <strong class="instruction-strong">Select "Use my own URL"</strong> in the connection form above, enter your gateway URL and token, and click <strong>Save</strong>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Troubleshooting -->
+      <div>
+        <h3 class="section-heading"><span class="icon icon-inline" aria-hidden="true">build</span> Troubleshooting</h3>
+        <div class="instruction-panel">
+          <div class="mb-md">
+            <strong class="instruction-strong">"Run in Brace" button not appearing?</strong>
+            <p class="muted-text small-text" style="margin:4px 0 0;">
+              Sign in and save a connection using the form above. The button appears on all prompts once a connection is saved.
+            </p>
+          </div>
+          <div class="mb-md">
+            <strong class="instruction-strong">Connection saved but no response arrives?</strong>
+            <p class="muted-text small-text" style="margin:4px 0 0;">
+              Check the gateway is running: <code class="code-inline">systemctl --user status openclaw-gateway</code>. Verify <code class="code-inline">PROMPTROOT_AGENT_TOKEN</code> is in <code class="code-inline">~/.openclaw/.env</code> and the gateway was restarted after adding it.
+            </p>
+          </div>
+          <div class="mb-md">
+            <strong class="instruction-strong">Token rejected (4003 Invalid token)?</strong>
+            <p class="muted-text small-text" style="margin:4px 0 0;">
+              The token in <code class="code-inline">~/.openclaw/.env</code> must match the one saved in PromptRoot. Generate a fresh token on the <a href="/pages/profile/profile.html#agentApiSection">Agent API page</a>, update both places, and restart the gateway.
+            </p>
+          </div>
+          <div>
+            <strong class="instruction-strong">Infinite reconnect loop in gateway logs?</strong>
+            <p class="muted-text small-text" style="margin:4px 0 0;">
+              Happens when <code class="code-inline">promptroot-relay</code> is enabled in both <code class="code-inline">[plugins]</code> and <code class="code-inline">[gateway]</code> sections of <code class="code-inline">openclaw.json</code>. Remove the duplicate entry and restart.
+            </p>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 

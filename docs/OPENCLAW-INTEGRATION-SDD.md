@@ -1,7 +1,7 @@
 # SDD-0002: PromptRoot × OpenClaw Integration
 
-**Version:** 2.1
-**Date:** 2026-03-20
+**Version:** 2.3
+**Date:** 2026-03-22
 **Author:** Brace
 **Status:** In Progress
 
@@ -21,6 +21,8 @@
 | 1.9 | 2026-03-20 | Rename Bliz → Brace throughout; Phase 0 complete: gateway audited, `promptroot-gateway` OpenClaw plugin implemented (`POST /api/prompt` + `GET /api/prompt/:jobId` via `subagent.run`); Phase 0 tasks marked done; Phase 3a unblocked pending tunnel setup (Q6): `openclaw-keys.js`, `openclaw-api.js`, `brace-modal.js`, `brace-response-panel.js`, `callOpenclawGateway` + `pollOpenclawJob` Cloud Functions, `/openclaw` settings page, "Run in Brace" button in prompt action bar; mark Phase 3a PromptRoot tasks done; update Phase 3b tasks (PromptRoot side done, relay service + OpenClaw plugin still pending); update Notes |
 | 2.0 | 2026-03-20 | Phase 3b relay service built: `relay/index.js` (Node.js WebSocket + HTTP), `relay/Dockerfile`, `relay/fly.toml` (Fly.io, 1 shared-CPU 256MB instance, `iad`); answers Q4 (Fly.io chosen over Cloud Run — no sticky session complexity); relay validates `pra_...` tokens via `agentKeysByHash` Firestore lookup; in-memory job store with 10min TTL; `RELAY_SHARED_SECRET` + `FIREBASE_SERVICE_ACCOUNT` env vars required at deploy; mark Phase 3b relay tasks done pending deploy + OpenClaw plugin |
 | 2.1 | 2026-03-20 | Phase 3b end-to-end deployed and verified: relay live at `promptroot-relay.fly.dev` (scaled to 1 machine, `auto_stop_machines=off`); `promptroot-relay` OpenClaw plugin deployed at `~/.openclaw/extensions/promptroot-relay/index.js`; fixes: add `type:'job'` to relay dispatch, trim `RELAY_SHARED_SECRET` trailing newline, code 4000 → no reconnect, add `idempotencyKey`, store env in `~/.openclaw/.env`; end-to-end "Run in Brace" flow confirmed working |
+| 2.2 | 2026-03-22 | `/openclaw` page redesigned: hero panel, 4-feature grid, 4-step relay setup guide (with `code-block` snippets), advanced custom-URL section, troubleshooting, live connection status card styled like webcapture extension detection; Agent API section moved to profile page; `input-field` → `form-control` for dark-mode; nav Agent API link removed; onboarding copy task marked done |
+| 2.3 | 2026-03-22 | Add Phase 7: Brace Web UI (Open WebUI on fly.io backed by `/v1/chat/completions`); "Run in Brace" button opens new tab instead of inline response panel; `deploy/brace-ui/` config committed (Brace repo PR #3); `gateway.openai.chatCompletions: true` enabled in `openclaw.json` |
 
 ---
 
@@ -88,15 +90,14 @@ OpenClaw agents currently store prompts ad-hoc in workspace files. PromptRoot pr
 
 ### 2. "Run in Brace" Button in PromptRoot
 
-Similar to "⚡ Try in Jules", add a "🦞 Run in Brace" button that:
-- Sends the prompt + substituted variables to OpenClaw via the gateway API
-- Polls every 3 seconds for the response and displays it inline when complete
+Similar to "⚡ Try in Jules", add a "🦞 Run in Brace" button that sends the substituted prompt to Brace. Two modes depending on phase:
 
-Two delivery modes:
-- **Phase 3a** (Jesse only): routes through a user-configured Cloudflare Tunnel URL — fast to ship, no new infra
-- **Phase 3b** (any user): routes through `relay.promptroot.io` — OpenClaw connects out, no tunnel or domain needed
+- **Phase 3a/3b (inline panel):** sends prompt via Cloud Function → gateway/relay, polls for response, renders inline below the prompt viewer
+- **Phase 7 (new tab — current recommended path for Jesse):** opens `https://brace-ui.fly.dev/?q=<encoded prompt>` in a new tab, where Open WebUI picks it up and starts the chat. No polling, no inline panel — the full Jules-style multi-session experience.
 
-**Implementation:** See Phase 3 Design Spike below. Requires Phase 0 (gateway spike) first.
+If the template has unfilled `{PLACEHOLDERS}`, the variable substitution modal fires first (same as Jules). The new tab opens with the fully-rendered prompt.
+
+**Implementation:** Phase 3 design spike for the relay/polling path; Phase 7 for the new-tab path.
 
 ---
 
@@ -541,7 +542,7 @@ The plugin:
 - [x] `callOpenclawGateway` Cloud Function routes to relay when `useRelay: true` (503s until relay service is deployed)
 - [ ] Add relay connection status indicator to OpenClaw settings page (`GET /{uid}/status`)
 - [x] `brace-modal.js` offers relay vs custom-URL mode selector
-- [ ] Document relay setup in PromptRoot onboarding copy (hold until relay is live)
+- [x] Document relay setup in PromptRoot onboarding copy — `/pages/openclaw/openclaw.html` redesigned with hero, feature grid, 4-step relay setup guide, advanced custom-URL section, troubleshooting, and live connection status card
 
 ---
 
@@ -632,6 +633,74 @@ All Brace scripts and skills reference `$PROMPTROOT_AGENT_TOKEN` — never hardc
 - [ ] Deploy Cloud Functions: `cd functions && npm run deploy`
 - [ ] After generating token: add `PROMPTROOT_AGENT_TOKEN` to `~/.bashrc` and OpenClaw secrets config
 - [ ] Write integration tests (Brace calls each endpoint, verifies response shape)
+
+---
+
+### Phase 7 — Brace Web UI (Open WebUI on fly.io)
+
+**Depends on:** Phase 0 (`chatCompletions` endpoint enabled), Cloudflare Tunnel from Phase 3a
+
+**Goal:** Jules/Codex-style multi-session web UI for Brace — parallel conversations, full history, streaming — with "Run in Brace" opening a new tab instead of an inline panel. Reuses Open WebUI rather than building a custom frontend.
+
+**Architecture:**
+```
+Open WebUI (fly.io: brace-ui.fly.dev)
+  └── OPENAI_API_BASE_URL = https://<cloudflare-tunnel-url>/v1
+        └── Cloudflare Tunnel → OpenClaw gateway (:18789)
+                               POST /v1/chat/completions (enabled Phase 0)
+```
+
+Each browser tab = an independent session. OpenClaw handles them in parallel via its native multi-session runtime. History stored in SQLite on a persistent fly.io volume.
+
+**"Run in Brace" new-tab flow (replaces inline response panel for Jesse):**
+1. User clicks "Run in Brace" on a prompt
+2. If template has unfilled `{PLACEHOLDERS}`: variable substitution modal fires (existing behavior)
+3. Once prompt is complete: `window.open('https://brace-ui.fly.dev/?q=' + encodeURIComponent(filledPrompt), '_blank')`
+4. Open WebUI receives `?q=` param, pre-fills the input, auto-sends
+
+**Phase 3a/3b inline panel:** Retained for future multi-user path (other users won't have their own Brace UI instance). For Jesse, the new-tab flow supersedes it.
+
+**Security:** `OPENAI_API_KEY` (= `OPENCLAW_GATEWAY_TOKEN`) lives in fly.io secrets only — never in `fly.toml` or client-side code. Open WebUI handles its own login so the gateway token is never exposed to the browser.
+
+**Acceptance criteria:**
+- `https://brace-ui.fly.dev` loads and connects to OpenClaw
+- Multiple parallel sessions work (open two tabs, both respond independently)
+- "Run in Brace" on PromptRoot opens new tab with prompt pre-filled
+- Chat history persists across fly.io deploys (volume mounted)
+- App name shows "Brace" (not "Open WebUI")
+
+**Tasks:**
+- [x] Enable `gateway.openai.chatCompletions: true` in `openclaw.json` (Brace repo PR #3)
+- [x] Add `deploy/brace-ui/fly.toml` and `deploy/brace-ui/README.md` (Brace repo PR #3)
+- [ ] First deploy: `fly launch --no-deploy --copy-config --name brace-ui`
+- [ ] Create persistent volume: `fly volumes create brace_data --region iad --size 1`
+- [ ] Set fly secrets: `OPENAI_API_KEY`, `OPENAI_API_BASE_URL`, `WEBUI_SECRET_KEY`
+- [ ] `fly deploy` and verify chat works end-to-end
+- [ ] Update "Run in Brace" button: open new tab (`brace-ui.fly.dev/?q=<prompt>`) instead of inline panel
+- [ ] Set `WEBUI_URL=https://brace-ui.fly.dev` in Firebase Functions config
+- [ ] Branding: set name to "Brace", upload logo in Open WebUI admin settings
+
+**fly.toml highlights (`deploy/brace-ui/fly.toml`):**
+```toml
+app = "brace-ui"
+primary_region = "iad"
+
+[build]
+  image = "ghcr.io/open-webui/open-webui:main"
+
+[env]
+  WEBUI_NAME = "Brace"
+  ENABLE_SIGNUP = "false"         # first user becomes admin; no open registration
+  ENABLE_IMAGE_GENERATION = "false"
+
+[[mounts]]
+  source = "brace_data"
+  destination = "/app/backend/data"   # SQLite history + config
+
+[http_service]
+  force_https = true
+  auto_stop_machines = "stop"         # scales to zero when idle
+```
 
 ---
 
@@ -967,10 +1036,10 @@ Multiple tokens per user are supported. Each token is individually labeled and r
 **Prompt viewer action bar** (`src/modules/prompt-viewer.js`)
 - Add "🦞 Run in Brace" button alongside the Jules "⚡ Try in Jules" button
 - Disabled state with tooltip `"Set up OpenClaw token in Settings"` when no token stored
-- Loading state (spinner) while `sendToBrace` is in flight
-- On success: scrolls to response panel
+- **Phase 7 behavior (current):** on click, open `https://brace-ui.fly.dev/?q=<encoded prompt>` in a new tab — no inline panel, no polling. Variable substitution modal fires first if template has unfilled placeholders.
+- **Phase 3a/3b behavior (retained for multi-user):** for users without a Brace UI instance, the original inline response panel flow remains as a fallback — detect via `openclawKeys/{uid}.useWebUi` flag (or absence of `WEBUI_URL` config).
 
-**Brace response panel** (`src/modules/brace-response-panel.js`)
+**Brace response panel** (`src/modules/brace-response-panel.js`) *(Phase 3a/3b path only)*
 - Renders below the prompt viewer, hidden by default
 - States: `pending` (animated spinner + "Waiting for Brace…"), `complete` (rendered markdown), `error` (error message + retry button), `timeout` (5-minute limit reached)
 - Response rendered via `marked.js` + DOMPurify (same pipeline as prompt renderer)
@@ -1215,5 +1284,8 @@ Use `request` (Playwright API testing) against the deployed or emulated Cloud Fu
 - **Phase 6 is complete** (PromptRoot side) — pending: Cloud Function deploy (`cd functions && npm run deploy`), then generate first token and add to `~/.bashrc`
 - **Phase 3a/3b PromptRoot side is complete** (PR #777) — `callOpenclawGateway` + `pollOpenclawJob` are built and route correctly; Phase 3a is usable once Phase 0 (gateway spike) is done and functions are deployed; Phase 3b relay mode returns 503 until `relay.promptroot.io` is deployed
 - Phase 5 (service account queue) should not be built — Phase 6 is already done
-- **Remaining unblocked work:** Phase 0 (Brace audits gateway), Phase 1 (fetch-prompt.sh / list-prompts.sh), Phase 2 (prompt contribution workflow) — all Brace-side, can start now
-- **Remaining blocked work:** Phase 3b relay service + OpenClaw plugin (blocked until relay is deployed); Phase 3a end-to-end test (blocked on Phase 0 + function deploy)
+- **Remaining unblocked work:** Phase 1 (fetch-prompt.sh / list-prompts.sh), Phase 2 (prompt contribution workflow), Phase 7 deploy (fly.io)
+- **Remaining blocked work:** Phase 3a end-to-end test (blocked on Cloud Function deploy + tunnel setup); Phase 7 "Run in Brace" new-tab update (blocked on `brace-ui.fly.dev` being live)
+- **Phase 7 supersedes Phase 3 inline panel for Jesse** — the new-tab Open WebUI path is the preferred "Run in Brace" experience. The inline panel is retained as the multi-user fallback path for users who don't have their own Brace UI.
+- **Brace Web UI config:** `deploy/brace-ui/fly.toml` + README committed in Brace repo (PR #3); `gateway.openai.chatCompletions: true` enabled in `openclaw.json`
+- **Open WebUI chosen over custom React frontend** — handles multi-session, history, streaming, file attachments; connects to OpenClaw's existing `/v1/chat/completions` endpoint with no custom code

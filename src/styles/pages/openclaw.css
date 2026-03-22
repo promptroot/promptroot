@@ -1,5 +1,48 @@
 /* OpenClaw settings page styles */
 
+/* Connection status card (mirrors extension-detection pattern) */
+.openclaw-detect-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.openclaw-detect-status__icon {
+  color: var(--success-color, #22c55e);
+  flex-shrink: 0;
+}
+
+.openclaw-detect-status__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.openclaw-detect-status__title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--success-color, #22c55e);
+}
+
+.openclaw-detect-status__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Code block (multi-line snippet) */
+.code-block {
+  display: block;
+  background: var(--code-bg, #f5f5f5);
+  color: var(--text, inherit);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 6px;
+  font-family: monospace;
+  font-size: 13px;
+  white-space: pre;
+  overflow-x: auto;
+}
+
 .openclaw-mode-selector {
   display: flex;
   flex-direction: column;

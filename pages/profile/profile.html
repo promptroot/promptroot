@@ -52,6 +52,74 @@
         </div>
       </div>
 
+      <!-- Agent API Section -->
+      <div id="agentApiSection" class="mt-lg">
+        <h3 class="section-title-md mb-md"><span class="icon icon-inline" aria-hidden="true">api</span> Agent API</h3>
+        <p class="muted-text mb-md">Generate API tokens for programmatic access to PromptRoot. Tokens grant full API access — treat them like passwords.</p>
+
+        <div id="agentKeysLoading" class="panel pad-xl text-center mb-md">
+          <div class="muted-text font-16">Loading...</div>
+        </div>
+
+        <div id="agentKeysNotSignedIn" class="panel pad-xl text-center mb-md hidden">
+          <div class="muted-text font-16">Please sign in to manage API tokens.</div>
+        </div>
+
+        <div id="agentKeysContent" class="hidden">
+          <!-- One-time token reveal panel -->
+          <div id="generatedTokenPanel" class="panel pad-md mb-md agent-token-reveal hidden">
+            <div class="section-label mb-sm">
+              <span class="icon icon-inline" aria-hidden="true">warning</span>
+              Copy your token now — it will not be shown again
+            </div>
+            <div class="agent-token-value-wrap mb-sm">
+              <code id="generatedTokenValue" class="agent-token-value"></code>
+            </div>
+            <div class="agent-token-actions">
+              <button id="copyGeneratedTokenBtn" class="btn primary sm">Copy Token</button>
+              <button id="dismissGeneratedTokenBtn" class="btn sm">Dismiss</button>
+            </div>
+          </div>
+
+          <!-- Generate new token -->
+          <div class="mb-md">
+            <div class="section-label mb-sm"><span class="icon icon-inline" aria-hidden="true">add</span> New Token</div>
+            <div class="agent-key-generate-row">
+              <input type="text" id="agentKeyLabelInput" class="input-field" placeholder="Token label (e.g., &quot;OpenClaw dev&quot;)" maxlength="80" />
+              <button id="generateAgentKeyBtn" class="btn primary">Generate Token</button>
+            </div>
+          </div>
+
+          <!-- Token list -->
+          <div>
+            <div class="section-label mb-sm"><span class="icon icon-inline" aria-hidden="true">key</span> Active Tokens</div>
+            <div id="agentKeysList" class="panel list-md">
+              <div class="muted-text small-text">Loading tokens...</div>
+            </div>
+          </div>
+
+          <!-- API reference -->
+          <div class="mt-md">
+            <div class="section-label mb-sm"><span class="icon icon-inline" aria-hidden="true">book</span> API Reference</div>
+            <div class="panel pad-md small-text">
+              <p class="mb-sm">Authenticate requests with: <code>Authorization: Bearer &lt;token&gt;</code></p>
+              <p class="mb-sm fw-600">Endpoints</p>
+              <ul class="agent-api-endpoints">
+                <li><code>GET /prompts</code> — list prompt files</li>
+                <li><code>GET /prompts/:path</code> — fetch prompt content</li>
+                <li><code>POST /prompts/render</code> — render template with variables</li>
+                <li><code>GET /queue</code> — list Jules queue items</li>
+                <li><code>POST /queue</code> — add item to queue</li>
+                <li><code>PATCH /queue/:id</code> — update queue item</li>
+                <li><code>DELETE /queue/:id</code> — remove queue item</li>
+                <li><code>GET /sessions</code> — list Jules sessions</li>
+                <li><code>GET /webclips</code> — list web clips</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Jules API Key Section -->
       <div id="julesKeySection" class="mt-lg">
         <h3 class="section-title-md mb-md"><span class="icon icon-inline" aria-hidden="true">smart_toy</span> Jules API Key</h3>

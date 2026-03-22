@@ -13,6 +13,7 @@ import { clearCopenCache } from '../modules/copen.js';
 import { showJulesKeyModal } from '../modules/jules-modal.js';
 import { deleteStoredJulesKey, checkJulesKey } from '../modules/jules-keys.js';
 import { renderStatus, STATUS_TYPES } from '../modules/status-renderer.js';
+import { initAgentKeys } from '../modules/agent-keys.js';
 
 let currentUser = null;
 let editingCopenId = null;
@@ -39,6 +40,7 @@ async function loadProfile(user) {
     profileUserName.textContent = user.displayName || user.email || 'User';
   }
 
+  await initAgentKeys(user);
   await loadJulesKeyStatus(user);
   await loadCopens(user);
 }

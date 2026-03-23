@@ -7,13 +7,16 @@ import { toggleVisibility } from '../utils/dom-helpers.js';
 import { JULES_MESSAGES, TIMEOUTS, RETRY_CONFIG } from '../utils/constants.js';
 import { initSplitButton, updateSplitButtonOptions } from './split-button.js';
 import { getCopenOptions, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_ICON } from '../utils/copen-config.js';
+import { getLastAgent, saveLastAgent, isBraceConfigured, getAgentOptions } from './run-in-agent.js';
 // Lazy loaded: jules-keys, jules-modal, jules-queue
 
 let _lastSelectedSourceId = null;
 let _lastSelectedBranch = null;
 let _branchChangeListenerAdded = false;
 let _freeInputCopenSplitBtn = null;
+let _freeInputRunInAgentSplitBtn = null;
 let _authListenerAdded = false;
+let _agentAuthListenerAdded = false;
 
 async function refreshFreeInputCopenOptions() {
   const copenContainer = document.getElementById('freeInputCopenContainer');
@@ -98,14 +101,14 @@ export async function showFreeInputForm() {
   toggleVisibility(freeInputSection, true);
   
   const textarea = document.getElementById('freeInputTextarea');
-  const submitBtn = document.getElementById('freeInputSubmitBtn');
+  const runInAgentContainer = document.getElementById('freeInputRunInAgentContainer');
   const queueBtn = document.getElementById('freeInputQueueBtn');
   const splitBtn = document.getElementById('freeInputSplitBtn');
   const saveBtn = document.getElementById('freeInputSaveBtn');
   const cancelBtn = document.getElementById('freeInputCancelBtn');
   const copenContainer = document.getElementById('freeInputCopenContainer');
   
-  if (!textarea || !submitBtn || !queueBtn || !splitBtn || !saveBtn || !cancelBtn || !copenContainer) {
+  if (!textarea || !runInAgentContainer || !queueBtn || !splitBtn || !saveBtn || !cancelBtn || !copenContainer) {
     console.warn('Free Input controls not found; skipping UI rendering');
     return;
   }
@@ -173,7 +176,6 @@ export async function showFreeInputForm() {
   const updateButtonStates = () => {
     const hasText = textarea.value.trim().length > 0;
     
-    submitBtn.disabled = !hasText;
     queueBtn.disabled = !hasText;
     splitBtn.disabled = !hasText;
     saveBtn.disabled = !hasText;
@@ -186,6 +188,15 @@ export async function showFreeInputForm() {
     }
     if (copenToggleBtn) {
       copenToggleBtn.disabled = !hasText;
+    }
+
+    const agentActionBtn = runInAgentContainer.querySelector('.split-btn__action');
+    const agentToggleBtn = runInAgentContainer.querySelector('.split-btn__toggle');
+    if (agentActionBtn) {
+      agentActionBtn.disabled = !hasText;
+    }
+    if (agentToggleBtn) {
+      agentToggleBtn.disabled = !hasText;
     }
   };
 
@@ -416,13 +427,15 @@ export async function showFreeInputForm() {
     }
 
     try {
-      const { addToJulesQueue } = await import('./jules-queue.js');
-      await addToJulesQueue(user.uid, {
+      const { addToAgenticQueue } = await import('./agentic-queue.js');
+      const destination = getLastAgent();
+      await addToAgenticQueue(user.uid, {
         type: 'single',
         prompt: promptText,
         sourceId: _lastSelectedSourceId,
         branch: _lastSelectedBranch,
-        note: 'Queued from Free Input'
+        note: 'Queued from Free Input',
+        destination
       });
       showToast('Prompt queued successfully!', 'success');
       showFreeInputForm();
@@ -465,7 +478,66 @@ export async function showFreeInputForm() {
     });
   }
 
-  submitBtn.onclick = handleSubmit;
+  // Initialize run-in-agent split button if not already initialized
+  if (!_freeInputRunInAgentSplitBtn && runInAgentContainer) {
+    const auth = getAuth();
+    const user = auth?.currentUser;
+    let braceEnabled = false;
+    if (user) {
+      try { braceEnabled = await isBraceConfigured(user.uid); } catch {}
+    }
+    const options = getAgentOptions(braceEnabled);
+    const lastAgent = getLastAgent();
+
+    _freeInputRunInAgentSplitBtn = initSplitButton({
+      container: runInAgentContainer,
+      defaultLabel: 'Run in Agent',
+      defaultIcon: 'send',
+      options,
+      onAction: async (selectedAgent) => {
+        saveLastAgent(selectedAgent);
+        if (selectedAgent === 'jules') {
+          await handleSubmit();
+        } else if (selectedAgent === 'brace') {
+          const promptText = validatePromptText();
+          if (!promptText) return;
+          try {
+            const { sendToBrace } = await import('./openclaw-api.js');
+            await sendToBrace(promptText);
+            showToast('Sent to Brace!', 'success');
+          } catch (err) {
+            showToast('Failed to send to Brace: ' + err.message, 'error');
+          }
+        }
+      }
+    });
+
+    // Set initial selection to last used agent
+    if (_freeInputRunInAgentSplitBtn && lastAgent !== 'jules') {
+      _freeInputRunInAgentSplitBtn.setSelection(lastAgent);
+    }
+
+    // Refresh on auth state change
+    if (!_agentAuthListenerAdded && auth) {
+      auth.onAuthStateChanged(async (u) => {
+        if (!_freeInputRunInAgentSplitBtn || !runInAgentContainer) return;
+        let enabled = false;
+        if (u) { try { enabled = await isBraceConfigured(u.uid); } catch {} }
+        _freeInputRunInAgentSplitBtn.updateOptions(getAgentOptions(enabled));
+      });
+      _agentAuthListenerAdded = true;
+    }
+  } else if (_freeInputRunInAgentSplitBtn && runInAgentContainer) {
+    // Refresh options on re-show
+    const auth = getAuth();
+    const user = auth?.currentUser;
+    let braceEnabled = false;
+    if (user) {
+      try { braceEnabled = await isBraceConfigured(user.uid); } catch {}
+    }
+    _freeInputRunInAgentSplitBtn.updateOptions(getAgentOptions(braceEnabled));
+  }
+
   queueBtn.onclick = handleQueue;
   splitBtn.onclick = handleSplit;
   saveBtn.onclick = handleSave;

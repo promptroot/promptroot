@@ -86,8 +86,8 @@ let rawBtn = null;
 let ghBtn = null;
 let editBtn = null;
 let shareBtn = null;
-let julesBtn = null;
-let braceBtn = null;
+let runInAgentContainer = null;
+let runInAgentSplitBtn = null;
 let freeInputBtn = null;
 let queueBtn = null;
 let scheduleBtn = null;
@@ -137,8 +137,10 @@ export function initPromptRenderer() {
   ghBtn = document.getElementById('ghBtn');
   editBtn = document.getElementById('editBtn');
   shareBtn = document.getElementById('shareBtn');
-  julesBtn = document.getElementById('julesBtn');
-  braceBtn = document.getElementById('braceBtn');
+  runInAgentContainer = document.getElementById('runInAgentContainer');
+  if (runInAgentContainer) {
+    _initRunInAgentButton();
+  }
   freeInputBtn = document.getElementById('freeInputBtn');
   queueBtn = document.getElementById('queueBtn');
   scheduleBtn = document.getElementById('scheduleBtn');
@@ -146,6 +148,59 @@ export function initPromptRenderer() {
 
   document.addEventListener('click', handleDocumentClick);
   window.addEventListener('branchChanged', handleBranchChanged);
+}
+
+async function _initRunInAgentButton() {
+  const { getAgentOptions, getLastAgent, saveLastAgent, isBraceConfigured } = await import('./run-in-agent.js');
+
+  const auth = getAuth();
+  const user = auth?.currentUser;
+
+  let braceEnabled = false;
+  if (user) {
+    try { braceEnabled = await isBraceConfigured(user.uid); } catch {}
+  }
+
+  const options = getAgentOptions(braceEnabled);
+  const lastAgent = getLastAgent();
+
+  runInAgentSplitBtn = initSplitButton({
+    container: runInAgentContainer,
+    defaultLabel: 'Run in Agent',
+    defaultIcon: 'smart_toy',
+    options,
+    onAction: async (selectedAgent) => {
+      saveLastAgent(selectedAgent);
+      if (selectedAgent === 'jules') {
+        if (handleTryInJulesCallback) {
+          handleTryInJulesCallback(currentPromptText);
+        }
+      } else if (selectedAgent === 'brace') {
+        try {
+          const { sendToBrace } = await import('./openclaw-api.js');
+          await sendToBrace(currentPromptText);
+          showToast('Sent to Brace!', 'success');
+        } catch (err) {
+          showToast('Failed to send to Brace: ' + err.message, 'error');
+        }
+      }
+    }
+  });
+
+  // Set initial selection to last used agent
+  if (runInAgentSplitBtn && lastAgent !== 'jules') {
+    runInAgentSplitBtn.setSelection(lastAgent);
+  }
+
+  // Refresh on auth state change
+  if (auth) {
+    auth.onAuthStateChanged(async (u) => {
+      if (!runInAgentContainer || !runInAgentSplitBtn) return;
+      let enabled = false;
+      if (u) { try { enabled = await isBraceConfigured(u.uid); } catch {} }
+      runInAgentSplitBtn.updateOptions(getAgentOptions(enabled));
+    });
+  }
 }
 
 async function refreshCopenOptions() {
@@ -167,6 +222,11 @@ export function destroyPromptRenderer() {
   if (copenContainer) {
     destroySplitButton(copenContainer);
     copenSplitBtn = null;
+  }
+
+  if (runInAgentContainer) {
+    destroySplitButton(runInAgentContainer);
+    runInAgentSplitBtn = null;
   }
   
   cacheRaw.clear();
@@ -197,21 +257,6 @@ function handleDocumentClick(event) {
 
   if (target === shareBtn) {
     handleShareLink();
-    return;
-  }
-
-  if (target === julesBtn) {
-    if (handleTryInJulesCallback) {
-      handleTryInJulesCallback(currentPromptText);
-    }
-    return;
-  }
-
-  if (target === braceBtn) {
-    window.open(
-      'https://brace-ui.fly.dev/?q=' + encodeURIComponent(currentPromptText),
-      '_blank',
-    );
     return;
   }
 

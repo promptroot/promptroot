@@ -109,7 +109,14 @@
           </div>
           <button id="freeInputCancelBtn" class="btn"><span class="icon icon-inline" aria-hidden="true">clear</span> Clear</button>
           <button id="freeInputQueueBtn" class="btn"><span class="icon icon-inline" aria-hidden="true">schedule</span> Queue</button>
-          <button id="freeInputSubmitBtn" class="btn primary"><span class="icon icon-inline" aria-hidden="true">send</span> Submit to Jules</button>
+          <div id="freeInputRunInAgentContainer" class="split-btn" title="Run prompt in selected agent">
+            <button class="btn primary split-btn__action" aria-label="Run in selected agent">
+              <span class="icon icon-inline" aria-hidden="true">send</span>
+              <span>Run in Agent</span>
+            </button>
+            <button class="btn primary split-btn__toggle" aria-label="Select agent" aria-haspopup="true" aria-expanded="false"></button>
+            <div class="split-btn__menu" role="menu"></div>
+          </div>
         </div>
       </div>
       
@@ -126,8 +133,14 @@
           <button class="btn split-btn__toggle" aria-label="Select app" aria-haspopup="true" aria-expanded="false"></button>
           <div class="split-btn__menu"></div>
         </div>
-        <button class="btn" id="julesBtn" title="Try this prompt in Jules"><span class="icon icon-inline" aria-hidden="true">smart_toy</span> Try in Jules</button>
-        <button class="btn" id="braceBtn" title="Run this prompt in Brace (OpenClaw)"><span class="icon icon-inline" aria-hidden="true">hub</span> Run in Brace</button>
+        <div id="runInAgentContainer" class="split-btn" title="Run this prompt in the selected agent">
+          <button class="btn split-btn__action" aria-label="Run in selected agent">
+            <span class="icon icon-inline" aria-hidden="true">smart_toy</span>
+            <span>Run in Agent</span>
+          </button>
+          <button class="btn split-btn__toggle" aria-label="Select agent" aria-haspopup="true" aria-expanded="false"></button>
+          <div class="split-btn__menu" role="menu"></div>
+        </div>
         <button class="btn" id="queueBtn" title="Add this prompt to queue"><span class="icon icon-inline" aria-hidden="true">list_alt</span> Queue</button>
         <button class="btn" id="scheduleBtn" title="Schedule this prompt"><span class="icon icon-inline" aria-hidden="true">schedule</span> Schedule</button>
         <button class="btn" id="shareBtn" title="Copy a link to this prompt"><span class="icon icon-inline" aria-hidden="true">link</span> Copy link</button>

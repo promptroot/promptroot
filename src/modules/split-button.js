@@ -77,8 +77,21 @@ export function initSplitButton(config) {
     const stored = sessionStorage.getItem(storageKey);
     if (stored) {
       const storedOption = options.find(opt => opt.value === stored);
-      if (storedOption) {
+      if (storedOption && !storedOption.disabled) {
         currentSelection = storedOption;
+      }
+    }
+  }
+  // Fall back to first non-disabled option if stored selection is disabled
+  if (!currentSelection && storageKey) {
+    const stored = sessionStorage.getItem(storageKey);
+    if (stored) {
+      const disabledStored = options.find(opt => opt.value === stored && opt.disabled);
+      if (disabledStored) {
+        const firstEnabled = options.find(opt => !opt.disabled);
+        if (firstEnabled) {
+          currentSelection = firstEnabled;
+        }
       }
     }
   }
@@ -126,6 +139,8 @@ export function initSplitButton(config) {
   const handleMenuClick = (e) => {
     const item = e.target.closest('.split-btn__menu-item');
     if (!item) return;
+
+    if (item.dataset.disabled === 'true') return;
 
     const value = item.dataset.value;
     const option = options.find(opt => opt.value === value);
@@ -217,6 +232,12 @@ function rebuildMenu(menu, options) {
     item.dataset.value = option.value;
     item.setAttribute('role', 'menuitem');
     item.setAttribute('tabindex', '-1');
+    
+    if (option.disabled) {
+      item.classList.add('split-btn__menu-item--disabled');
+      item.setAttribute('aria-disabled', 'true');
+      item.dataset.disabled = 'true';
+    }
     
     if (option.icon) {
       item.appendChild(createIcon(option.icon, 'icon-inline'));

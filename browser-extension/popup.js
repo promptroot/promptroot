@@ -23,13 +23,18 @@ const { createIcon, createIconWithText, ICONS } = iconHelpers;
 const originalSyncLabel = syncBtn.innerHTML;
 
 function setDownloadButtonIdle() {
-  downloadBtn.innerHTML = createIconWithText(ICONS.DOWNLOAD, 'Download');
+  downloadBtn.replaceChildren();
+  downloadBtn.insertAdjacentHTML('beforeend', createIcon(ICONS.DOWNLOAD, { size: 'inline' }));
+  downloadBtn.appendChild(document.createTextNode(' Download'));
 }
 
 async function init() {
   await updateGitHubStatus();
-  connectGitHubBtn.innerHTML = createIconWithText(ICONS.LINK, 'Connect to GitHub');
-  disconnectBtn.innerHTML = createIcon(ICONS.LOGOUT, { title: 'Disconnect' });
+  connectGitHubBtn.replaceChildren();
+  connectGitHubBtn.insertAdjacentHTML('beforeend', createIcon(ICONS.LINK, { size: 'inline' }));
+  connectGitHubBtn.appendChild(document.createTextNode(' Connect to GitHub'));
+  disconnectBtn.replaceChildren();
+  disconnectBtn.insertAdjacentHTML('beforeend', createIcon(ICONS.LOGOUT, { title: 'Disconnect' }));
   disconnectBtn.title = 'Disconnect';
   setDownloadButtonIdle();
   extractContent();
@@ -113,7 +118,9 @@ function downloadMarkdown() {
   const finalFilename = filename.endsWith('.md') ? filename : filename + '.md';
   
   downloadBtn.disabled = true;
-  downloadBtn.innerHTML = createIconWithText(ICONS.LOADING, 'Downloading...');
+  downloadBtn.replaceChildren();
+  downloadBtn.insertAdjacentHTML('beforeend', createIcon(ICONS.LOADING, { size: 'inline' }));
+  downloadBtn.appendChild(document.createTextNode(' Downloading...'));
   showStatus('Preparing download...', 'info');
   
   try {
@@ -155,7 +162,9 @@ async function syncToGitHub() {
   const finalFilename = filename.endsWith('.md') ? filename : filename + '.md';
   
   syncBtn.disabled = true;
-  syncBtn.innerHTML = createIconWithText(ICONS.LOADING, 'Sending...');
+  syncBtn.replaceChildren();
+  syncBtn.insertAdjacentHTML('beforeend', createIcon(ICONS.LOADING, { size: 'inline' }));
+  syncBtn.appendChild(document.createTextNode(' Sending...'));
   showStatus('Sending to PromptRoot...', 'info');
   
   try {
@@ -182,11 +191,13 @@ async function syncToGitHub() {
     }
     
     syncBtn.disabled = false;
-    syncBtn.innerHTML = originalSyncLabel;
+    syncBtn.replaceChildren();
+    syncBtn.insertAdjacentHTML('beforeend', originalSyncLabel);
   } catch (error) {
     showStatus('Error: ' + error.message, 'error');
     syncBtn.disabled = false;
-    syncBtn.innerHTML = originalSyncLabel;
+    syncBtn.replaceChildren();
+    syncBtn.insertAdjacentHTML('beforeend', originalSyncLabel);
   }
 }
 
@@ -290,7 +301,7 @@ function showStatus(message, type) {
   statusDiv.replaceChildren();
 
   const iconName = type === 'success' ? ICONS.CHECK : type === 'error' ? ICONS.ERROR : ICONS.INFO;
-  statusDiv.innerHTML = createIcon(iconName, { size: 'inline' });
+  statusDiv.insertAdjacentHTML('beforeend', createIcon(iconName, { size: 'inline' }));
   statusDiv.appendChild(document.createTextNode(' ' + message));
 
   statusDiv.className = `status ${type}`;

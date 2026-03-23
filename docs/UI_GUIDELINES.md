@@ -59,8 +59,6 @@ Located in `base.css`:
 :root {
   /* Core Colors */
   --bg: #0a0e1a;
-  --card: #141829;
-  --muted: #8b94a8;
   --text: #f0f3f8;
   --accent: #4dd9ff;
   --accent-glow: #4dd9ff1a;
@@ -122,7 +120,6 @@ Located in `base.css`:
 
 ```css
 .text-center   /* text-align: center */
-.muted         /* color: var(--muted) */
 .font-16       /* font-size: 16px */
 .fw-600        /* font-weight: 600 */
 .small-text    /* font-size: 13px */

@@ -41,15 +41,11 @@ body {
   --surface-elevated: #1a1f35;     /* Hover/elevated states */
   --border: #222438;
   
-  /* Legacy aliases (deprecated - remove in future) */
-  --card: var(--surface);
   
   /* ===== TEXT ===== */
   --text: #f0f3f8;
   --text-muted: #8b94a8;
   
-  /* Legacy alias (deprecated - remove in future) */
-  --muted: var(--text-muted);
   
   /* ===== ACCENT (CYAN) ===== */
   --accent: #4dd9ff;

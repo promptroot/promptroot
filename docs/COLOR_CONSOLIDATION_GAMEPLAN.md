@@ -173,7 +173,7 @@ Accent color variations scattered across files:
 - [ ] Replace any stragglers with appropriate CSS variables
 
 ### Phase 9: Remove Deprecated Aliases
-- [ ] Remove `--muted` alias (replace with `--text-muted`)
+- [x] Remove `--muted` alias (replace with `--text-muted`)
 - [ ] Remove `--warn` alias (replace with `--warning`)
 - [ ] Update any JavaScript files referencing old variable names
 - [ ] Test: Full site regression test

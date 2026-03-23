@@ -46,9 +46,6 @@
 .color-warning { color: var(--warning); }
 .color-info { color: var(--info); }
 
-/* Legacy aliases */
-.color-error { color: var(--danger); }
-
 /* Backgrounds */
 .bg-subtle { background: var(--overlay-subtle); }
 .bg-hover { background: var(--overlay-hover); }

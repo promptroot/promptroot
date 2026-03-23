@@ -15,15 +15,15 @@ import { showPromptViewer } from './prompt-viewer.js';
 
 // Service layer imports
 import {
-  addToJulesQueue as serviceAddToQueue,
-  updateJulesQueueItem as serviceUpdateItem,
-  deleteFromJulesQueue as serviceDeleteItem,
-  listJulesQueue as serviceListQueue,
-  getUserTimeZone as serviceGetUserTimeZone,
-  saveUserTimeZone as serviceSaveUserTimeZone,
-  batchUnscheduleItems as serviceBatchUnschedule,
-  deleteSelectedSubtasks as serviceDeleteSubtasks,
-  subscribeToQueueUpdates as serviceSubscribeToQueue
+  addToJulesQueue,
+  updateJulesQueueItem,
+  deleteFromJulesQueue,
+  listJulesQueue,
+  getUserTimeZone,
+  saveUserTimeZone,
+  batchUnscheduleItems,
+  deleteSelectedSubtasks,
+  subscribeToQueueUpdates
 } from './jules-queue-service.js';
 
 // Store imports
@@ -96,25 +96,13 @@ export async function handleQueueAction(queueItemData, silent = false) {
   }
 }
 
-export async function addToJulesQueue(uid, queueItem) {
-  return await serviceAddToQueue(uid, queueItem);
-}
-
-export async function updateJulesQueueItem(uid, docId, updates) {
-  return await serviceUpdateItem(uid, docId, updates);
-}
-
-export async function deleteFromJulesQueue(uid, docId) {
-  return await serviceDeleteItem(uid, docId);
-}
-
-export async function listJulesQueue(uid) {
-  return await serviceListQueue(uid);
-}
-
-export function subscribeToQueueUpdates(uid, callback) {
-  return serviceSubscribeToQueue(uid, callback);
-}
+export {
+  addToJulesQueue,
+  updateJulesQueueItem,
+  deleteFromJulesQueue,
+  listJulesQueue,
+  subscribeToQueueUpdates
+};
 
 export function showJulesQueueModal() {
   const modal = document.getElementById('julesQueueModal');
@@ -945,7 +933,7 @@ async function showScheduleModal() {
     return;
   }
   
-  const userTimeZone = await serviceGetUserTimeZone(user.uid);
+  const userTimeZone = await getUserTimeZone(user.uid);
   
   const existingModal = getActiveScheduleModal();
   if (existingModal) {
@@ -998,7 +986,7 @@ export async function showScheduleModalForPrompt(promptTitle) {
     return;
   }
   
-  const userTimeZone = await serviceGetUserTimeZone(user.uid);
+  const userTimeZone = await getUserTimeZone(user.uid);
   
   const existingModal = getActiveScheduleModal();
   if (existingModal) {
@@ -1199,7 +1187,7 @@ async function confirmScheduleItems() {
     return;
   }
   
-  await serviceSaveUserTimeZone(user.uid, selectedTimeZone);
+  await saveUserTimeZone(user.uid, selectedTimeZone);
   
   const { queueSelections } = getSelectedQueueIds();
   
@@ -1284,7 +1272,7 @@ async function confirmScheduleItemById(itemId) {
     return;
   }
   
-  await serviceSaveUserTimeZone(user.uid, selectedTimeZone);
+  await saveUserTimeZone(user.uid, selectedTimeZone);
   
   try {
     const scheduledAt = firebase.firestore.Timestamp.fromDate(scheduledDate);
@@ -1562,14 +1550,14 @@ function createQueueCard(item) {
   return card;
 }
 
-async function deleteSelectedSubtasks(docId, indices) {
+async function internalDeleteSelectedSubtasks(docId, indices) {
   const user = getAuth()?.currentUser;
   if (!user) return;
 
   const item = findQueueItem(docId);
   if (!item || !Array.isArray(item.remaining)) return;
 
-  await serviceDeleteSubtasks(user.uid, docId, indices, item.remaining);
+  await deleteSelectedSubtasks(user.uid, docId, indices, item.remaining);
 }
 
 async function runSelectedSubtasks(docId, indices, suppressPopups = false, openInBackground = false) {
@@ -1615,12 +1603,12 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
           retry = false;
         } else if (result.action === 'queue') {
           if (successfulIndices.length > 0) {
-            await deleteSelectedSubtasks(docId, successfulIndices);
+            await internalDeleteSelectedSubtasks(docId, successfulIndices);
           }
           return { successful: successfulIndices.length, skipped: skippedIndices.length };
         } else {
           if (successfulIndices.length > 0) {
-            await deleteSelectedSubtasks(docId, successfulIndices);
+            await internalDeleteSelectedSubtasks(docId, successfulIndices);
           }
           const err = new Error('User cancelled');
           err.successfulCount = successfulIndices.length;
@@ -1631,7 +1619,7 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
   }
 
   if (successfulIndices.length > 0) {
-    await deleteSelectedSubtasks(docId, successfulIndices);
+    await internalDeleteSelectedSubtasks(docId, successfulIndices);
   }
   
   return { successful: successfulIndices.length, skipped: skippedIndices.length };
@@ -1844,7 +1832,7 @@ async function unscheduleSelectedQueueItems() {
   if (!confirmed) return;
   
   try {
-    await serviceBatchUnschedule(user.uid, queueSelections);
+    await batchUnscheduleItems(user.uid, queueSelections);
     
     clearCache(CACHE_KEYS.QUEUE_ITEMS, user.uid);
     
@@ -1902,7 +1890,7 @@ async function deleteSelectedQueueItems() {
     for (const [docId, indices] of Object.entries(subtaskSelections)) {
       if (queueSelections.includes(docId)) continue;
       
-      await deleteSelectedSubtasks(docId, indices);
+      await internalDeleteSelectedSubtasks(docId, indices);
     }
     
     showToast(JULES_MESSAGES.deleted(totalCount), 'success');

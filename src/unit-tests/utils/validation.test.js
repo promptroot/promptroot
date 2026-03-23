@@ -13,6 +13,8 @@ describe('validation.js', () => {
       expect(validateOwner('')).toBe(false);
       expect(validateOwner('-start')).toBe(false);
       expect(validateOwner('end-')).toBe(false);
+      expect(validateOwner('-')).toBe(false);
+      expect(validateOwner('a--b')).toBe(false);
       expect(validateOwner('double--hyphen')).toBe(false);
       expect(validateOwner('invalid char')).toBe(false);
       expect(validateOwner('a'.repeat(40))).toBe(false);

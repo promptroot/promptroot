@@ -62,6 +62,17 @@ async function validateAgentToken(token) {
   return { uid: snap.data().uid, tokenHash: hash };
 }
 
+async function setRelayStatus(uid, connected) {
+  try {
+    await db.doc(`relayStatus/${uid}`).set({
+      connected,
+      updatedAt: admin.firestore.Timestamp.now(),
+    });
+  } catch (err) {
+    console.error('[relay] Failed to set relayStatus:', err.message);
+  }
+}
+
 async function updateLastUsed(uid, tokenHash) {
   try {
     const ref = db.doc(`agentKeys/${uid}`);
@@ -256,6 +267,7 @@ wss.on('connection', async (ws, req) => {
   connections.set(uid, ws);
   console.log(`[relay] Brace connected uid=${uid} (connections=${connections.size})`);
   updateLastUsed(uid, tokenHash);
+  setRelayStatus(uid, true);
 
   ws.on('message', (data) => {
     try {
@@ -319,7 +331,10 @@ wss.on('connection', async (ws, req) => {
   });
 
   ws.on('close', () => {
-    if (connections.get(uid) === ws) connections.delete(uid);
+    if (connections.get(uid) === ws) {
+      connections.delete(uid);
+      setRelayStatus(uid, false);
+    }
     console.log(`[relay] Brace disconnected uid=${uid} (connections=${connections.size})`);
     // Fail any in-flight OpenAI requests belonging to this uid
     for (const [requestId, pending] of oaiRequests) {

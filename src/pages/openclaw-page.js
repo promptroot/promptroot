@@ -1,7 +1,7 @@
 // ===== OpenClaw Settings Page =====
 
 import { initializeSharedComponents } from '../shared-init.js';
-import { getAuth } from '../modules/firebase-service.js';
+import { getAuth, getDb } from '../modules/firebase-service.js';
 import { getOpenclawConfig, encryptAndStoreOpenclawKey, deleteStoredOpenclawKey } from '../modules/openclaw-keys.js';
 import { showToast } from '../modules/toast.js';
 import { OPENCLAW_UI_TEXT } from '../utils/constants.js';
@@ -50,6 +50,25 @@ async function initOpenclawPage(user) {
   };
   relayRadio.addEventListener('change', updateMode);
   customRadio.addEventListener('change', updateMode);
+
+  // Subscribe to live relay status
+  const db = getDb();
+  if (db) {
+    db.doc(`relayStatus/${user.uid}`).onSnapshot((snap) => {
+      const relayStatusEl = document.getElementById('openclawRelayStatus');
+      if (!relayStatusEl) return;
+      if (!snap.exists) {
+        relayStatusEl.textContent = '';
+        relayStatusEl.className = 'small-text muted-text mt-xs';
+      } else if (snap.data().connected) {
+        relayStatusEl.textContent = '● Relay connected';
+        relayStatusEl.className = 'small-text color-success mt-xs';
+      } else {
+        relayStatusEl.textContent = '● Relay offline — start the OpenClaw gateway to connect';
+        relayStatusEl.className = 'small-text color-warning mt-xs';
+      }
+    });
+  }
 
   // Load existing config
   try {

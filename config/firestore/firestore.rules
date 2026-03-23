@@ -64,6 +64,12 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Relay connection status - written by relay (admin SDK), read-only for the user
+    match /relayStatus/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
     // Agent API Keys - admin SDK only, no client direct access
     match /agentKeys/{userId} {
       allow read, write: if false;

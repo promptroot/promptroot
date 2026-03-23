@@ -25,7 +25,17 @@ describe('clipboard utility', () => {
 
   afterEach(() => {
     // Restore originals
-    global.navigator = originalNavigator;
+    if (originalNavigator) {
+      Object.defineProperty(global, 'navigator', {
+        value: originalNavigator,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      // If it wasn't there, we want to remove it, but Object.defineProperty with value: undefined
+      // might still leave the property. Let's just set it to undefined.
+      global.navigator = undefined;
+    }
     console.error = originalConsoleError;
     console.warn = originalConsoleWarn;
     vi.clearAllMocks();

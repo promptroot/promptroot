@@ -1895,20 +1895,35 @@ async function deleteSelectedQueueItems() {
   if (!confirmed) return;
   
   try {
+    const deletionPromises = [];
+
     for (const id of queueSelections) {
-      await deleteFromJulesQueue(user.uid, id);
+      deletionPromises.push(deleteFromJulesQueue(user.uid, id));
     }
-    
+
     for (const [docId, indices] of Object.entries(subtaskSelections)) {
       if (queueSelections.includes(docId)) continue;
-      
-      await deleteSelectedSubtasks(docId, indices);
+      deletionPromises.push(deleteSelectedSubtasks(docId, indices));
     }
+
+    const results = await Promise.allSettled(deletionPromises);
+    const failed = results.filter(r => r.status === 'rejected');
     
-    showToast(JULES_MESSAGES.deleted(totalCount), 'success');
-    await loadQueuePage();
+    if (failed.length > 0) {
+      console.error('Some deletions failed:', failed);
+      const successCount = deletionPromises.length - failed.length;
+      if (successCount > 0) {
+        showToast(`Deleted ${successCount} items, ${failed.length} failed`, 'warn');
+      } else {
+        throw new Error('All deletion attempts failed');
+      }
+    } else {
+      showToast(JULES_MESSAGES.deleted(totalCount), 'success');
+    }
   } catch (err) {
     handleError(err, { source: 'deleteSelectedQueueItems' });
+  } finally {
+    await loadQueuePage();
   }
 }
 

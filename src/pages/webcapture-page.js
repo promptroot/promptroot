@@ -14,6 +14,15 @@ function waitForComponents() {
   }
 }
 
+function setButtonState(button, iconName, text) {
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'icon icon-inline';
+  iconSpan.setAttribute('aria-hidden', 'true');
+  iconSpan.textContent = iconName;
+  const textNode = document.createTextNode(text.startsWith(' ') ? text : ' ' + text);
+  button.replaceChildren(iconSpan, textNode);
+}
+
 async function initApp() {
   if (isChromium()) {
     await checkExtensionStatus();
@@ -24,23 +33,25 @@ async function initApp() {
   if (downloadBtn && !downloadBtn.dataset.bound) {
     downloadBtn.dataset.bound = 'true';
     downloadBtn.addEventListener('click', async () => {
+      // Cache original content to restore it later
+      const originalNodes = Array.from(downloadBtn.childNodes).map(node => node.cloneNode(true));
+
       try {
         downloadBtn.disabled = true;
-        const originalDownloadLabel = downloadBtn.innerHTML;
-        downloadBtn.innerHTML = '<span class="icon icon-inline" aria-hidden="true">hourglass_top</span> Opening Chrome Web Store...';
+        setButtonState(downloadBtn, 'hourglass_top', 'Opening Chrome Web Store...');
 
         window.open(WEB_CAPTURE_EXTENSION_URL, '_blank', 'noopener');
 
-        downloadBtn.innerHTML = '<span class="icon icon-inline" aria-hidden="true">check_circle</span> Store opened';
+        setButtonState(downloadBtn, 'check_circle', 'Store opened');
         setTimeout(() => {
-          downloadBtn.innerHTML = originalDownloadLabel;
+          downloadBtn.replaceChildren(...originalNodes.map(n => n.cloneNode(true)));
           downloadBtn.disabled = false;
         }, TIMEOUTS.actionFeedback);
       } catch (error) {
         console.error('Store link failed:', error);
-        downloadBtn.innerHTML = '<span class="icon icon-inline" aria-hidden="true">error</span> Unable to open store';
+        setButtonState(downloadBtn, 'error', 'Unable to open store');
         setTimeout(() => {
-          downloadBtn.innerHTML = originalDownloadLabel;
+          downloadBtn.replaceChildren(...originalNodes.map(n => n.cloneNode(true)));
           downloadBtn.disabled = false;
         }, TIMEOUTS.actionFeedback);
       }
@@ -55,7 +66,7 @@ async function checkExtensionStatus() {
   const isInstalled = await detectExtension();
 
   if (isInstalled) {
-    downloadBtn.innerHTML = '<span class="icon icon-inline" aria-hidden="true">store</span> View in Chrome Web Store';
+    setButtonState(downloadBtn, 'store', 'View in Chrome Web Store');
   }
 }
 

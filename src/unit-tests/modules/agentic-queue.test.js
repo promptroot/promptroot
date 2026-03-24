@@ -98,22 +98,15 @@ describe('agentic-queue', () => {
   });
 
   describe('subscribeToAgenticQueueUpdates', () => {
-    it('should delegate to service subscribeToQueueUpdates', () => {
-      const { subscribeToQueueUpdates } = vi.mocked(
-        require('../../modules/jules-queue-service.js')
-      );
-      // Use imported mock directly
-    });
-
-    it('should pass uid and callback to service', async () => {
+    it('passes through to service subscribeToQueueUpdates', async () => {
       const { subscribeToQueueUpdates } = await import('../../modules/jules-queue-service.js');
       const unsubscribe = vi.fn();
       subscribeToQueueUpdates.mockReturnValue(unsubscribe);
 
       const callback = vi.fn();
-      const result = subscribeToAgenticQueueUpdates('user1', callback);
+      const result = subscribeToAgenticQueueUpdates('uid123', callback);
 
-      expect(subscribeToQueueUpdates).toHaveBeenCalledWith('user1', callback);
+      expect(subscribeToQueueUpdates).toHaveBeenCalledWith('uid123', callback);
       expect(result).toBe(unsubscribe);
     });
   });

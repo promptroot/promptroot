@@ -61,6 +61,8 @@ test.describe('Run in Agent Split Button', () => {
   });
 
   test('Brace option is disabled when not configured', async ({ page }) => {
+    // Brace requires auth (OpenClaw config) to be enabled. Without being logged in,
+    // the brace menu item should have aria-disabled="true".
     const container = page.locator('#runInAgentContainer');
     await expect(container).toBeVisible({ timeout: 5000 });
 
@@ -70,13 +72,8 @@ test.describe('Run in Agent Split Button', () => {
     const menu = container.locator('.split-btn__menu');
     await expect(menu).toBeVisible({ timeout: 3000 });
 
-    // Brace should have disabled attributes (when not configured)
     const braceOption = menu.locator('[data-value="brace"]');
-    const isDisabled = await braceOption.getAttribute('aria-disabled');
-
-    // It may or may not be disabled depending on configuration
-    // Just verify the option exists with the hub icon
-    await expect(braceOption).toBeVisible();
+    await expect(braceOption).toHaveAttribute('aria-disabled', 'true');
   });
 
   test('localStorage persists agent selection across reload', async ({ page }) => {
@@ -98,16 +95,9 @@ test.describe('Run in Agent Split Button', () => {
   });
 
   test('freeInputRunInAgentContainer is present in free input section', async ({ page }) => {
-    // Navigate to the free input view (no file selected)
-    await page.goto('/');
-    await page.waitForTimeout(1000);
-
-    // Free input section should be visible by default
-    const freeInputSection = page.locator('#freeInputSection');
-    const freeInputRunIn = page.locator('#freeInputRunInAgentContainer');
-
-    // Check that the container exists in the DOM
-    const count = await freeInputRunIn.count();
-    expect(count).toBeGreaterThanOrEqual(0); // Exists in HTML even if hidden
+    // This test requires a logged-in user to render the free input section.
+    // Skip rather than assert a trivially-true condition (count >= 0 is meaningless).
+    // TODO: wire up a test user fixture to assert count === 1 and split button renders.
+    test.skip(true, 'Requires authenticated test user to render freeInputSection; skipping to avoid no-op assertion');
   });
 });

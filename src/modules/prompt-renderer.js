@@ -172,13 +172,15 @@ async function _initRunInAgentButton() {
     onAction: async (selectedAgent) => {
       saveLastAgent(selectedAgent);
       if (selectedAgent === 'jules') {
+        // Use the higher-level callback (not dispatchToAgent) because it handles the Jules
+        // modal flow, key checks, and other UI machinery that dispatchToAgent bypasses.
         if (handleTryInJulesCallback) {
           handleTryInJulesCallback(currentPromptText);
         }
       } else if (selectedAgent === 'brace') {
         try {
-          const { sendToBrace } = await import('./openclaw-api.js');
-          await sendToBrace(currentPromptText);
+          const { dispatchToAgent } = await import('./run-in-agent.js');
+          await dispatchToAgent('brace', { promptText: currentPromptText, title: '' });
           showToast('Sent to Brace!', 'success');
         } catch (err) {
           showToast('Failed to send to Brace: ' + err.message, 'error');

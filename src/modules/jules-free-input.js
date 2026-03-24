@@ -428,16 +428,19 @@ export async function showFreeInputForm() {
 
     try {
       const { addToAgenticQueue } = await import('./agentic-queue.js');
-      const destination = getLastAgent();
+      // Use the split button's current in-session selection rather than getLastAgent()
+      // (which reads localStorage and may be stale if the user changed the dropdown
+      // this session without submitting).
+      const selectedAgent = _freeInputRunInAgentSplitBtn?.getSelection() || 'jules';
       await addToAgenticQueue(user.uid, {
         type: 'single',
         prompt: promptText,
         sourceId: _lastSelectedSourceId,
         branch: _lastSelectedBranch,
-        note: 'Queued from Free Input',
-        destination
+        destination: selectedAgent,
+        note: 'Queued from Free Input'
       });
-      showToast('Prompt queued successfully!', 'success');
+      showToast(`Prompt queued for ${selectedAgent === 'brace' ? 'Brace' : 'Jules'}!`, 'success');
       showFreeInputForm();
     } catch (err) {
       showToast('Failed to queue prompt: ' + err.message, 'error');
@@ -497,13 +500,16 @@ export async function showFreeInputForm() {
       onAction: async (selectedAgent) => {
         saveLastAgent(selectedAgent);
         if (selectedAgent === 'jules') {
+          // Jules uses handleSubmit() which manages its own modal/retry/key-check flow.
+          // We don't route through dispatchToAgent here because that would call
+          // callRunJulesFunction directly, bypassing the callback machinery in handleSubmit.
           await handleSubmit();
         } else if (selectedAgent === 'brace') {
           const promptText = validatePromptText();
           if (!promptText) return;
           try {
-            const { sendToBrace } = await import('./openclaw-api.js');
-            await sendToBrace(promptText);
+            const { dispatchToAgent } = await import('./run-in-agent.js');
+            await dispatchToAgent('brace', { promptText, title: '' });
             showToast('Sent to Brace!', 'success');
           } catch (err) {
             showToast('Failed to send to Brace: ' + err.message, 'error');
@@ -548,6 +554,13 @@ export async function showFreeInputForm() {
       handleSubmit();
     }
   });
+}
+
+export function destroyFreeInputRunInAgent() {
+  if (_freeInputRunInAgentSplitBtn) {
+    _freeInputRunInAgentSplitBtn.destroy();
+    _freeInputRunInAgentSplitBtn = null;
+  }
 }
 
 export function hideFreeInputForm() {

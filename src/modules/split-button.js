@@ -79,19 +79,9 @@ export function initSplitButton(config) {
       const storedOption = options.find(opt => opt.value === stored);
       if (storedOption && !storedOption.disabled) {
         currentSelection = storedOption;
-      }
-    }
-  }
-  // Fall back to first non-disabled option if stored selection is disabled
-  if (!currentSelection && storageKey) {
-    const stored = sessionStorage.getItem(storageKey);
-    if (stored) {
-      const disabledStored = options.find(opt => opt.value === stored && opt.disabled);
-      if (disabledStored) {
-        const firstEnabled = options.find(opt => !opt.disabled);
-        if (firstEnabled) {
-          currentSelection = firstEnabled;
-        }
+      } else if (storedOption?.disabled) {
+        // Fall back to first non-disabled option if stored selection is now disabled
+        currentSelection = options.find(opt => !opt.disabled) || null;
       }
     }
   }

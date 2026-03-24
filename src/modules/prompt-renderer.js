@@ -139,7 +139,7 @@ export function initPromptRenderer() {
   shareBtn = document.getElementById('shareBtn');
   runInAgentContainer = document.getElementById('runInAgentContainer');
   if (runInAgentContainer) {
-    _initRunInAgentButton();
+    _initRunInAgentButton().catch((err) => console.warn('Failed to initialize run-in-agent button:', err));
   }
   freeInputBtn = document.getElementById('freeInputBtn');
   queueBtn = document.getElementById('queueBtn');
@@ -230,7 +230,11 @@ export function destroyPromptRenderer() {
     destroySplitButton(runInAgentContainer);
     runInAgentSplitBtn = null;
   }
-  
+
+  import('./jules-free-input.js').then(({ destroyFreeInputRunInAgent }) => {
+    destroyFreeInputRunInAgent();
+  }).catch(() => {});
+
   cacheRaw.clear();
   currentPromptText = null;
   handleTryInJulesCallback = null;

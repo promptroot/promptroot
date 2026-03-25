@@ -205,17 +205,7 @@ export function hidePanel() {
 }
 
 function resetBraceBtn() {
-  const braceBtn = document.getElementById('braceBtn');
-  if (braceBtn) {
-    braceBtn.disabled = false;
-    braceBtn.textContent = '';
-    const icon = document.createElement('span');
-    icon.className = 'icon icon-inline';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = 'bug_report';
-    braceBtn.appendChild(icon);
-    braceBtn.append(' Run in Brace');
-  }
+  // #braceBtn was removed in the run-in-agent split button migration; no-op now.
 }
 
 /**

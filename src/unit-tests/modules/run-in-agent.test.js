@@ -2,25 +2,20 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getAgentOptions, getLastAgent, saveLastAgent, dispatchToAgent } from '../../modules/run-in-agent.js';
 
 // Mock dependencies
-vi.mock('../../modules/openclaw-keys.js', () => ({
-  getOpenclawConfig: vi.fn()
-}));
-
 vi.mock('../../modules/jules-api.js', () => ({
   callRunJulesFunction: vi.fn()
 }));
 
-vi.mock('../../modules/openclaw-api.js', () => ({
-  sendToBrace: vi.fn()
+vi.mock('../../modules/toast.js', () => ({
+  showToast: vi.fn()
 }));
 
 vi.mock('../../utils/constants.js', () => ({
+  OPENCLAW: {
+    BRACE_UI_URL: 'https://brace-ui.fly.dev'
+  },
   AGENT_UI_TEXT: {
-    RUN_IN_AGENT: 'Run in Agent',
-    BRACE_NOT_CONFIGURED: 'Brace (not configured)',
     SENT_TO_BRACE: 'Sent to Brace!',
-    BRACE_SEND_FAILED: 'Failed to send to Brace: ',
-    AGENTIC_QUEUE_EMPTY: 'No items in the Agentic Queue.',
   }
 }));
 
@@ -28,38 +23,36 @@ describe('run-in-agent', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
+    // Mock window.open
+    vi.stubGlobal('open', vi.fn());
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   describe('getAgentOptions', () => {
-    it('should return Jules enabled and Brace enabled when braceEnabled=true', () => {
-      const options = getAgentOptions(true);
+    it('should return Jules and Brace options', () => {
+      const options = getAgentOptions();
       expect(options).toHaveLength(2);
       expect(options[0].value).toBe('jules');
-      expect(options[0].disabled).toBeFalsy();
       expect(options[1].value).toBe('brace');
+    });
+
+    it('should always have Brace enabled (not disabled)', () => {
+      const options = getAgentOptions();
       expect(options[1].disabled).toBeFalsy();
       expect(options[1].label).toBe('Brace');
     });
 
-    it('should return Brace disabled when braceEnabled=false', () => {
-      const options = getAgentOptions(false);
-      expect(options).toHaveLength(2);
-      expect(options[1].value).toBe('brace');
-      expect(options[1].disabled).toBe(true);
-      expect(options[1].label).toBe('Brace (not configured)');
-    });
-
-    it('should always include smart_toy icon for Jules', () => {
-      const options = getAgentOptions(true);
+    it('should include smart_toy icon for Jules', () => {
+      const options = getAgentOptions();
       expect(options[0].icon).toBe('smart_toy');
     });
 
-    it('should always include hub icon for Brace', () => {
-      const options = getAgentOptions(false);
+    it('should include hub icon for Brace', () => {
+      const options = getAgentOptions();
       expect(options[1].icon).toBe('hub');
     });
   });
@@ -80,26 +73,6 @@ describe('run-in-agent', () => {
     });
   });
 
-  describe('isBraceConfigured', () => {
-    it('should return true when config exists', async () => {
-      const { getOpenclawConfig } = await import('../../modules/openclaw-keys.js');
-      getOpenclawConfig.mockResolvedValue({ apiKey: 'test-key' });
-
-      const { isBraceConfigured } = await import('../../modules/run-in-agent.js');
-      const result = await isBraceConfigured('user123');
-      expect(result).toBe(true);
-    });
-
-    it('should return false when config is null', async () => {
-      const { getOpenclawConfig } = await import('../../modules/openclaw-keys.js');
-      getOpenclawConfig.mockResolvedValue(null);
-
-      const { isBraceConfigured } = await import('../../modules/run-in-agent.js');
-      const result = await isBraceConfigured('user123');
-      expect(result).toBe(false);
-    });
-  });
-
   describe('dispatchToAgent', () => {
     it('should dispatch to Jules via callRunJulesFunction', async () => {
       const { callRunJulesFunction } = await import('../../modules/jules-api.js');
@@ -112,15 +85,23 @@ describe('run-in-agent', () => {
       expect(result).toBe('https://jules.example.com/session/123');
     });
 
-    it('should dispatch to Brace via sendToBrace', async () => {
-      const { sendToBrace } = await import('../../modules/openclaw-api.js');
-      sendToBrace.mockResolvedValue('ok');
+    it('should open Brace URL in new tab', async () => {
+      const payload = { promptText: 'hello world', title: 'Test' };
+      await dispatchToAgent('brace', payload);
 
-      const payload = { promptText: 'test prompt', title: 'Test Title' };
-      const result = await dispatchToAgent('brace', payload);
+      expect(window.open).toHaveBeenCalledWith(
+        'https://brace-ui.fly.dev/?q=' + encodeURIComponent('hello world'),
+        '_blank',
+        'noopener,noreferrer'
+      );
+    });
 
-      expect(sendToBrace).toHaveBeenCalledWith('test prompt', 'Test Title');
-      expect(result).toBe('ok');
+    it('should show toast after opening Brace', async () => {
+      const { showToast } = await import('../../modules/toast.js');
+      const payload = { promptText: 'test prompt' };
+      await dispatchToAgent('brace', payload);
+
+      expect(showToast).toHaveBeenCalledWith('Sent to Brace!', 'success');
     });
 
     it('should throw for unknown agent', async () => {
@@ -128,20 +109,12 @@ describe('run-in-agent', () => {
       await expect(dispatchToAgent('unknown', payload)).rejects.toThrow('Unknown agent: unknown');
     });
 
-    it('should propagate errors from jules dispatch', async () => {
+    it('should propagate errors from Jules dispatch', async () => {
       const { callRunJulesFunction } = await import('../../modules/jules-api.js');
       callRunJulesFunction.mockRejectedValue(new Error('Jules API error'));
 
       const payload = { promptText: 'test', sourceId: 'src', branch: 'main', title: 'T' };
       await expect(dispatchToAgent('jules', payload)).rejects.toThrow('Jules API error');
-    });
-
-    it('should propagate errors from brace dispatch', async () => {
-      const { sendToBrace } = await import('../../modules/openclaw-api.js');
-      sendToBrace.mockRejectedValue(new Error('Brace API error'));
-
-      const payload = { promptText: 'test', title: 'T' };
-      await expect(dispatchToAgent('brace', payload)).rejects.toThrow('Brace API error');
     });
   });
 });

@@ -3,25 +3,15 @@
  * Manages agent selection (Jules vs Brace) for prompt dispatch.
  */
 
-import { AGENT_UI_TEXT } from '../utils/constants.js';
+import { OPENCLAW, AGENT_UI_TEXT } from '../utils/constants.js';
+import { showToast } from './toast.js';
 
 const AGENT_STORAGE_KEY = 'agenticQueue.lastAgent';
 
-export async function isBraceConfigured(uid) {
-  const { getOpenclawConfig } = await import('./openclaw-keys.js');
-  const config = await getOpenclawConfig(uid);
-  return !!config;
-}
-
-export function getAgentOptions(braceEnabled) {
+export function getAgentOptions() {
   return [
     { value: 'jules', label: 'Jules', icon: 'smart_toy' },
-    {
-      value: 'brace',
-      label: braceEnabled ? 'Brace' : AGENT_UI_TEXT.BRACE_NOT_CONFIGURED,
-      icon: 'hub',
-      disabled: !braceEnabled
-    }
+    { value: 'brace', label: 'Brace', icon: 'hub' }
   ];
 }
 
@@ -44,8 +34,9 @@ export async function dispatchToAgent(agent, payload) {
     const { callRunJulesFunction } = await import('./jules-api.js');
     return callRunJulesFunction(payload.promptText, payload.sourceId, payload.branch, payload.title);
   } else if (agent === 'brace') {
-    const { sendToBrace } = await import('./openclaw-api.js');
-    return sendToBrace(payload.promptText, payload.title);
+    window.open(OPENCLAW.BRACE_UI_URL + '/?q=' + encodeURIComponent(payload.promptText), '_blank', 'noopener,noreferrer');
+    showToast(AGENT_UI_TEXT.SENT_TO_BRACE, 'success');
+    return;
   }
   throw new Error(`Unknown agent: ${agent}`);
 }

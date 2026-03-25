@@ -42,6 +42,7 @@ const CLASSES = {
  * @param {Array} config.options - Array of option objects {value, label, icon}
  * @param {Function} config.onAction - Callback when action button is clicked (value) => void
  * @param {string} [config.storageKey] - SessionStorage key for remembering last selection
+ * @param {boolean} [config.executeOnSelect=true] - Whether selecting from the dropdown also executes onAction
  * @returns {Object} - API for controlling the split button
  */
 export function initSplitButton(config) {
@@ -51,7 +52,8 @@ export function initSplitButton(config) {
     defaultIcon,
     options: initialOptions,
     onAction,
-    storageKey
+    storageKey,
+    executeOnSelect = true
   } = config;
 
   if (!container || !initialOptions || !onAction) {
@@ -144,8 +146,10 @@ export function initSplitButton(config) {
         sessionStorage.setItem(storageKey, option.value);
       }
       
-      // Execute action
-      onAction(option.value);
+      // Execute action (only if executeOnSelect is enabled)
+      if (executeOnSelect) {
+        onAction(option.value);
+      }
       
       // Close dropdown
       if (dropdown) {

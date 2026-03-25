@@ -7,7 +7,7 @@ import { toggleVisibility } from '../utils/dom-helpers.js';
 import { JULES_MESSAGES, TIMEOUTS, RETRY_CONFIG } from '../utils/constants.js';
 import { initSplitButton, updateSplitButtonOptions } from './split-button.js';
 import { getCopenOptions, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_ICON } from '../utils/copen-config.js';
-import { getLastAgent, saveLastAgent, isBraceConfigured, getAgentOptions } from './run-in-agent.js';
+import { getLastAgent, saveLastAgent, getAgentOptions, dispatchToAgent } from './run-in-agent.js';
 // Lazy loaded: jules-keys, jules-modal, jules-queue
 
 let _lastSelectedSourceId = null;
@@ -16,7 +16,6 @@ let _branchChangeListenerAdded = false;
 let _freeInputCopenSplitBtn = null;
 let _freeInputRunInAgentSplitBtn = null;
 let _authListenerAdded = false;
-let _agentAuthListenerAdded = false;
 
 async function refreshFreeInputCopenOptions() {
   const copenContainer = document.getElementById('freeInputCopenContainer');
@@ -483,20 +482,14 @@ export async function showFreeInputForm() {
 
   // Initialize run-in-agent split button if not already initialized
   if (!_freeInputRunInAgentSplitBtn && runInAgentContainer) {
-    const auth = getAuth();
-    const user = auth?.currentUser;
-    let braceEnabled = false;
-    if (user) {
-      try { braceEnabled = await isBraceConfigured(user.uid); } catch {}
-    }
-    const options = getAgentOptions(braceEnabled);
     const lastAgent = getLastAgent();
 
     _freeInputRunInAgentSplitBtn = initSplitButton({
       container: runInAgentContainer,
       defaultLabel: 'Run in Agent',
       defaultIcon: 'send',
-      options,
+      options: getAgentOptions(),
+      executeOnSelect: false,
       onAction: async (selectedAgent) => {
         saveLastAgent(selectedAgent);
         if (selectedAgent === 'jules') {
@@ -507,13 +500,7 @@ export async function showFreeInputForm() {
         } else if (selectedAgent === 'brace') {
           const promptText = validatePromptText();
           if (!promptText) return;
-          try {
-            const { dispatchToAgent } = await import('./run-in-agent.js');
-            await dispatchToAgent('brace', { promptText, title: '' });
-            showToast('Sent to Brace!', 'success');
-          } catch (err) {
-            showToast('Failed to send to Brace: ' + err.message, 'error');
-          }
+          dispatchToAgent('brace', { promptText });
         }
       }
     });
@@ -522,26 +509,6 @@ export async function showFreeInputForm() {
     if (_freeInputRunInAgentSplitBtn && lastAgent !== 'jules') {
       _freeInputRunInAgentSplitBtn.setSelection(lastAgent);
     }
-
-    // Refresh on auth state change
-    if (!_agentAuthListenerAdded && auth) {
-      auth.onAuthStateChanged(async (u) => {
-        if (!_freeInputRunInAgentSplitBtn || !runInAgentContainer) return;
-        let enabled = false;
-        if (u) { try { enabled = await isBraceConfigured(u.uid); } catch {} }
-        _freeInputRunInAgentSplitBtn.updateOptions(getAgentOptions(enabled));
-      });
-      _agentAuthListenerAdded = true;
-    }
-  } else if (_freeInputRunInAgentSplitBtn && runInAgentContainer) {
-    // Refresh options on re-show
-    const auth = getAuth();
-    const user = auth?.currentUser;
-    let braceEnabled = false;
-    if (user) {
-      try { braceEnabled = await isBraceConfigured(user.uid); } catch {}
-    }
-    _freeInputRunInAgentSplitBtn.updateOptions(getAgentOptions(braceEnabled));
   }
 
   queueBtn.onclick = handleQueue;

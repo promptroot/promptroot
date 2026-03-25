@@ -11,6 +11,7 @@ import statusBar from './status-bar.js';
 import { initSplitButton, destroySplitButton, updateSplitButtonOptions } from './split-button.js';
 import { getCopenOptions, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_ICON } from '../utils/copen-config.js';
 import { getAuth } from './firebase-service.js';
+import { getAgentOptions, getLastAgent, saveLastAgent, dispatchToAgent } from './run-in-agent.js';
 
 let domPurifyHooksInitialized = false;
 
@@ -139,7 +140,7 @@ export function initPromptRenderer() {
   shareBtn = document.getElementById('shareBtn');
   runInAgentContainer = document.getElementById('runInAgentContainer');
   if (runInAgentContainer) {
-    _initRunInAgentButton().catch((err) => console.warn('Failed to initialize run-in-agent button:', err));
+    _initRunInAgentButton();
   }
   freeInputBtn = document.getElementById('freeInputBtn');
   queueBtn = document.getElementById('queueBtn');
@@ -150,26 +151,16 @@ export function initPromptRenderer() {
   window.addEventListener('branchChanged', handleBranchChanged);
 }
 
-async function _initRunInAgentButton() {
-  const { getAgentOptions, getLastAgent, saveLastAgent, isBraceConfigured } = await import('./run-in-agent.js');
-
-  const auth = getAuth();
-  const user = auth?.currentUser;
-
-  let braceEnabled = false;
-  if (user) {
-    try { braceEnabled = await isBraceConfigured(user.uid); } catch {}
-  }
-
-  const options = getAgentOptions(braceEnabled);
+function _initRunInAgentButton() {
   const lastAgent = getLastAgent();
 
   runInAgentSplitBtn = initSplitButton({
     container: runInAgentContainer,
     defaultLabel: 'Run in Agent',
     defaultIcon: 'smart_toy',
-    options,
-    onAction: async (selectedAgent) => {
+    options: getAgentOptions(),
+    executeOnSelect: false,
+    onAction: (selectedAgent) => {
       saveLastAgent(selectedAgent);
       if (selectedAgent === 'jules') {
         // Use the higher-level callback (not dispatchToAgent) because it handles the Jules
@@ -178,13 +169,7 @@ async function _initRunInAgentButton() {
           handleTryInJulesCallback(currentPromptText);
         }
       } else if (selectedAgent === 'brace') {
-        try {
-          const { dispatchToAgent } = await import('./run-in-agent.js');
-          await dispatchToAgent('brace', { promptText: currentPromptText, title: '' });
-          showToast('Sent to Brace!', 'success');
-        } catch (err) {
-          showToast('Failed to send to Brace: ' + err.message, 'error');
-        }
+        dispatchToAgent('brace', { promptText: currentPromptText });
       }
     }
   });
@@ -192,16 +177,6 @@ async function _initRunInAgentButton() {
   // Set initial selection to last used agent
   if (runInAgentSplitBtn && lastAgent !== 'jules') {
     runInAgentSplitBtn.setSelection(lastAgent);
-  }
-
-  // Refresh on auth state change
-  if (auth) {
-    auth.onAuthStateChanged(async (u) => {
-      if (!runInAgentContainer || !runInAgentSplitBtn) return;
-      let enabled = false;
-      if (u) { try { enabled = await isBraceConfigured(u.uid); } catch {} }
-      runInAgentSplitBtn.updateOptions(getAgentOptions(enabled));
-    });
   }
 }
 

@@ -180,9 +180,8 @@ async function _initRunInAgentButton() {
       } else if (selectedAgent === 'brace') {
         try {
           const { dispatchToAgent } = await import('./run-in-agent.js');
-          const jobId = await dispatchToAgent('brace', { promptText: currentPromptText, title: '' });
-          const { showPanel } = await import('./brace-response-panel.js');
-          showPanel(jobId, currentFile?.path || null);
+          await dispatchToAgent('brace', { promptText: currentPromptText, title: '' });
+          showToast('Sent to Brace!', 'success');
         } catch (err) {
           showToast('Failed to send to Brace: ' + err.message, 'error');
         }

@@ -509,9 +509,8 @@ export async function showFreeInputForm() {
           if (!promptText) return;
           try {
             const { dispatchToAgent } = await import('./run-in-agent.js');
-            const jobId = await dispatchToAgent('brace', { promptText, title: '' });
-            const { showPanel } = await import('./brace-response-panel.js');
-            showPanel(jobId);
+            await dispatchToAgent('brace', { promptText, title: '' });
+            showToast('Sent to Brace!', 'success');
           } catch (err) {
             showToast('Failed to send to Brace: ' + err.message, 'error');
           }

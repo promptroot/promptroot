@@ -42,6 +42,7 @@ const CLASSES = {
  * @param {Array} config.options - Array of option objects {value, label, icon}
  * @param {Function} config.onAction - Callback when action button is clicked (value) => void
  * @param {string} [config.storageKey] - SessionStorage key for remembering last selection
+ * @param {boolean} [config.executeOnSelect=true] - Whether selecting from the dropdown also executes onAction
  * @returns {Object} - API for controlling the split button
  */
 export function initSplitButton(config) {
@@ -51,7 +52,8 @@ export function initSplitButton(config) {
     defaultIcon,
     options: initialOptions,
     onAction,
-    storageKey
+    storageKey,
+    executeOnSelect = true
   } = config;
 
   if (!container || !initialOptions || !onAction) {
@@ -77,8 +79,11 @@ export function initSplitButton(config) {
     const stored = sessionStorage.getItem(storageKey);
     if (stored) {
       const storedOption = options.find(opt => opt.value === stored);
-      if (storedOption) {
+      if (storedOption && !storedOption.disabled) {
         currentSelection = storedOption;
+      } else if (storedOption?.disabled) {
+        // Fall back to first non-disabled option if stored selection is now disabled
+        currentSelection = options.find(opt => !opt.disabled) || null;
       }
     }
   }
@@ -127,6 +132,8 @@ export function initSplitButton(config) {
     const item = e.target.closest('.split-btn__menu-item');
     if (!item) return;
 
+    if (item.dataset.disabled === 'true') return;
+
     const value = item.dataset.value;
     const option = options.find(opt => opt.value === value);
     
@@ -139,8 +146,10 @@ export function initSplitButton(config) {
         sessionStorage.setItem(storageKey, option.value);
       }
       
-      // Execute action
-      onAction(option.value);
+      // Execute action (only if executeOnSelect is enabled)
+      if (executeOnSelect) {
+        onAction(option.value);
+      }
       
       // Close dropdown
       if (dropdown) {
@@ -217,6 +226,12 @@ function rebuildMenu(menu, options) {
     item.dataset.value = option.value;
     item.setAttribute('role', 'menuitem');
     item.setAttribute('tabindex', '-1');
+    
+    if (option.disabled) {
+      item.classList.add('split-btn__menu-item--disabled');
+      item.setAttribute('aria-disabled', 'true');
+      item.dataset.disabled = 'true';
+    }
     
     if (option.icon) {
       item.appendChild(createIcon(option.icon, 'icon-inline'));

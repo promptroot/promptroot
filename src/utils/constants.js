@@ -226,10 +226,7 @@ export const AGENT_API = {
 // OpenClaw integration constants
 export const OPENCLAW = {
   KEY_COLLECTION: 'openclawKeys',
-  POLL_INTERVAL_MS: 3000,
-  POLL_TIMEOUT_MS: 5 * 60 * 1000, // 5 minutes
-  JOB_TTL_MS: 24 * 60 * 60 * 1000, // 24 hours
-  SESSION_KEY_PREFIX: 'brace_job_'
+  BRACE_UI_URL: 'https://brace-ui.fly.dev'
 };
 
 // OpenClaw UI text
@@ -251,16 +248,6 @@ export const OPENCLAW_UI_TEXT = {
   NOT_SIGNED_IN: 'Please sign in to configure OpenClaw.',
   TOKEN_REQUIRED: 'Please enter a token.',
   URL_REQUIRED: 'Please enter a gateway URL.',
-  RUN_IN_BLIZ: '🦞 Run in Brace',
-  RUNNING: 'Running...',
-  PENDING: 'Waiting for Brace',
-  COPY_RESPONSE: 'Copy response',
-  CLOSE_PANEL: 'Close',
-  TIMEOUT_MSG: 'Brace took too long. The job may still complete — check back later.',
-  ERROR_UNREACHABLE: 'Brace is unreachable. Is your tunnel running?',
-  ERROR_CREDENTIALS: 'Could not load credentials. Check your connection.',
-  ERROR_GENERIC: 'Something went wrong. Try again.',
-  RESULT_EXPIRED: 'Result expired (>24h). Re-run the prompt.',
   GENERATE_TOKEN_LINK: 'Generate a token first →'
 };
 
@@ -509,4 +496,13 @@ export const CACHE_POLICIES = {
     ttl: CACHE_DURATIONS.short,
     strategy: CACHE_STRATEGIES.CACHE_FIRST
   }
+};
+
+
+export const AGENT_UI_TEXT = {
+  RUN_IN_AGENT: 'Run in Agent',
+  BRACE_NOT_CONFIGURED: 'Brace (not configured)',
+  SENT_TO_BRACE: 'Sent to Brace!',
+  BRACE_SEND_FAILED: 'Failed to send to Brace: ',
+  AGENTIC_QUEUE_EMPTY: 'No items in the Agentic Queue.',
 };

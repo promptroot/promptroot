@@ -1,15 +1,24 @@
 /**
- * promptroot-relay — WebSocket relay between PromptRoot Cloud Functions and Brace agents.
+ * promptroot-relay — WebSocket relay between PromptRoot / brace-ui and Brace agents.
  *
  * Brace connects outbound via WebSocket (no tunnel/port-forwarding needed).
- * Cloud Functions submit jobs and poll results via HTTP.
+ * Cloud Functions and brace-ui submit jobs and poll results via HTTP.
  *
- * WebSocket auth:  Authorization: Bearer pra_...  (agent token, validated via agentKeysByHash)
- * HTTP auth:       Authorization: Bearer {RELAY_SHARED_SECRET}
+ * Auth model:
+ *   WebSocket (Brace → relay):  Authorization: Bearer pra_...  (agent token, validated via agentKeysByHash)
+ *   HTTP (callers → relay):     Authorization: Bearer pra_...  (same agent token)
+ *   Legacy HTTP (Cloud Fns):    Authorization: Bearer {RELAY_SHARED_SECRET}
  *
- * HTTP routes (called by Cloud Functions):
- *   POST /:uid/prompt             — submit a job for a uid, returns { jobId }
- *   GET  /:uid/prompt/:jobId      — poll job result
+ * OAuth vs API key:
+ *   Both are supported. OAuth (Claude.ai Pro/Max) is recommended — the OpenClaw plugin
+ *   routes all requests through subagent.run() which works with OAuth. An Anthropic API
+ *   key is not required but can be added as a fallback for cost management.
+ *
+ * HTTP routes:
+ *   GET  /v1/models               — list available models (returns [{id: "brace"}])
+ *   POST /v1/chat/completions     — OpenAI-compatible chat endpoint (proxied to Brace)
+ *   POST /:uid/prompt             — legacy: submit a job for a uid, returns { jobId }
+ *   GET  /:uid/prompt/:jobId      — legacy: poll job result
  *   GET  /health                  — health check
  */
 
@@ -341,26 +350,6 @@ wss.on('connection', async (ws, req) => {
         return;
       }
 
-      // ── OpenAI streaming chunk ────────────────────────────────────────────
-      if (msg.type === 'openai_chunk') {
-        const { requestId, data: chunk } = msg;
-        const pending = oaiRequests.get(requestId);
-        if (!pending || !pending.streaming) return;
-        // chunk is already SSE-formatted from OpenClaw (e.g. "data: {...}\n\n")
-        pending.res.write(chunk);
-        return;
-      }
-
-      // ── OpenAI streaming done ─────────────────────────────────────────────
-      if (msg.type === 'openai_done') {
-        const { requestId } = msg;
-        const pending = oaiRequests.get(requestId);
-        if (!pending || !pending.streaming) return;
-        oaiRequests.delete(requestId);
-        // OpenClaw's stream already sent data: [DONE] as a chunk; just end the response
-        pending.res.end();
-        return;
-      }
 
     } catch (e) {
       console.error('[relay] Bad message from Brace:', e.message);

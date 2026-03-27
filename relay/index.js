@@ -120,9 +120,26 @@ function generateRequestId() {
 }
 
 // --- HTTP server ---
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+  'Access-Control-Max-Age': '86400',
+};
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const parts = url.pathname.split('/').filter(Boolean); // ['uid', 'prompt'] or ['uid', 'prompt', 'jobId']
+
+  // CORS preflight — no auth required
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, CORS_HEADERS);
+    res.end();
+    return;
+  }
+
+  // Inject CORS headers on all responses
+  Object.entries(CORS_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
 
   // Health check — no auth required
   if (req.method === 'GET' && url.pathname === '/health') {
@@ -299,8 +316,28 @@ wss.on('connection', async (ws, req) => {
         if (!pending) return;
         clearTimeout(pending.timer);
         oaiRequests.delete(requestId);
-        pending.res.writeHead(200, { 'Content-Type': 'application/json' });
-        pending.res.end(JSON.stringify(body));
+        if (pending.streaming) {
+          // Client requested SSE but plugin returned a full JSON response — convert to SSE
+          const chunk = {
+            id: body.id || `chatcmpl_${requestId}`,
+            object: 'chat.completion.chunk',
+            created: body.created || Math.floor(Date.now() / 1000),
+            model: body.model || 'brace',
+            choices: [{
+              index: 0,
+              delta: { role: 'assistant', content: body.choices?.[0]?.message?.content || '' },
+              finish_reason: null,
+            }],
+          };
+          const doneChunk = { ...chunk, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] };
+          pending.res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+          pending.res.write(`data: ${JSON.stringify(doneChunk)}\n\n`);
+          pending.res.write('data: [DONE]\n\n');
+          pending.res.end();
+        } else {
+          pending.res.writeHead(200, { 'Content-Type': 'application/json' });
+          pending.res.end(JSON.stringify(body));
+        }
         return;
       }
 

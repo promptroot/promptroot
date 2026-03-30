@@ -185,4 +185,13 @@ Here's a comprehensive analysis and gradual migration plan.
    know about). But it delivers zero new features to users and carries meaningful refactoring risk across ~14k lines of Realm-related code.                                          
                                                                                                                                                                                    
   It's worth doing if you plan to actively develop this app for the next few years. If the codebase is relatively stable and rarely touched, the risk/reward is questionable.  
+
+  Once you complete the Realm migration:
+  1. Remove id 'realm-android' plugin → legacy-kapt plugin goes with it
+  2. Remove the kapt {} block — nothing left uses it                                                                                                                                 
+  3. Remove alias(libs.plugins.legacy.kapt) from libs.versions.toml
+  4. Remove kotlin-kapt from the plugins block                                                                                                                                       
+                                                                                                                                                                                     
+  You'd be on pure KSP across the board. This is a real build speed benefit — KAPT is significantly slower than KSP because it has to generate Java stubs before processing, while   
+  KSP works directly on Kotlin symbols. On a codebase this size, you'd likely see a noticeable reduction in incremental build times. 
 ```

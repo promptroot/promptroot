@@ -194,4 +194,33 @@ Here's a comprehensive analysis and gradual migration plan.
                                                                                                                                                                                      
   You'd be on pure KSP across the board. This is a real build speed benefit — KAPT is significantly slower than KSP because it has to generate Java stubs before processing, while   
   KSP works directly on Kotlin symbols. On a codebase this size, you'd likely see a noticeable reduction in incremental build times. 
+
+  The Blocker                                                                                                                                                                        
+                                                                                                                                                                                     
+  realm-kotlin doesn't support Kotlin 2.3.x. Your project uses Kotlin 2.3.20. The realm-kotlin compiler plugin calls an internal Kotlin FIR API (FirResolvedTypeRef.getType()) that  
+  was removed in Kotlin 2.2. This is a known open issue (https://github.com/realm/realm-kotlin/issues/1869) — opened July 2025, still not fixed. MongoDB hasn't been keeping the     
+  compiler plugin in sync with Kotlin releases.                                                                                                                                      
+                                                                                                                                                                                   
+  Your Options
+
+  Option 1 — Wait. Do nothing for now. Watch https://github.com/realm/realm-kotlin/issues/1869. If MongoDB fixes it, the migration plan we laid out still stands. Risk: MongoDB may  
+  abandon realm-kotlin or keep falling behind Kotlin versions.
+                                                                                                                                                                                     
+  Option 2 — Migrate to Room instead. Room is Google's official Android database, fully supported, actively maintained, and natively supports Kotlin coroutines and Flow. It achieves
+   all the same goals (suspend writes, Flow queries, KSP, no KAPT). The migration would be larger (different query DSL, SQL vs Realm objects), but you'd be on a library that tracks
+  every Kotlin release. This would also enable full KSP removal of KAPT.                                                                                                             
+                                                                                                                                                                                   
+  Option 3 — Downgrade Kotlin. Drop from 2.3.20 to 2.0.20 (the last version realm-kotlin officially works with). This unblocks the migration plan but is a significant regression and
+   will cause other dependency compatibility issues.
+                                                                                                                                                                                     
+  Recommendation: Given MongoDB's track record of lagging multiple major Kotlin versions, Option 2 (Room) is the more reliable long-term path. But it's a larger decision — Room's   
+  query model (SQL + DAOs) is meaningfully different from Realm's object model, and the migration scope would be similar but different in character.
+                                                                                                                                                                                     
+  What would you like to do?                                                                                                                                                       
+
+  Sources:
+  - https://github.com/realm/realm-kotlin/issues/1869
+  - https://github.com/realm/realm-kotlin/issues/1857                                                                                                                                
+  - https://github.com/XilinJia/krdb                 
+                                      
 ```

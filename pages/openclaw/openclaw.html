@@ -152,11 +152,17 @@
           <h4 class="section-subheading">Step 1 — Install OpenClaw</h4>
           <ol class="instruction-list">
             <li class="instruction-item">
-              <strong class="instruction-strong">Install the OpenClaw daemon</strong> on your machine and ensure Brace is configured
+              <strong class="instruction-strong">Linux / macOS</strong> — run the one-line installer:<br/>
+              <code class="code-inline">curl -sSL https://raw.githubusercontent.com/promptroot/promptroot/main/scripts/openclaw/install.sh | sh</code>
+            </li>
+            <li class="instruction-item">
+              <strong class="instruction-strong">Windows</strong> — run in PowerShell:<br/>
+              <code class="code-inline">irm https://openclaw.ai/install.ps1 | iex</code><br/>
+              Then follow the <a href="https://github.com/promptroot/promptroot/blob/main/docs/OPENCLAW.md#windows" target="_blank" rel="noopener">Windows setup guide</a> to install plugins manually.
             </li>
             <li class="instruction-item">
               <strong class="instruction-strong">Verify the gateway is running</strong><br/>
-              <code class="code-inline">systemctl --user status openclaw-gateway</code> should show <code class="code-inline">active (running)</code>
+              <code class="code-inline">openclaw gateway status</code>
             </li>
           </ol>
         </div>
@@ -185,13 +191,14 @@
               <pre class="code-block">PROMPTROOT_AGENT_TOKEN=pra_...</pre>
             </li>
             <li class="instruction-item">
-              <strong class="instruction-strong">Enable the promptroot-relay plugin</strong><br/>
-              In <code class="code-inline">~/.openclaw/openclaw.json</code>, add under <code class="code-inline">"plugins"</code>:
-              <pre class="code-block">"promptroot-relay": { "enabled": true }</pre>
+              <strong class="instruction-strong">Enable the PromptRoot plugins</strong><br/>
+              <pre class="code-block">openclaw plugins enable promptroot-relay
+openclaw plugins enable promptroot-gateway</pre>
             </li>
             <li class="instruction-item">
               <strong class="instruction-strong">Restart the gateway</strong><br/>
-              <code class="code-inline">systemctl --user restart openclaw-gateway</code>
+              Linux/macOS: <code class="code-inline">openclaw gateway restart</code><br/>
+              Windows: stop and re-run <code class="code-inline">openclaw gateway</code>
             </li>
           </ol>
         </div>
@@ -244,7 +251,7 @@
           <div class="mb-md">
             <strong class="instruction-strong">Connection saved but no response arrives?</strong>
             <p class="muted-text small-text" style="margin:4px 0 0;">
-              Check the gateway is running: <code class="code-inline">systemctl --user status openclaw-gateway</code>. Verify <code class="code-inline">PROMPTROOT_AGENT_TOKEN</code> is in <code class="code-inline">~/.openclaw/.env</code> and the gateway was restarted after adding it.
+              Check the gateway is running: <code class="code-inline">openclaw gateway status</code>. Verify <code class="code-inline">PROMPTROOT_AGENT_TOKEN</code> is in <code class="code-inline">~/.openclaw/.env</code> and plugins are enabled (<code class="code-inline">openclaw plugins enable promptroot-relay</code>), then restart the gateway.
             </p>
           </div>
           <div class="mb-md">

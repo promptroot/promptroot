@@ -27,6 +27,39 @@ PLUGINS="promptroot-relay promptroot-gateway"
 OPENCLAW_EXT_DIR="${HOME}/.openclaw/extensions"
 OPENCLAW_ENV="${HOME}/.openclaw/.env"
 
+# ── Windows detection ─────────────────────────────────────────────────────────
+
+case "$(uname -s 2>/dev/null)" in
+  MINGW*|MSYS*|CYGWIN*)
+    printf "${WARN}⚠${NC} Windows shell detected (Git Bash / MSYS).\n"
+    printf "  This script requires a POSIX shell on Linux or macOS.\n"
+    printf "\n"
+    printf "${BOLD}On Windows, install manually:${NC}\n"
+    printf "  1. Install OpenClaw (PowerShell):\n"
+    printf "       powershell.exe -c \"irm https://openclaw.ai/install.ps1 | iex\"\n"
+    printf "  2. Configure auth (Git Bash):\n"
+    printf "       openclaw onboard\n"
+    printf "  3. Install plugins (Git Bash):\n"
+    printf "       mkdir -p ~/.openclaw/extensions\n"
+    printf "       REPO=https://raw.githubusercontent.com/promptroot/promptroot/main\n"
+    printf "       for p in promptroot-relay promptroot-gateway; do\n"
+    printf "         mkdir -p ~/.openclaw/extensions/\$p\n"
+    printf "         for f in index.js openclaw.plugin.json package.json; do\n"
+    printf "           curl -fsSL \$REPO/scripts/openclaw/plugins/\$p/\$f -o ~/.openclaw/extensions/\$p/\$f\n"
+    printf "         done\n"
+    printf "         (cd ~/.openclaw/extensions/\$p && npm install --silent)\n"
+    printf "         openclaw plugins enable \$p\n"
+    printf "       done\n"
+    printf "  4. Generate token at: https://promptroot.io/agent-api\n"
+    printf "       echo \"PROMPTROOT_AGENT_TOKEN=pra_...\" >> ~/.openclaw/.env\n"
+    printf "  5. Start gateway:\n"
+    printf "       openclaw gateway\n"
+    printf "\n"
+    printf "See full Windows guide: https://promptroot.io/docs/openclaw#windows\n"
+    exit 0
+    ;;
+esac
+
 log()  { printf "${CYAN}▶${NC} %s\n" "$*"; }
 ok()   { printf "${GREEN}✓${NC} %s\n" "$*"; }
 warn() { printf "${WARN}⚠${NC} %s\n" "$*"; }

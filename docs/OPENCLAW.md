@@ -20,6 +20,8 @@ That's it. Everything else is handled automatically.
 
 ## Install
 
+> **Windows users:** The install script requires Linux or macOS. See [Windows setup](#windows) below.
+
 ```bash
 curl -sSL https://raw.githubusercontent.com/promptroot/promptroot/main/scripts/openclaw/install.sh | sh
 ```
@@ -32,6 +34,48 @@ The script will:
 5. Start the gateway service
 
 **Total time: ~3 minutes**
+
+---
+
+## Windows
+
+The install script doesn't run on Windows (Git Bash / MSYS). Use PowerShell + Git Bash instead:
+
+**1. Install OpenClaw** (PowerShell):
+```powershell
+irm https://openclaw.ai/install.ps1 | iex
+```
+
+**2. Configure auth** (Git Bash):
+```bash
+openclaw onboard
+```
+
+**3. Install plugins** (Git Bash):
+```bash
+mkdir -p ~/.openclaw/extensions
+REPO=https://raw.githubusercontent.com/promptroot/promptroot/main
+for p in promptroot-relay promptroot-gateway; do
+  mkdir -p ~/.openclaw/extensions/$p
+  for f in index.js openclaw.plugin.json package.json; do
+    curl -fsSL $REPO/scripts/openclaw/plugins/$p/$f -o ~/.openclaw/extensions/$p/$f
+  done
+  (cd ~/.openclaw/extensions/$p && npm install --silent)
+  openclaw plugins enable $p
+done
+```
+
+**4. Generate your agent token** at [promptroot.io/agent-api](https://promptroot.io/agent-api), then save it:
+```bash
+echo "PROMPTROOT_AGENT_TOKEN=pra_..." >> ~/.openclaw/.env
+```
+
+**5. Start the gateway:**
+```bash
+openclaw gateway
+```
+
+> **Note:** `openclaw gateway restart` and `openclaw gateway start` require a Windows service installation that the PowerShell installer skips by default. Run `openclaw gateway` directly in a terminal instead.
 
 ---
 
@@ -115,6 +159,8 @@ openclaw gateway restart
 - Check your token: `openclaw plugins inspect promptroot-relay`
 - Verify token at [promptroot.io/agent-api](https://promptroot.io/agent-api)
 - Check logs: `tail -f /tmp/openclaw/openclaw-$(date +%Y-%m-%d).log | grep relay`
+- **Windows:** Confirm plugins are enabled: `openclaw plugins enable promptroot-relay && openclaw plugins enable promptroot-gateway`
+- **Windows:** Log file is at `%LOCALAPPDATA%\Temp\openclaw\openclaw-<date>.log`
 
 **Auth errors**
 ```bash

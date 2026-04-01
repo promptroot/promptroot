@@ -44,8 +44,8 @@
 
 /* One-time token reveal */
 .agent-token-reveal {
-  border: 2px solid var(--warning-color, #f59e0b);
-  background: var(--warning-bg, #fffbeb);
+  border: 2px solid var(--warning);
+  background: var(--warning-bg);
 }
 
 .agent-token-value-wrap {

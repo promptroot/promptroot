@@ -63,6 +63,7 @@ body {
   --danger: #ff6b6b;               /* Consolidated error/danger color */
   --success: #4ade80;              /* Brighter green for better contrast */
   --warning: #f39c12;
+  --warning-bg: rgba(243, 156, 18, 0.08);
   --info: #2980b9;
   
   /* ===== OVERLAYS ===== */

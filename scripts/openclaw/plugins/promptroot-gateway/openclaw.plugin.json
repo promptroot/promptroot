@@ -1,0 +1,20 @@
+{
+  "id": "promptroot-gateway",
+  "name": "PromptRoot Gateway",
+  "description": "Exposes POST /api/prompt and GET /api/prompt/:jobId so PromptRoot can send prompts to Brace and poll for results (SDD-0002 Phase 0/3a).",
+  "version": "1.0.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "jobTtlMs": {
+        "type": "number",
+        "description": "How long to keep completed job results in memory (ms). Default: 86400000 (24h)."
+      },
+      "runTimeoutMs": {
+        "type": "number",
+        "description": "Max time to wait for agent to complete a job (ms). Default: 300000 (5m)."
+      }
+    }
+  }
+}

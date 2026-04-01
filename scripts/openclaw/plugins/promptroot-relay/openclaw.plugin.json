@@ -1,0 +1,20 @@
+{
+  "id": "promptroot-relay",
+  "name": "PromptRoot Relay",
+  "description": "Connects Brace to relay.promptroot.io so PromptRoot users can trigger 'Run in Brace' without a Cloudflare Tunnel. Requires PROMPTROOT_AGENT_TOKEN env var (SDD-0002 Phase 3b).",
+  "version": "1.0.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "relayUrl": {
+        "type": "string",
+        "description": "Override the relay WebSocket URL. Default: wss://relay.promptroot.io/connect"
+      },
+      "runTimeoutMs": {
+        "type": "number",
+        "description": "Max time to wait for agent to complete a relay job (ms). Default: 300000 (5m)."
+      }
+    }
+  }
+}

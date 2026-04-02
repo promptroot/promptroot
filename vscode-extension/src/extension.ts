@@ -57,7 +57,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Initialize Firebase
   try {
-    initializeFirebase(context);
+    initializeFirebase(context, outputChannel);
     outputChannel.appendLine('Firebase initialized successfully');
   } catch (error) {
     outputChannel.appendLine(`Firebase initialization failed: ${error}`);

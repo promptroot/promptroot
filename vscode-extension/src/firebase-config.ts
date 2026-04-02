@@ -28,8 +28,7 @@ let isEmulatorMode = false;
 /**
  * Initialize Firebase with configuration from VS Code settings
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function initializeFirebase(context: vscode.ExtensionContext): void {
+export function initializeFirebase(_context: vscode.ExtensionContext, outputChannel?: vscode.OutputChannel): void {
 	const config = vscode.workspace.getConfiguration('promptroot.firebase');
 	const useEmulator = config.get<boolean>('useEmulator', false);
 	const projectId = config.get<string>('projectId', 'promptroot-b02a2');
@@ -58,12 +57,12 @@ export function initializeFirebase(context: vscode.ExtensionContext): void {
 			connectFirestoreEmulator(firebaseDb, emulatorHost, firestorePort);
 			
 			isEmulatorMode = true;
-			console.log(`Firebase emulators connected: Auth=${authPort}, Firestore=${firestorePort}`);
+			outputChannel?.appendLine(`Firebase emulators connected: Auth=${authPort}, Firestore=${firestorePort}`);
 		}
 
-		console.log(`Firebase initialized in ${useEmulator ? 'EMULATOR' : 'PRODUCTION'} mode`);
+		outputChannel?.appendLine(`Firebase initialized in ${useEmulator ? 'EMULATOR' : 'PRODUCTION'} mode`);
 	} catch (error) {
-		console.error('Failed to initialize Firebase:', error);
+		outputChannel?.appendLine(`Failed to initialize Firebase: ${error instanceof Error ? error.message : String(error)}`);
 		vscode.window.showErrorMessage(
 			`Failed to initialize Firebase: ${error instanceof Error ? error.message : 'Unknown error'}`
 		);

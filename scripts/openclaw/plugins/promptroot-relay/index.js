@@ -120,6 +120,7 @@ const plugin = {
     let reconnectAttempt = 0;
     let stopped = false;
     let reconnectTimer = null;
+    const sendQueue = []; // Responses buffered while WS is reconnecting
 
     // ── Job executor ───────────────────────────────────────────────────────────
 
@@ -179,7 +180,12 @@ const plugin = {
           ws.send(JSON.stringify(payload));
         } catch (err) {
           logErr(`send failed: ${String(err)}`);
+          sendQueue.push(payload);
         }
+      } else {
+        // WS is reconnecting — buffer and flush on next open
+        log(`queued response for ${payload.requestId ?? payload.jobId} (ws not open)`);
+        sendQueue.push(payload);
       }
     }
 
@@ -195,6 +201,16 @@ const plugin = {
       ws.on("open", () => {
         reconnectAttempt = 0;
         log("connected to relay");
+        // Flush any responses that were buffered while reconnecting
+        while (sendQueue.length > 0) {
+          const queued = sendQueue.shift();
+          try {
+            ws.send(JSON.stringify(queued));
+            log(`flushed queued response for ${queued.requestId ?? queued.jobId}`);
+          } catch (err) {
+            logErr(`flush failed: ${String(err)}`);
+          }
+        }
       });
 
       ws.on("message", async (raw) => {
@@ -231,45 +247,97 @@ const plugin = {
             return;
           }
 
-          const gatewayPort = process.env.OPENCLAW_GATEWAY_PORT || 18789;
-          const gatewayToken = process.env.OPENCLAW_GATEWAY_TOKEN;
+          log(`openai request ${requestId} via subagent`);
 
-          // Always use non-streaming internally — the relay server handles SSE
-          // conversion on its end. The relay server has no openai_chunk handler,
-          // so streaming chunks would be silently dropped.
-          log(`openai request ${requestId} (non-stream internal)`);
+          // Convert the messages array to a single prompt string.
+          // Include system prompt and full conversation history as context.
+          const getText = (content) => {
+            if (typeof content === "string") return content;
+            if (Array.isArray(content))
+              return content
+                .filter((b) => b?.type === "text")
+                .map((b) => b.text ?? "")
+                .join("");
+            return "";
+          };
 
-          let response;
+          const messages = body.messages ?? [];
+          const systemMsg = messages.find((m) => m.role === "system");
+          const chatMessages = messages.filter((m) => m.role !== "system");
+
+          let prompt = "";
+          if (systemMsg) {
+            prompt += `System: ${getText(systemMsg.content)}\n\n`;
+          }
+          if (chatMessages.length > 1) {
+            prompt += chatMessages
+              .slice(0, -1)
+              .map((m) => `${m.role === "assistant" ? "Assistant" : "User"}: ${getText(m.content)}`)
+              .join("\n\n");
+            prompt += "\n\n";
+          }
+          const lastMsg = chatMessages[chatMessages.length - 1];
+          prompt += lastMsg ? getText(lastMsg.content) : "";
+
+          const sessionKey = `promptroot-openai-${requestId}`;
+
           try {
-            response = await fetch(`http://localhost:${gatewayPort}/v1/chat/completions`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${gatewayToken}`,
-                "x-openclaw-scopes": "operator.write",
-              },
-              body: JSON.stringify({ ...body, model: "openclaw", stream: false }),
+            const { runId } = await api.runtime.subagent.run({
+              sessionKey,
+              idempotencyKey: requestId,
+              message: prompt,
+              deliver: false,
             });
+
+            const waitResult = await api.runtime.subagent.waitForRun({
+              runId,
+              timeoutMs: RUN_TIMEOUT_MS,
+            });
+
+            let output = "";
+            let error;
+
+            if (waitResult.status === "ok") {
+              const { messages: sessionMessages } = await api.runtime.subagent.getSessionMessages({
+                sessionKey,
+                limit: 20,
+              });
+              output = extractLastAssistantText(sessionMessages);
+              log(`openai request ${requestId} complete (${output.length} chars)`);
+            } else {
+              error = waitResult.error ?? `run ended with status: ${waitResult.status}`;
+              logErr(`openai request ${requestId} failed: ${error}`);
+            }
+
+            setTimeout(async () => {
+              try { await api.runtime.subagent.deleteSession({ sessionKey }); } catch {}
+            }, 30_000).unref();
+
+            const responseBody = error
+              ? { error: { message: error, type: "relay_error" } }
+              : {
+                  id: `chatcmpl_${requestId}`,
+                  object: "chat.completion",
+                  created: Math.floor(Date.now() / 1000),
+                  model: body.model || "brace",
+                  choices: [
+                    {
+                      index: 0,
+                      message: { role: "assistant", content: output },
+                      finish_reason: "stop",
+                    },
+                  ],
+                };
+
+            sendSafe({ type: "openai_response", requestId, body: responseBody });
           } catch (err) {
-            logErr(`openai fetch failed for ${requestId}: ${String(err)}`);
+            logErr(`openai request ${requestId} threw: ${String(err)}`);
             sendSafe({
               type: "openai_response",
               requestId,
               body: { error: { message: String(err), type: "relay_error" } },
             });
-            return;
           }
-
-          if (!response.ok) {
-            const errBody = await response.json().catch(() => ({}));
-            sendSafe({ type: "openai_response", requestId, body: errBody });
-            return;
-          }
-
-          const result = await response.json().catch((err) => ({
-            error: { message: String(err), type: "relay_error" },
-          }));
-          sendSafe({ type: "openai_response", requestId, body: result });
           return;
         }
 

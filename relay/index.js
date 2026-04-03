@@ -195,9 +195,14 @@ const server = createServer(async (req, res) => {
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
       });
-      // Store with no timer — streaming responses drive their own completion
-      oaiRequests.set(requestId, { res, streaming: true, timer: null, uid });
+      // Send SSE keepalive comments every 15s so brace-ui doesn't time out
+      // while the subagent is processing (typically 20-60s).
+      const keepAlive = setInterval(() => {
+        try { res.write(': keepalive\n\n'); } catch { clearInterval(keepAlive); }
+      }, 15_000);
+      oaiRequests.set(requestId, { res, streaming: true, timer: null, uid, keepAlive });
       req.on('close', () => {
+        clearInterval(keepAlive);
         oaiRequests.delete(requestId);
       });
     } else {
@@ -295,6 +300,11 @@ wss.on('connection', async (ws, req) => {
   updateLastUsed(uid, tokenHash);
   setRelayStatus(uid, true);
 
+  // Keep Fly.io from killing idle WebSocket connections (default 60s timeout)
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === 1) ws.ping();
+  }, 30_000);
+
   ws.on('message', (data) => {
     try {
       const msg = JSON.parse(data.toString());
@@ -324,6 +334,7 @@ wss.on('connection', async (ws, req) => {
         const pending = oaiRequests.get(requestId);
         if (!pending) return;
         clearTimeout(pending.timer);
+        clearInterval(pending.keepAlive);
         oaiRequests.delete(requestId);
         if (pending.streaming) {
           // Client requested SSE but plugin returned a full JSON response — convert to SSE
@@ -357,22 +368,29 @@ wss.on('connection', async (ws, req) => {
   });
 
   ws.on('close', () => {
+    clearInterval(pingInterval);
     if (connections.get(uid) === ws) {
       connections.delete(uid);
       setRelayStatus(uid, false);
     }
     console.log(`[relay] Brace disconnected uid=${uid} (connections=${connections.size})`);
-    // Fail any in-flight OpenAI requests belonging to this uid
-    for (const [requestId, pending] of oaiRequests) {
-      if (pending.uid !== uid) continue;
-      oaiRequests.delete(requestId);
-      if (pending.streaming) {
-        try { pending.res.end(); } catch {}
-      } else {
-        clearTimeout(pending.timer);
-        try { json(pending.res, 503, { error: 'Brace disconnected' }); } catch {}
+    // Grace period: plugin may reconnect and deliver the response before we give up.
+    // Only fail in-flight requests if no new connection arrives within 30s.
+    const snapshotWs = ws;
+    setTimeout(() => {
+      for (const [requestId, pending] of oaiRequests) {
+        if (pending.uid !== uid) continue;
+        // If a new connection replaced this one, let it handle the response.
+        if (connections.get(uid) && connections.get(uid) !== snapshotWs) continue;
+        oaiRequests.delete(requestId);
+        if (pending.streaming) {
+          try { pending.res.end(); } catch {}
+        } else {
+          clearTimeout(pending.timer);
+          try { json(pending.res, 503, { error: 'Brace disconnected' }); } catch {}
+        }
       }
-    }
+    }, 30_000);
   });
 
   ws.on('error', (err) => {

@@ -127,7 +127,7 @@ docker run -d \
   -e OPENAI_API_BASE_URL=https://promptroot-relay.fly.dev/v1 \
   -e OPENAI_API_KEY=pra_<your-token> \
   -e WEBUI_SECRET_KEY=$(openssl rand -hex 32) \
-  -e ENABLE_SIGNUP=false \
+  -e ENABLE_SIGNUP=true \
   ghcr.io/promptroot/brace-ui:latest
 ```
 

@@ -206,7 +206,7 @@ export class RepositoryTreeProvider implements vscode.TreeDataProvider<Repositor
 				favoriteRepos: updatedFavorites
 			});
 		} catch (error) {
-			console.error('Failed to save favorite repositories:', error);
+			this.outputChannel.appendLine(`Failed to save favorite repositories: ${error instanceof Error ? (error.stack || error.message) : String(error)}`);
 			throw error;
 		}
 	}
@@ -375,7 +375,7 @@ export class RepositoryTreeProvider implements vscode.TreeDataProvider<Repositor
 
 		} catch (error) {
 			this.isLoading = false;
-			console.error('Failed to load repositories:', error);
+			this.outputChannel.appendLine(`Failed to load repositories: ${error instanceof Error ? (error.stack || error.message) : String(error)}`);
 			
 			return [
 				new RepositoryTreeItem(

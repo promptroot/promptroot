@@ -62,7 +62,12 @@ export function initializeFirebase(_context: vscode.ExtensionContext, outputChan
 
 		outputChannel?.appendLine(`Firebase initialized in ${useEmulator ? 'EMULATOR' : 'PRODUCTION'} mode`);
 	} catch (error) {
-		outputChannel?.appendLine(`Failed to initialize Firebase: ${error instanceof Error ? error.message : String(error)}`);
+		const errorMessage = `Failed to initialize Firebase: ${error instanceof Error ? (error.stack || error.message) : String(error)}`;
+		if (outputChannel) {
+			outputChannel.appendLine(errorMessage);
+		} else {
+			console.error(errorMessage);
+		}
 		vscode.window.showErrorMessage(
 			`Failed to initialize Firebase: ${error instanceof Error ? error.message : 'Unknown error'}`
 		);

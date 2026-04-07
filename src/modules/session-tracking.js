@@ -608,25 +608,27 @@ export async function importJulesHistory(progressCallback = null) {
 
     const totalSessions = allApiSessions.length;
 
-    // Now process each session
-    for (let i = 0; i < allApiSessions.length; i++) {
-      const session = allApiSessions[i];
-      
+    // Fetch all local sessions in a single batch query for efficient comparison
+    const allSessionsSnapshot = await db
+      .collection('juleSessions')
+      .doc(user.uid)
+      .collection('sessions')
+      .get();
+
+    const localSessionsMap = new Map();
+    allSessionsSnapshot.docs.forEach(doc => {
+      localSessionsMap.set(doc.id, { id: doc.id, ...doc.data() });
+    });
+
+    // Process all sessions in parallel for improved performance
+    const importPromises = allApiSessions.map(async (session, i) => {
       try {
         const sessionId = session.id;
+        const localSession = localSessionsMap.get(sessionId);
         
-        // Check if session already exists
-        const sessionRef = db
-          .collection('juleSessions')
-          .doc(user.uid)
-          .collection('sessions')
-          .doc(sessionId);
-        
-        const existingDoc = await sessionRef.get();
-        if (existingDoc.exists) {
-          // Check if API version is newer than what we have
-          const existingData = existingDoc.data();
-          const existingUpdateTime = existingData.apiUpdateTime?.toDate?.() || new Date(existingData.apiUpdateTime || 0);
+        // Check if session already exists and if an update is needed
+        if (localSession) {
+          const existingUpdateTime = localSession.apiUpdateTime?.toDate?.() || new Date(localSession.apiUpdateTime || 0);
           const apiUpdateTime = session.updateTime ? new Date(session.updateTime) : new Date();
           
           if (apiUpdateTime <= existingUpdateTime) {
@@ -634,9 +636,8 @@ export async function importJulesHistory(progressCallback = null) {
             if (progressCallback) {
               progressCallback(i + 1, totalSessions);
             }
-            continue;
+            return;
           }
-          // If newer, we'll update it below
         }
 
         // Find PR data in outputs
@@ -673,6 +674,12 @@ export async function importJulesHistory(progressCallback = null) {
           importedAt: getServerTimestamp()
         };
 
+        const sessionRef = db
+          .collection('juleSessions')
+          .doc(user.uid)
+          .collection('sessions')
+          .doc(sessionId);
+
         await sessionRef.set(sessionData);
         stats.imported++;
         
@@ -687,7 +694,10 @@ export async function importJulesHistory(progressCallback = null) {
           progressCallback(i + 1, totalSessions);
         }
       }
-    }
+    });
+
+    // Wait for all imports to complete (with error handling for individual items already managed)
+    await Promise.allSettled(importPromises);
 
     return stats;
   } catch (error) {

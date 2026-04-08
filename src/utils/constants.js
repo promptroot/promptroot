@@ -1,5 +1,4 @@
 // ===== All Constants, Regex Patterns, and Magic Strings =====
-
 import { ICONS, createIconWithText } from './icon-helpers.js';
 
 export const OWNER = "promptroot";
@@ -498,11 +497,10 @@ export const CACHE_POLICIES = {
   }
 };
 
-
 export const AGENT_UI_TEXT = {
   RUN_IN_AGENT: 'Run in Agent',
   BRACE_NOT_CONFIGURED: 'Brace (not configured)',
   SENT_TO_BRACE: 'Sent to Brace!',
   BRACE_SEND_FAILED: 'Failed to send to Brace: ',
-  AGENTIC_QUEUE_EMPTY: 'No items in the Agentic Queue.',
+  AGENTIC_QUEUE_EMPTY: 'No items in the Agentic Queue.'
 };

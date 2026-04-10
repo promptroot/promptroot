@@ -47,6 +47,21 @@ export async function copyAndOpen(target, promptText) {
     await copyText(promptText);
 
     const url = await getCopenUrl(target);
+
+    // Validate URL protocol to prevent XSS / Open Redirect
+    try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        console.error('Invalid Copen URL protocol:', parsedUrl.protocol);
+        showToast('Invalid Copen URL.', 'error');
+        return false;
+      }
+    } catch (e) {
+      console.error('Invalid Copen URL:', url);
+      showToast('Invalid Copen URL.', 'error');
+      return false;
+    }
+
     window.open(url, '_blank', 'noopener,noreferrer');
 
     return true;

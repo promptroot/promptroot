@@ -217,7 +217,8 @@ else
     echo
     warn "Could not read token interactively."
     printf "\n${BOLD}Run this command manually to set your token:${NC}\n"
-    printf "  echo 'PROMPTROOT_AGENT_TOKEN=pra_YOUR_TOKEN' >> %s\n" "${OPENCLAW_ENV}"
+    printf "  grep -v '^PROMPTROOT_AGENT_TOKEN=' %s > %s.tmp && echo 'PROMPTROOT_AGENT_TOKEN=pra_YOUR_TOKEN' >> %s.tmp && mv %s.tmp %s\n" \
+      "${OPENCLAW_ENV}" "${OPENCLAW_ENV}" "${OPENCLAW_ENV}" "${OPENCLAW_ENV}" "${OPENCLAW_ENV}"
     fail "agent token: interactive read failed — set manually"
     AGENT_TOKEN=""
   fi

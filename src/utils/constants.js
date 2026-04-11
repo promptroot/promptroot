@@ -225,7 +225,8 @@ export const AGENT_API = {
 // OpenClaw integration constants
 export const OPENCLAW = {
   KEY_COLLECTION: 'openclawKeys',
-  BRACE_UI_URL: 'https://brace-ui.fly.dev'
+  BRACE_UI_URL: 'https://brace-ui.fly.dev',
+  RELAY_URL: 'https://promptroot-relay.fly.dev'
 };
 
 // OpenClaw UI text

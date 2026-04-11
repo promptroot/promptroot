@@ -10,12 +10,23 @@ vi.mock('../../modules/toast.js', () => ({
   showToast: vi.fn()
 }));
 
+vi.mock('../../modules/firebase-service.js', () => ({
+  getAuth: vi.fn()
+}));
+
+vi.mock('../../modules/openclaw-keys.js', () => ({
+  getOpenclawConfig: vi.fn(),
+  decryptOpenclawKey: vi.fn()
+}));
+
 vi.mock('../../utils/constants.js', () => ({
   OPENCLAW: {
-    BRACE_UI_URL: 'https://brace-ui.fly.dev'
+    BRACE_UI_URL: 'https://brace-ui.fly.dev',
+    RELAY_URL: 'https://promptroot-relay.fly.dev'
   },
   AGENT_UI_TEXT: {
     SENT_TO_BRACE: 'Sent to Brace!',
+    BRACE_SEND_FAILED: 'Failed to send to Brace: ',
   }
 }));
 
@@ -23,8 +34,8 @@ describe('run-in-agent', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
-    // Mock window.open
     vi.stubGlobal('open', vi.fn());
+    vi.stubGlobal('fetch', vi.fn());
   });
 
   afterEach(() => {
@@ -85,23 +96,94 @@ describe('run-in-agent', () => {
       expect(result).toBe('https://jules.example.com/session/123');
     });
 
-    it('should open Brace URL in new tab', async () => {
-      const payload = { promptText: 'hello world', title: 'Test' };
-      await dispatchToAgent('brace', payload);
+    describe('brace dispatch — configured with relay', () => {
+      beforeEach(async () => {
+        const { getAuth } = await import('../../modules/firebase-service.js');
+        getAuth.mockReturnValue({ currentUser: { uid: 'user123' } });
+        const { getOpenclawConfig, decryptOpenclawKey } = await import('../../modules/openclaw-keys.js');
+        getOpenclawConfig.mockResolvedValue({ hasToken: true, useRelay: true, gatewayUrl: null });
+        decryptOpenclawKey.mockResolvedValue('pra_testtoken');
+      });
 
-      expect(window.open).toHaveBeenCalledWith(
-        'https://brace-ui.fly.dev/?q=' + encodeURIComponent('hello world'),
-        '_blank',
-        'noopener,noreferrer'
-      );
+      it('should POST to relay /v1/chat/completions with the decrypted token', async () => {
+        const controller = { abort: vi.fn(), signal: {} };
+        vi.stubGlobal('AbortController', vi.fn(() => controller));
+        fetch.mockImplementation(() => new Promise(() => {})); // never resolves (in-flight)
+
+        const payload = { promptText: 'hello world' };
+        dispatchToAgent('brace', payload); // don't await — hangs until abort
+
+        await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+        const [url, options] = fetch.mock.calls[0];
+        expect(url).toBe('https://promptroot-relay.fly.dev/v1/chat/completions');
+        expect(options.method).toBe('POST');
+        expect(options.headers['Authorization']).toBe('Bearer pra_testtoken');
+        const body = JSON.parse(options.body);
+        expect(body.messages[0].content).toBe('hello world');
+        expect(body.model).toBe('brace');
+      });
+
+      it('should show SENT_TO_BRACE toast when relay hangs (AbortError = in-flight)', async () => {
+        const { showToast } = await import('../../modules/toast.js');
+        // Simulate timeout: fetch rejects with AbortError
+        const abortErr = new DOMException('aborted', 'AbortError');
+        fetch.mockRejectedValue(abortErr);
+
+        await dispatchToAgent('brace', { promptText: 'test' });
+        expect(showToast).toHaveBeenCalledWith('Sent to Brace!', 'success');
+      });
+
+      it('should show error toast when relay returns 503 (no brace connected)', async () => {
+        const { showToast } = await import('../../modules/toast.js');
+        fetch.mockResolvedValue({
+          ok: false,
+          status: 503,
+          json: async () => ({ error: 'No Brace instance connected' }),
+        });
+
+        await dispatchToAgent('brace', { promptText: 'test' });
+        expect(showToast).toHaveBeenCalledWith(
+          'Failed to send to Brace: No Brace instance connected',
+          'error'
+        );
+      });
+
+      it('should show SENT_TO_BRACE toast on ok response', async () => {
+        const { showToast } = await import('../../modules/toast.js');
+        fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
+
+        await dispatchToAgent('brace', { promptText: 'test' });
+        expect(showToast).toHaveBeenCalledWith('Sent to Brace!', 'success');
+      });
+
+      it('should not open a new browser tab when relay is configured', async () => {
+        fetch.mockRejectedValue(new DOMException('aborted', 'AbortError'));
+        await dispatchToAgent('brace', { promptText: 'test' });
+        expect(window.open).not.toHaveBeenCalled();
+      });
     });
 
-    it('should show toast after opening Brace', async () => {
-      const { showToast } = await import('../../modules/toast.js');
-      const payload = { promptText: 'test prompt' };
-      await dispatchToAgent('brace', payload);
+    describe('brace dispatch — not configured (fallback)', () => {
+      it('should open brace-ui in new tab when not signed in', async () => {
+        const { getAuth } = await import('../../modules/firebase-service.js');
+        getAuth.mockReturnValue({ currentUser: null });
 
-      expect(showToast).toHaveBeenCalledWith('Sent to Brace!', 'success');
+        await dispatchToAgent('brace', { promptText: 'test' });
+        expect(window.open).toHaveBeenCalledWith(
+          'https://brace-ui.fly.dev',
+          '_blank',
+          'noopener,noreferrer'
+        );
+      });
+
+      it('should show toast in fallback path', async () => {
+        const { showToast } = await import('../../modules/toast.js');
+        const { getAuth } = await import('../../modules/firebase-service.js');
+        getAuth.mockReturnValue({ currentUser: null });
+
+        await dispatchToAgent('brace', { promptText: 'test' });
+        expect(showToast).toHaveBeenCalledWith('Sent to Brace!', 'success');
+      });
     });
 
     it('should throw for unknown agent', async () => {

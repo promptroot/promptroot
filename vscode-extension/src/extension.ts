@@ -57,10 +57,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Initialize Firebase
   try {
-    initializeFirebase(context);
-    outputChannel.appendLine('Firebase initialized successfully');
+    initializeFirebase(context, outputChannel);
   } catch (error) {
-    outputChannel.appendLine(`Firebase initialization failed: ${error}`);
+    outputChannel.appendLine(`Firebase initialization failed: ${error instanceof Error ? (error.stack || error.message) : String(error)}`);
     if (errorHandler) {
       await errorHandler.handleError(
         error instanceof Error ? error : new Error(String(error)),

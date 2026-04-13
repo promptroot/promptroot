@@ -1,0 +1,14 @@
+{
+  "name": "promptroot-relay",
+  "version": "1.0.0",
+  "description": "WebSocket relay — routes PromptRoot jobs to connected Brace agents",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "ws": "^8.18.0"
+  }
+}

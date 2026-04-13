@@ -307,3 +307,21 @@
   color: var(--text);
   padding: 8px;
 }
+
+/* Queue destination badge (shows which agent a queued item targets) */
+.queue-destination-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  font-size: 0.75rem;
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+  background: var(--bg-muted, #f0f0f0);
+  color: var(--text-muted, #666);
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.queue-destination-badge .icon {
+  font-size: 0.875em;
+}

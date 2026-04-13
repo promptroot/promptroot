@@ -1,0 +1,96 @@
+/* OpenClaw settings page styles */
+
+/* Connection status card (mirrors extension-detection pattern) */
+.openclaw-detect-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.openclaw-detect-status__icon {
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.openclaw-detect-status__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.openclaw-detect-status__title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--success);
+}
+
+.openclaw-detect-status__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Code block (multi-line snippet) */
+.code-block {
+  display: block;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.openclaw-mode-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.openclaw-mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.openclaw-mode-option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-bg-subtle);
+}
+
+.openclaw-mode-option input[type="radio"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.openclaw-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.openclaw-setup-steps {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.openclaw-setup-steps li {
+  padding: 3px 0;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--bg);
+  vertical-align: middle;
+}

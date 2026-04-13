@@ -16,7 +16,14 @@ vi.mock('../../modules/github-api.js', () => ({
 vi.mock('../../utils/constants.js', () => ({
   CODEX_URL_REGEX: /codex\//,
   TIMEOUTS: { shortDelay: 100 },
-  CACHE_DURATIONS: { short: 300000, session: 0 }
+  CACHE_DURATIONS: { short: 300000, session: 0 },
+  AGENT_UI_TEXT: {
+    RUN_IN_AGENT: 'Run in Agent',
+    BRACE_NOT_CONFIGURED: 'Brace (not configured)',
+    SENT_TO_BRACE: 'Sent to Brace!',
+    BRACE_SEND_FAILED: 'Failed to send to Brace: ',
+    AGENTIC_QUEUE_EMPTY: 'No items in the Agentic Queue.'
+  }
 }));
 
 vi.mock('../../utils/dom-helpers.js', () => ({
@@ -47,8 +54,25 @@ vi.mock('../../modules/status-bar.js', () => ({
 }));
 vi.mock('../../utils/clipboard.js', () => ({ copyText: vi.fn().mockResolvedValue(true) }));
 vi.mock('../../modules/split-button.js', () => ({
-  initSplitButton: vi.fn(),
-  destroySplitButton: vi.fn()
+  initSplitButton: vi.fn().mockReturnValue({
+    destroy: vi.fn(),
+    setSelection: vi.fn(),
+    getSelection: vi.fn(),
+    updateOptions: vi.fn()
+  }),
+  destroySplitButton: vi.fn(),
+  updateSplitButtonOptions: vi.fn()
+}));
+
+vi.mock('../../modules/run-in-agent.js', () => ({
+  isBraceConfigured: vi.fn().mockResolvedValue(false),
+  getAgentOptions: vi.fn().mockReturnValue([
+    { value: 'jules', label: 'Jules', icon: 'smart_toy' },
+    { value: 'brace', label: 'Brace (not configured)', icon: 'hub', disabled: true }
+  ]),
+  getLastAgent: vi.fn().mockReturnValue('jules'),
+  saveLastAgent: vi.fn(),
+  dispatchToAgent: vi.fn()
 }));
 vi.mock('../../utils/copen-config.js', () => ({
   COPEN_OPTIONS: [],

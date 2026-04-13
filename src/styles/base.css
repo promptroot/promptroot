@@ -35,6 +35,8 @@ body {
 
 /* Base variables, reset, and global styles */
 :root {
+  color-scheme: dark;
+
   /* ===== BASE STRUCTURE ===== */
   --bg: #0a0e1a;
   --surface: #141829;              /* Unified surface: cards, inputs, code blocks */
@@ -63,6 +65,7 @@ body {
   --danger: #ff6b6b;               /* Consolidated error/danger color */
   --success: #4ade80;              /* Brighter green for better contrast */
   --warning: #f39c12;
+  --warning-bg: rgba(243, 156, 18, 0.08);
   --info: #2980b9;
   
   /* ===== OVERLAYS ===== */

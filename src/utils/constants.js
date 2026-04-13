@@ -1,5 +1,4 @@
 // ===== All Constants, Regex Patterns, and Magic Strings =====
-
 import { ICONS, createIconWithText } from './icon-helpers.js';
 
 export const OWNER = "promptroot";
@@ -214,6 +213,66 @@ export const JULES_MESSAGES = {
   FINAL_RETRY_FAILED: "Failed to submit task after multiple retries. Please try again later.",
   KEY_DECRYPTION_ERROR: "Failed to decrypt Jules API key",
   KEY_DECRYPTION_TOAST: "Your Jules API key could not be read. Please re-enter it to continue."
+};
+
+// Agent API constants
+export const AGENT_API = {
+  TOKEN_PREFIX: 'pra_',
+  KEY_COLLECTION: 'agentKeys',
+  HASH_COLLECTION: 'agentKeysByHash',
+  RATE_LIMIT_PER_MINUTE: 60,
+  TOKEN_BYTES: 32
+};
+
+// OpenClaw integration constants
+export const OPENCLAW = {
+  KEY_COLLECTION: 'openclawKeys',
+  BRACE_UI_URL: 'https://brace-ui.fly.dev',
+  RELAY_URL: 'https://promptroot-relay.fly.dev'
+};
+
+// OpenClaw UI text
+export const OPENCLAW_UI_TEXT = {
+  PAGE_TITLE: 'OpenClaw Settings',
+  RELAY_MODE_LABEL: 'Use PromptRoot Relay',
+  CUSTOM_URL_MODE_LABEL: 'Use my own URL',
+  TOKEN_PLACEHOLDER: 'Paste your pra_... agent token',
+  GATEWAY_URL_PLACEHOLDER: 'https://gateway.example.com',
+  GATEWAY_TOKEN_PLACEHOLDER: 'Your OpenClaw gateway token',
+  SAVE_BUTTON: 'Save',
+  CANCEL_BUTTON: 'Cancel',
+  SAVING: 'Saving...',
+  SAVED: 'OpenClaw settings saved.',
+  SAVE_ERROR: 'Failed to save OpenClaw settings.',
+  DELETE_CONFIRM: 'Remove your OpenClaw configuration?',
+  DELETED: 'OpenClaw settings removed.',
+  NOT_CONFIGURED: 'No OpenClaw connection configured.',
+  NOT_SIGNED_IN: 'Please sign in to configure OpenClaw.',
+  TOKEN_REQUIRED: 'Please enter a token.',
+  URL_REQUIRED: 'Please enter a gateway URL.',
+  GENERATE_TOKEN_LINK: 'Generate a token first →'
+};
+
+// Agent API key management UI text
+export const AGENT_KEY_UI_TEXT = {
+  PAGE_TITLE: 'Agent API',
+  GENERATE_BTN: 'Generate Token',
+  REVOKE_BTN: 'Revoke',
+  COPY_TOKEN: 'Copy Token',
+  TOKEN_LABEL_PLACEHOLDER: 'Token label (e.g., "OpenClaw dev")',
+  NO_TOKENS: 'No API tokens yet. Generate one to get started.',
+  LOADING: 'Loading tokens...',
+  NOT_SIGNED_IN: 'Please sign in to manage API tokens.',
+  TOKEN_GENERATED_NOTICE: 'Token generated. Copy it now — it will not be shown again.',
+  TOKEN_REVOKED: 'Token revoked.',
+  REVOKE_CONFIRM: 'Revoke this token? Any services using it will immediately lose access.',
+  GENERATE_ERROR: 'Failed to generate token.',
+  REVOKE_ERROR: 'Failed to revoke token.',
+  LOAD_ERROR: 'Failed to load tokens.',
+  LABEL_REQUIRED: 'Please enter a label for this token.',
+  NEVER_USED: 'Never used',
+  CREATED_AT: (dateStr) => `Created ${dateStr}`,
+  LAST_USED: (dateStr) => `Last used ${dateStr}`
 };
 
 // UI text
@@ -439,4 +498,12 @@ export const CACHE_POLICIES = {
     ttl: CACHE_DURATIONS.short,
     strategy: CACHE_STRATEGIES.CACHE_FIRST
   }
+};
+
+export const AGENT_UI_TEXT = {
+  RUN_IN_AGENT: 'Run in Agent',
+  BRACE_NOT_CONFIGURED: 'Brace (not configured)',
+  SENT_TO_BRACE: 'Sent to Brace!',
+  BRACE_SEND_FAILED: 'Failed to send to Brace: ',
+  AGENTIC_QUEUE_EMPTY: 'No items in the Agentic Queue.'
 };

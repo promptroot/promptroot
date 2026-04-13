@@ -1,12 +1,22 @@
 const functions = require("firebase-functions");
 const logger = require("firebase-functions/logger");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
-const {onCall} = require("firebase-functions/v2/https");
+const {onCall, onRequest} = require("firebase-functions/v2/https");
+const {defineSecret} = require("firebase-functions/params");
+const relaySharedSecret = defineSecret('RELAY_SHARED_SECRET');
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
 const { webcrypto: crypto } = require('crypto');
 
 admin.initializeApp();
+
+const ALLOWED_ORIGINS = ['https://promptroot.io', 'http://localhost:3000', 'http://localhost:5000'];
+function setCors(req, res) {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.set('Access-Control-Allow-Origin', origin);
+  }
+}
 
 function formatJulesError(error, statusCode) {
   return 'Failed to create Jules session. Most likely causes: (1) API rate limit - wait a few minutes, (2) Invalid API key - check your settings, (3) Repository access - verify permissions.';
@@ -240,7 +250,7 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
     url: req.url
   });
 
-  res.set('Access-Control-Allow-Origin', '*');
+  setCors(req, res);
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -466,7 +476,7 @@ exports.getJulesKeyInfo = functions.https.onCall(async (data, context) => {
 });
 
 exports.githubOAuthExchange = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
+  setCors(req, res);
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -543,7 +553,7 @@ exports.githubOAuthExchange = functions.https.onRequest(async (req, res) => {
 });
 
 exports.getGitHubUser = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
+  setCors(req, res);
   res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -592,6 +602,349 @@ exports.getGitHubUser = functions.https.onRequest(async (req, res) => {
   } catch (error) {
     logger.error('Error in getGitHubUser:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ===== Agent Key Management =====
+// In-memory rate limit state for agentApi (per Cloud Function instance)
+const agentRateLimitMap = new Map(); // tokenHash → { count, windowStart }
+
+/**
+ * Compute SHA-256 hex of a string using Node's webcrypto.
+ * @param {string} str
+ * @returns {Promise<string>}
+ */
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', Buffer.from(str, 'utf8'));
+  return Buffer.from(buf).toString('hex');
+}
+
+/**
+ * Authenticate an agent API request by Bearer token.
+ * Returns { uid } on success, throws with statusCode on failure.
+ * Also updates lastUsedAt asynchronously.
+ * @param {string} authHeader
+ * @returns {Promise<{ uid: string, tokenHash: string }>}
+ */
+async function authenticateAgentToken(authHeader) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const err = new Error('Missing or invalid Authorization header');
+    err.statusCode = 401;
+    throw err;
+  }
+  const token = authHeader.substring('Bearer '.length).trim();
+  if (!token.startsWith('pra_')) {
+    const err = new Error('Invalid token format');
+    err.statusCode = 401;
+    throw err;
+  }
+
+  const tokenHash = await sha256Hex(token);
+  const db = admin.firestore();
+  const snap = await db.doc(`agentKeysByHash/${tokenHash}`).get();
+  if (!snap.exists) {
+    const err = new Error('Invalid or revoked token');
+    err.statusCode = 401;
+    throw err;
+  }
+
+  const { uid } = snap.data();
+
+  // Fire-and-forget lastUsedAt update
+  db.doc(`agentKeys/${uid}`).get().then(keySnap => {
+    if (!keySnap.exists) return;
+    const tokens = keySnap.data().tokens || [];
+    const updated = tokens.map(t =>
+      t.tokenHash === tokenHash
+        ? { ...t, lastUsedAt: admin.firestore.Timestamp.now() }
+        : t
+    );
+    return keySnap.ref.update({ tokens: updated });
+  }).catch(() => {});
+
+  return { uid, tokenHash };
+}
+
+/**
+ * Check rate limit for a token. Returns true if allowed, false if exceeded.
+ * 60 requests per minute per token (in-memory, per instance).
+ * @param {string} tokenHash
+ * @returns {boolean}
+ */
+function checkRateLimit(tokenHash) {
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const limit = 60;
+
+  const entry = agentRateLimitMap.get(tokenHash);
+  if (!entry || now - entry.windowStart >= windowMs) {
+    agentRateLimitMap.set(tokenHash, { count: 1, windowStart: now });
+    return true;
+  }
+  if (entry.count >= limit) return false;
+  entry.count++;
+  return true;
+}
+
+/**
+ * manageAgentKeys: HTTP Cloud Function for agent key CRUD.
+ * Auth: Firebase ID token (Bearer).
+ * Actions: create, list, revoke.
+ */
+exports.manageAgentKeys = functions.https.onRequest(async (req, res) => {
+  setCors(req, res);
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+  if (req.method !== 'POST') { res.status(405).json({ error: 'Use POST' }); return; }
+
+  // Auth: Firebase ID token
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Missing Authorization header' });
+    return;
+  }
+
+  let uid;
+  try {
+    const idToken = authHeader.substring('Bearer '.length);
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    uid = decoded.uid;
+  } catch {
+    res.status(401).json({ error: 'Invalid or expired ID token' });
+    return;
+  }
+
+  const { action, tokenHash, label } = req.body || {};
+  const db = admin.firestore();
+
+  try {
+    if (action === 'list') {
+      const snap = await db.doc(`agentKeys/${uid}`).get();
+      const tokens = snap.exists ? (snap.data().tokens || []) : [];
+      // Convert server timestamps to ISO strings for transport
+      const sanitized = tokens.map(t => ({
+        tokenHash: t.tokenHash,
+        label: t.label,
+        createdAt: t.createdAt?.toDate?.()?.toISOString() || t.createdAt || null,
+        lastUsedAt: t.lastUsedAt?.toDate?.()?.toISOString() || t.lastUsedAt || null
+      }));
+      res.json({ tokens: sanitized });
+      return;
+    }
+
+    if (action === 'create') {
+      if (!tokenHash || !label) {
+        res.status(400).json({ error: 'tokenHash and label are required' });
+        return;
+      }
+      const now = admin.firestore.Timestamp.now();
+      const newToken = { tokenHash, label, createdAt: now, lastUsedAt: null };
+
+      // Batch write: add to agentKeys array + create agentKeysByHash doc
+      const batch = db.batch();
+      const keysRef = db.doc(`agentKeys/${uid}`);
+      const snap = await keysRef.get();
+      if (snap.exists) {
+        batch.update(keysRef, { tokens: admin.firestore.FieldValue.arrayUnion(newToken) });
+      } else {
+        batch.set(keysRef, { tokens: [newToken] });
+      }
+      batch.set(db.doc(`agentKeysByHash/${tokenHash}`), { uid, createdAt: now });
+      await batch.commit();
+
+      res.json({ ok: true });
+      return;
+    }
+
+    if (action === 'revoke') {
+      if (!tokenHash) {
+        res.status(400).json({ error: 'tokenHash is required' });
+        return;
+      }
+      const keysRef = db.doc(`agentKeys/${uid}`);
+      const snap = await keysRef.get();
+      if (snap.exists) {
+        const tokens = snap.data().tokens || [];
+        const toRemove = tokens.find(t => t.tokenHash === tokenHash);
+        if (toRemove) {
+          const batch = db.batch();
+          batch.update(keysRef, { tokens: admin.firestore.FieldValue.arrayRemove(toRemove) });
+          batch.delete(db.doc(`agentKeysByHash/${tokenHash}`));
+          await batch.commit();
+        }
+      }
+      res.json({ ok: true });
+      return;
+    }
+
+    res.status(400).json({ error: `Unknown action: ${action}` });
+  } catch (error) {
+    logger.error('manageAgentKeys error:', error.message);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
+/**
+ * agentApi: HTTP Cloud Function serving the PromptRoot Agent REST API.
+ * Auth: Bearer agent token (pra_...) — validated via agentKeysByHash lookup.
+ * Rate limit: 60 req/min per token (in-memory per instance).
+ */
+exports.agentApi = functions.https.onRequest(async (req, res) => {
+  setCors(req, res);
+  res.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+  // Authenticate
+  let uid, tokenHash;
+  try {
+    ({ uid, tokenHash } = await authenticateAgentToken(req.headers.authorization));
+  } catch (err) {
+    res.status(err.statusCode || 401).json({ error: err.message });
+    return;
+  }
+
+  // Rate limit
+  if (!checkRateLimit(tokenHash)) {
+    res.status(429).json({ error: 'Rate limit exceeded (60 req/min)' });
+    return;
+  }
+
+  const db = admin.firestore();
+  const path = req.path || '/';
+  const method = req.method;
+
+  try {
+    // --- GET /prompts or GET /prompts?owner=...&repo=... ---
+    if (path === '/prompts' && method === 'GET') {
+      const owner = req.query.owner || 'promptroot';
+      const repo = req.query.repo || 'promptroot';
+      const branch = req.query.branch || 'main';
+      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`;
+      const r = await fetch(apiUrl, { headers: { 'User-Agent': 'PromptRoot-AgentAPI' } });
+      if (!r.ok) { res.status(r.status).json({ error: 'Failed to fetch prompt tree from GitHub' }); return; }
+      const json = await r.json();
+      const files = (json.tree || [])
+        .filter(f => f.type === 'blob' && f.path.endsWith('.md'))
+        .map(f => ({ path: f.path, size: f.size }));
+      res.json({ data: files });
+      return;
+    }
+
+    // --- POST /prompts/render ---
+    if (path === '/prompts/render' && method === 'POST') {
+      const { promptPath, variables = {}, owner = 'promptroot', repo = 'promptroot', branch = 'main' } = req.body || {};
+      if (!promptPath) { res.status(400).json({ error: 'promptPath is required' }); return; }
+      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${promptPath}`;
+      const r = await fetch(rawUrl);
+      if (!r.ok) { res.status(r.status).json({ error: 'Prompt not found' }); return; }
+      let content = await r.text();
+      // Simple variable substitution: replace {VAR_NAME} with provided values
+      content = content.replace(/\{([A-Z0-9_-]+)\}/g, (_, key) => variables[key] ?? `{${key}}`);
+      res.json({ data: { content } });
+      return;
+    }
+
+    // --- GET /prompts/* (fetch single prompt raw) ---
+    if (path.startsWith('/prompts/') && method === 'GET') {
+      const promptPath = path.substring('/prompts/'.length);
+      const owner = req.query.owner || 'promptroot';
+      const repo = req.query.repo || 'promptroot';
+      const branch = req.query.branch || 'main';
+      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${promptPath}`;
+      const r = await fetch(rawUrl);
+      if (!r.ok) { res.status(r.status).json({ error: 'Prompt not found' }); return; }
+      const content = await r.text();
+      res.json({ data: { path: promptPath, content } });
+      return;
+    }
+
+    // --- GET /queue ---
+    if (path === '/queue' && method === 'GET') {
+      const snap = await db.collection(`julesQueues/${uid}/items`).orderBy('createdAt', 'desc').limit(100).get();
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.()?.toISOString() }));
+      res.json({ data: items });
+      return;
+    }
+
+    // --- POST /queue ---
+    if (path === '/queue' && method === 'POST') {
+      const { prompt, sourceId, branch, title, type = 'single' } = req.body || {};
+      if (!prompt) { res.status(400).json({ error: 'prompt is required' }); return; }
+      const ref = await db.collection(`julesQueues/${uid}/items`).add({
+        prompt, sourceId, branch, title, type,
+        status: 'pending',
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      res.json({ data: { id: ref.id } });
+      return;
+    }
+
+    // --- PATCH /queue/:id ---
+    if (path.startsWith('/queue/') && method === 'PATCH') {
+      const itemId = path.substring('/queue/'.length);
+      if (!itemId) { res.status(400).json({ error: 'itemId is required' }); return; }
+      // Allowlist writable fields — prevent overwriting internal fields (userId, createdAt, etc.)
+      const ALLOWED_PATCH_FIELDS = ['status', 'prompt', 'title', 'sourceId', 'branch', 'scheduledAt', 'result', 'error', 'type', 'remaining', 'retryOnFailure'];
+      const body = req.body || {};
+      const updates = {};
+      for (const key of ALLOWED_PATCH_FIELDS) {
+        if (key in body) updates[key] = body[key];
+      }
+      if (Object.keys(updates).length === 0) {
+        res.status(400).json({ error: `No valid fields to update. Allowed: ${ALLOWED_PATCH_FIELDS.join(', ')}` });
+        return;
+      }
+      updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+      await db.doc(`julesQueues/${uid}/items/${itemId}`).update(updates);
+      res.json({ data: { ok: true } });
+      return;
+    }
+
+    // --- DELETE /queue/:id ---
+    if (path.startsWith('/queue/') && method === 'DELETE') {
+      const itemId = path.substring('/queue/'.length);
+      await db.doc(`julesQueues/${uid}/items/${itemId}`).delete();
+      res.json({ data: { ok: true } });
+      return;
+    }
+
+    // --- GET /sessions ---
+    if (path === '/sessions' && method === 'GET') {
+      const snap = await db.collection(`juleSessions/${uid}/sessions`).orderBy('createdAt', 'desc').limit(50).get();
+      const sessions = snap.docs.map(d => ({
+        id: d.id,
+        ...d.data(),
+        createdAt: d.data().createdAt?.toDate?.()?.toISOString(),
+        completedAt: d.data().completedAt?.toDate?.()?.toISOString()
+      }));
+      res.json({ data: sessions });
+      return;
+    }
+
+    // --- GET /webclips ---
+    if (path === '/webclips' && method === 'GET') {
+      const owner = req.query.owner || 'promptroot';
+      const repo = req.query.repo || 'promptroot';
+      const branch = req.query.branch || 'web-captures';
+      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/webclips/${uid}?ref=${branch}`;
+      const r = await fetch(apiUrl, { headers: { 'User-Agent': 'PromptRoot-AgentAPI' } });
+      if (r.status === 404) { res.json({ data: [] }); return; }
+      if (!r.ok) { res.status(r.status).json({ error: 'Failed to fetch webclips' }); return; }
+      const files = await r.json();
+      res.json({ data: Array.isArray(files) ? files.map(f => ({ name: f.name, path: f.path, sha: f.sha })) : [] });
+      return;
+    }
+
+    // --- 404 ---
+    res.status(404).json({ error: `No route: ${method} ${path}` });
+
+  } catch (error) {
+    logger.error('agentApi error:', error.message, { path, method, uid });
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
 
@@ -877,5 +1230,143 @@ exports.exchangeVSCodeGitHubToken = onCall(async (request) => {
       'internal',
       error instanceof Error ? error.message : 'Failed to exchange token'
     );
+  }
+});
+
+// ===== OpenClaw Gateway Functions =====
+
+/**
+ * Decrypt the OpenClaw gateway token from Firestore.
+ * Reuses the same PBKDF2 + AES-GCM scheme as decryptJulesKey.
+ */
+async function decryptOpenclawToken(docData, uid) {
+  return decryptJulesKey(docData, uid);
+}
+
+/**
+ * Verify Firebase ID token from Authorization header and return uid.
+ */
+async function verifyIdToken(req) {
+  const authHeader = req.headers['authorization'] || '';
+  const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!idToken) throw new Error('Missing authorization token');
+  const decoded = await admin.auth().verifyIdToken(idToken);
+  return decoded.uid;
+}
+
+/**
+ * callOpenclawGateway — proxies a prompt to the user's OpenClaw gateway.
+ * Reads openclawKeys/{uid}, decrypts token, routes via relay or direct URL.
+ * Returns { jobId }.
+ */
+exports.callOpenclawGateway = onRequest({ secrets: [relaySharedSecret] }, async (req, res) => {
+  setCors(req, res);
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+  if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+  try {
+    const uid = await verifyIdToken(req);
+    const { text, slug } = req.body || {};
+    if (!text) { res.status(400).json({ error: 'text is required' }); return; }
+
+    const firestore = admin.firestore();
+    const snap = await firestore.doc(`openclawKeys/${uid}`).get();
+    if (!snap.exists) { res.status(412).json({ error: 'OpenClaw not configured' }); return; }
+
+    const docData = snap.data();
+    const token = await decryptOpenclawToken(docData, uid);
+
+    let gatewayUrl;
+    let authToken = token;
+
+    if (docData.useRelay) {
+      // Phase 3b: route via relay
+      const relaySecret = relaySharedSecret.value().trim();
+      if (!relaySecret) { res.status(503).json({ error: 'Relay not configured on server' }); return; }
+      gatewayUrl = `https://promptroot-relay.fly.dev/${uid}/prompt`;
+      authToken = relaySecret;
+    } else {
+      // Phase 3a: direct Cloudflare Tunnel
+      gatewayUrl = docData.gatewayUrl;
+      if (!gatewayUrl) { res.status(412).json({ error: 'Gateway URL not configured' }); return; }
+      gatewayUrl = gatewayUrl.replace(/\/$/, '') + '/api/prompt';
+    }
+
+    const gwRes = await fetch(gatewayUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({ text, source: 'promptroot', slug: slug || null })
+    });
+
+    if (!gwRes.ok) {
+      const errText = await gwRes.text().catch(() => '');
+      logger.error('Gateway error', gwRes.status, errText);
+      if (gwRes.status === 401) { res.status(401).json({ error: 'Gateway rejected token. Re-enter your credentials.' }); return; }
+      if (gwRes.status === 503) { res.status(503).json({ error: 'Brace is unreachable. Is your tunnel running?' }); return; }
+      res.status(502).json({ error: `Gateway returned ${gwRes.status}` }); return;
+    }
+
+    const gwData = await gwRes.json();
+    if (!gwData.jobId) { res.status(502).json({ error: 'Gateway did not return a jobId' }); return; }
+
+    res.json({ jobId: gwData.jobId });
+  } catch (err) {
+    logger.error('callOpenclawGateway error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal error' });
+  }
+});
+
+/**
+ * pollOpenclawJob — polls the OpenClaw gateway for a job result.
+ * Returns { status: 'pending'|'complete'|'error'|'not_found', output? }.
+ */
+exports.pollOpenclawJob = onRequest({ secrets: [relaySharedSecret] }, async (req, res) => {
+  setCors(req, res);
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+  if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+  try {
+    const uid = await verifyIdToken(req);
+    const { jobId } = req.body || {};
+    if (!jobId) { res.status(400).json({ error: 'jobId is required' }); return; }
+
+    const firestore2 = admin.firestore();
+    const snap = await firestore2.doc(`openclawKeys/${uid}`).get();
+    if (!snap.exists) { res.status(412).json({ error: 'OpenClaw not configured' }); return; }
+
+    const docData = snap.data();
+    const token = await decryptOpenclawToken(docData, uid);
+
+    let pollUrl;
+    let authToken = token;
+
+    if (docData.useRelay) {
+      const relaySecret = relaySharedSecret.value().trim();
+      if (!relaySecret) { res.status(503).json({ error: 'Relay not configured on server' }); return; }
+      pollUrl = `https://promptroot-relay.fly.dev/${uid}/prompt/${jobId}`;
+      authToken = relaySecret;
+    } else {
+      const gatewayUrl = (docData.gatewayUrl || '').replace(/\/$/, '');
+      if (!gatewayUrl) { res.status(412).json({ error: 'Gateway URL not configured' }); return; }
+      pollUrl = `${gatewayUrl}/api/prompt/${encodeURIComponent(jobId)}`;
+    }
+
+    const gwRes = await fetch(pollUrl, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    if (gwRes.status === 404) { res.json({ status: 'not_found' }); return; }
+    if (!gwRes.ok) { res.status(502).json({ error: `Gateway returned ${gwRes.status}` }); return; }
+
+    const gwData = await gwRes.json();
+    res.json({
+      status: gwData.status || 'pending',
+      output: gwData.result || gwData.output || null
+    });
+  } catch (err) {
+    logger.error('pollOpenclawJob error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal error' });
   }
 });

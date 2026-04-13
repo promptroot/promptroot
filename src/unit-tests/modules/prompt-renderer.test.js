@@ -28,6 +28,13 @@ vi.mock('../../utils/constants.js', () => ({
   CACHE_DURATIONS: {
     short: 300000,
     session: 0
+  },
+  AGENT_UI_TEXT: {
+    RUN_IN_AGENT: 'Run in Agent',
+    BRACE_NOT_CONFIGURED: 'Brace (not configured)',
+    SENT_TO_BRACE: 'Sent to Brace!',
+    BRACE_SEND_FAILED: 'Failed to send to Brace: ',
+    AGENTIC_QUEUE_EMPTY: 'No items in the Agentic Queue.'
   }
 }));
 
@@ -68,6 +75,28 @@ vi.mock('../../modules/status-bar.js', () => ({
 
 vi.mock('../../utils/clipboard.js', () => ({
   copyText: vi.fn().mockResolvedValue(true)
+}));
+
+vi.mock('../../modules/split-button.js', () => ({
+  initSplitButton: vi.fn().mockReturnValue({
+    destroy: vi.fn(),
+    setSelection: vi.fn(),
+    getSelection: vi.fn(),
+    updateOptions: vi.fn()
+  }),
+  destroySplitButton: vi.fn(),
+  updateSplitButtonOptions: vi.fn()
+}));
+
+vi.mock('../../modules/run-in-agent.js', () => ({
+  isBraceConfigured: vi.fn().mockResolvedValue(false),
+  getAgentOptions: vi.fn().mockReturnValue([
+    { value: 'jules', label: 'Jules', icon: 'smart_toy' },
+    { value: 'brace', label: 'Brace (not configured)', icon: 'hub', disabled: true }
+  ]),
+  getLastAgent: vi.fn().mockReturnValue('jules'),
+  saveLastAgent: vi.fn(),
+  dispatchToAgent: vi.fn()
 }));
 
 global.document = {
@@ -131,7 +160,7 @@ describe('prompt-renderer', () => {
     global.document.getElementById.mockImplementation((id) => {
       const allowedIds = [
         'content', 'title', 'meta', 'empty', 'actions', 'copyBtn', 'copenBtn',
-        'rawBtn', 'ghBtn', 'editBtn', 'shareBtn', 'julesBtn', 'freeInputBtn', 'moreBtn',
+        'rawBtn', 'ghBtn', 'editBtn', 'shareBtn', 'runInAgentContainer', 'freeInputBtn', 'moreBtn',
         'freeInputSection', 'freeInputTextarea', 'freeInputSubmitBtn', 'freeInputQueueBtn',
         'freeInputSplitBtn', 'freeInputSaveBtn', 'freeInputCopenBtn', 'freeInputCancelBtn',
         'freeInputRepoDropdownText', 'freeInputRepoDropdownBtn', 'freeInputRepoDropdownMenu',
@@ -206,7 +235,7 @@ describe('prompt-renderer', () => {
       expect(global.document.getElementById).toHaveBeenCalledWith('ghBtn');
       expect(global.document.getElementById).toHaveBeenCalledWith('editBtn');
       expect(global.document.getElementById).toHaveBeenCalledWith('shareBtn');
-      expect(global.document.getElementById).toHaveBeenCalledWith('julesBtn');
+      expect(global.document.getElementById).toHaveBeenCalledWith('runInAgentContainer');
       expect(global.document.getElementById).toHaveBeenCalledWith('freeInputBtn');
       expect(global.document.getElementById).toHaveBeenCalledWith('moreBtn');
     });
@@ -433,7 +462,7 @@ describe('prompt-renderer', () => {
           };
         }
         if (id === 'copyBtn' || id === 'rawBtn' || id === 'ghBtn' || id === 'editBtn' || 
-            id === 'shareBtn' || id === 'julesBtn' || id === 'freeInputBtn' || id === 'moreBtn') {
+            id === 'shareBtn' || id === 'freeInputBtn' || id === 'moreBtn') {
           return {
             innerHTML: '',
             href: '',
@@ -510,7 +539,6 @@ describe('prompt-renderer', () => {
         ghBtn: { id: 'ghBtn', closest: vi.fn().mockReturnValue(null) },
         editBtn: { id: 'editBtn', closest: vi.fn().mockReturnValue(null) },
         shareBtn: { id: 'shareBtn', closest: vi.fn().mockReturnValue(null) },
-        julesBtn: { id: 'julesBtn', closest: vi.fn().mockReturnValue(null) },
         freeInputBtn: { id: 'freeInputBtn', closest: vi.fn().mockReturnValue(null) }
       };
 
@@ -538,19 +566,6 @@ describe('prompt-renderer', () => {
       expect(copyText).toHaveBeenCalledWith('test content to copy');
     });
 
-    it('should handle jules button click', async () => {
-      const mockCallback = vi.fn();
-      setHandleTryInJulesCallback(mockCallback);
-      setCurrentPromptText('test prompt for jules');
-      
-      const clickEvent = { target: mockButtons.julesBtn, preventDefault: vi.fn(), stopPropagation: vi.fn() };
-      const documentClickHandlers = global.document.addEventListener.mock.calls.filter(call => call[0] === 'click');
-      if (documentClickHandlers.length > 0) {
-        await documentClickHandlers[0][1](clickEvent);
-      }
-
-      expect(mockCallback).toHaveBeenCalledWith('test prompt for jules');
-    });
   });
 
   describe('integration scenarios', () => {

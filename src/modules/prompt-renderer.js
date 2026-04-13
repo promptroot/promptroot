@@ -11,6 +11,7 @@ import statusBar from './status-bar.js';
 import { initSplitButton, destroySplitButton, updateSplitButtonOptions } from './split-button.js';
 import { getCopenOptions, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_ICON } from '../utils/copen-config.js';
 import { getAuth } from './firebase-service.js';
+import { getAgentOptions, getLastAgent, saveLastAgent, dispatchToAgent } from './run-in-agent.js';
 
 let domPurifyHooksInitialized = false;
 
@@ -86,7 +87,8 @@ let rawBtn = null;
 let ghBtn = null;
 let editBtn = null;
 let shareBtn = null;
-let julesBtn = null;
+let runInAgentContainer = null;
+let runInAgentSplitBtn = null;
 let freeInputBtn = null;
 let queueBtn = null;
 let scheduleBtn = null;
@@ -136,7 +138,10 @@ export function initPromptRenderer() {
   ghBtn = document.getElementById('ghBtn');
   editBtn = document.getElementById('editBtn');
   shareBtn = document.getElementById('shareBtn');
-  julesBtn = document.getElementById('julesBtn');
+  runInAgentContainer = document.getElementById('runInAgentContainer');
+  if (runInAgentContainer) {
+    _initRunInAgentButton();
+  }
   freeInputBtn = document.getElementById('freeInputBtn');
   queueBtn = document.getElementById('queueBtn');
   scheduleBtn = document.getElementById('scheduleBtn');
@@ -144,6 +149,35 @@ export function initPromptRenderer() {
 
   document.addEventListener('click', handleDocumentClick);
   window.addEventListener('branchChanged', handleBranchChanged);
+}
+
+function _initRunInAgentButton() {
+  const lastAgent = getLastAgent();
+
+  runInAgentSplitBtn = initSplitButton({
+    container: runInAgentContainer,
+    defaultLabel: 'Run in Agent',
+    defaultIcon: 'smart_toy',
+    options: getAgentOptions(),
+    executeOnSelect: false,
+    onAction: (selectedAgent) => {
+      saveLastAgent(selectedAgent);
+      if (selectedAgent === 'jules') {
+        // Use the higher-level callback (not dispatchToAgent) because it handles the Jules
+        // modal flow, key checks, and other UI machinery that dispatchToAgent bypasses.
+        if (handleTryInJulesCallback) {
+          handleTryInJulesCallback(currentPromptText);
+        }
+      } else if (selectedAgent === 'brace') {
+        dispatchToAgent('brace', { promptText: currentPromptText });
+      }
+    }
+  });
+
+  // Set initial selection to last used agent
+  if (runInAgentSplitBtn && lastAgent !== 'jules') {
+    runInAgentSplitBtn.setSelection(lastAgent);
+  }
 }
 
 async function refreshCopenOptions() {
@@ -166,7 +200,16 @@ export function destroyPromptRenderer() {
     destroySplitButton(copenContainer);
     copenSplitBtn = null;
   }
-  
+
+  if (runInAgentContainer) {
+    destroySplitButton(runInAgentContainer);
+    runInAgentSplitBtn = null;
+  }
+
+  import('./jules-free-input.js').then(({ destroyFreeInputRunInAgent }) => {
+    destroyFreeInputRunInAgent();
+  }).catch(() => {});
+
   cacheRaw.clear();
   currentPromptText = null;
   handleTryInJulesCallback = null;
@@ -195,13 +238,6 @@ function handleDocumentClick(event) {
 
   if (target === shareBtn) {
     handleShareLink();
-    return;
-  }
-
-  if (target === julesBtn) {
-    if (handleTryInJulesCallback) {
-      handleTryInJulesCallback(currentPromptText);
-    }
     return;
   }
 

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>Agent API - PromptRoot</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="../../src/styles.css" />
+  <script src="../../src/font-init.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js" integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" integrity="sha384-BkEIW/B4JV9w6pRfBRgZtAcYDk5goH1nUI49rLo8s5PSHgTfgxWBczRVJx+fv5kP" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js" integrity="sha384-96KlrabK9X4T/tq4duY+/4JE60jZAiSs4QVJFwmY30ETT24x2+89B7qmq7O4IETX" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js" integrity="sha384-LF74FIj8PQKxRVken52qSHntBSVEC6b05H04maSVJibifVGmWz9Ajc23WjrRVSCX" crossorigin="anonymous"></script>
+  <script type="module" src="../../src/firebase-init.js"></script>
+  <script type="module" src="../../src/sw-register.js"></script>
+</head>
+<body data-page="agent-api">
+
+  <div class="wrap">
+    <main class="card pad-lg">
+      <div class="page-header">
+        <h2 class="section-title-lg"><span class="icon icon-inline" aria-hidden="true">api</span> Agent API</h2>
+      </div>
+
+      <p class="muted-text small-text mb-md">
+        Generate API tokens for programmatic access to PromptRoot. Tokens grant full API access — treat them like passwords.
+      </p>
+
+      <!-- Loading -->
+      <div id="agentKeysLoading" class="panel pad-xl text-center mb-md">
+        <div class="muted-text font-16">Loading...</div>
+      </div>
+
+      <!-- Not signed in -->
+      <div id="agentKeysNotSignedIn" class="panel pad-xl text-center mb-md hidden">
+        <div class="muted-text font-16">Please sign in to manage API tokens.</div>
+      </div>
+
+      <!-- Main content -->
+      <div id="agentKeysContent" class="hidden">
+
+        <!-- One-time token reveal panel -->
+        <div id="generatedTokenPanel" class="panel pad-md mb-md agent-token-reveal hidden">
+          <div class="section-label mb-sm">
+            <span class="icon icon-inline" aria-hidden="true">warning</span>
+            Copy your token now — it will not be shown again
+          </div>
+          <div class="agent-token-value-wrap mb-sm">
+            <code id="generatedTokenValue" class="agent-token-value"></code>
+          </div>
+          <div class="agent-token-actions">
+            <button id="copyGeneratedTokenBtn" class="btn primary sm">Copy Token</button>
+            <button id="dismissGeneratedTokenBtn" class="btn sm">Dismiss</button>
+          </div>
+        </div>
+
+        <!-- Generate new token -->
+        <div class="mb-md">
+          <div class="section-label mb-sm"><span class="icon icon-inline" aria-hidden="true">add</span> New Token</div>
+          <div class="agent-key-generate-row">
+            <input
+              type="text"
+              id="agentKeyLabelInput"
+              class="form-control"
+              placeholder="Token label (e.g., &quot;OpenClaw dev&quot;)"
+              maxlength="80"
+            />
+            <button id="generateAgentKeyBtn" class="btn primary">Generate Token</button>
+          </div>
+        </div>
+
+        <!-- Token list -->
+        <div>
+          <div class="section-label mb-sm"><span class="icon icon-inline" aria-hidden="true">key</span> Active Tokens</div>
+          <div id="agentKeysList" class="panel list-md">
+            <div class="muted-text small-text">Loading tokens...</div>
+          </div>
+        </div>
+
+        <!-- API reference -->
+        <div class="mt-md">
+          <div class="section-label mb-sm"><span class="icon icon-inline" aria-hidden="true">book</span> API Reference</div>
+          <div class="panel pad-md small-text">
+            <p class="mb-sm">Authenticate requests with: <code>Authorization: Bearer &lt;token&gt;</code></p>
+            <p class="mb-sm fw-600">Endpoints</p>
+            <ul class="agent-api-endpoints">
+              <li><code>GET /prompts</code> — list prompt files</li>
+              <li><code>GET /prompts/:path</code> — fetch prompt content</li>
+              <li><code>POST /prompts/render</code> — render template with variables</li>
+              <li><code>GET /queue</code> — list Jules queue items</li>
+              <li><code>POST /queue</code> — add item to queue</li>
+              <li><code>PATCH /queue/:id</code> — update queue item</li>
+              <li><code>DELETE /queue/:id</code> — remove queue item</li>
+              <li><code>GET /sessions</code> — list Jules sessions</li>
+              <li><code>GET /webclips</code> — list web clips</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-nav">
+      <a href="https://github.com/promptroot/promptroot/blob/main/README.md" target="_blank" rel="noopener" class="footer-nav__item">Help</a>
+      <span class="footer-nav__sep">•</span>
+      <button id="footerFeedbackBtn" class="footer-nav__item">Feedback</button>
+      <span class="footer-nav__sep">•</span>
+      <a href="../../pages/privacy/privacy.html" class="footer-nav__item">Privacy Policy</a>
+      <span class="footer-nav__sep">•</span>
+      <a href="https://github.com/promptroot/promptroot" target="_blank" rel="noopener" class="footer-nav__item">GitHub</a>
+    </div>
+  </footer>
+
+  <script type="module" src="../../src/shared-init.js"></script>
+  <script type="module" src="../../src/pages/agent-api-page.js"></script>
+</body>
+</html>

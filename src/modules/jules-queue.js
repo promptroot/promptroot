@@ -1326,7 +1326,7 @@ function renderQueueList(items) {
   if (!items || items.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'panel text-center pad-xl muted-text';
-    empty.textContent = 'No queued items.';
+    empty.textContent = 'No items in the Agentic Queue.';
     listDiv.replaceChildren();
     listDiv.appendChild(empty);
     return;
@@ -1334,8 +1334,8 @@ function renderQueueList(items) {
 
   listDiv.replaceChildren();
   
-  items.forEach(item => {
-    const card = createQueueCard(item);
+  items.forEach((item, index) => {
+    const card = createQueueCard(item, index + 1, items.length);
     listDiv.appendChild(card);
   });
   
@@ -1362,6 +1362,18 @@ function createCardHeader(item, status) {
     titleDiv.appendChild(document.createTextNode(' '));
     titleDiv.appendChild(remainingSpan);
   }
+
+  const destBadge = document.createElement('span');
+  destBadge.className = 'queue-destination-badge';
+  const destAgent = item.destination || 'jules';
+  const destIcon = document.createElement('span');
+  destIcon.className = 'icon icon-inline';
+  destIcon.setAttribute('aria-hidden', 'true');
+  destIcon.textContent = destAgent === 'brace' ? 'hub' : 'smart_toy';
+  destBadge.appendChild(destIcon);
+  destBadge.appendChild(document.createTextNode(' ' + (destAgent === 'brace' ? 'Brace' : 'Jules')));
+  titleDiv.appendChild(document.createTextNode(' '));
+  titleDiv.appendChild(destBadge);
   
   const editBtn = document.createElement('button');
   editBtn.className = 'btn-icon edit-queue-item';
@@ -1380,10 +1392,10 @@ function createCardHeader(item, status) {
   return titleDiv;
 }
 
-function createCardMeta(item, created) {
+function createCardMeta(item, created, position, total) {
   const metaDiv = document.createElement('div');
   metaDiv.className = 'queue-meta';
-  metaDiv.textContent = `Created: ${created} • ID: `;
+  metaDiv.textContent = `#${position} of ${total} • Created: ${created} • ID: `;
   const idSpan = document.createElement('span');
   idSpan.className = 'mono';
   idSpan.textContent = item.id;
@@ -1450,7 +1462,7 @@ function createSubtasksList(item) {
   return subtasksContainer;
 }
 
-function createQueueCard(item) {
+function createQueueCard(item, position, total) {
   const created = item.createdAt ? new Date(item.createdAt.seconds ? item.createdAt.seconds * 1000 : item.createdAt).toLocaleString() : 'Unknown';
   const status = item.status || 'pending';
 
@@ -1473,7 +1485,7 @@ function createQueueCard(item) {
   content.className = 'queue-content';
 
   content.appendChild(createCardHeader(item, status));
-  content.appendChild(createCardMeta(item, created));
+  content.appendChild(createCardMeta(item, created, position, total));
   
   // Repo info
   if (item.sourceId) {

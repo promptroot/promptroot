@@ -1,4 +1,10 @@
 /* Buttons */
+a.btn,
+a.btn:hover {
+  display: inline-block;
+  text-decoration: none;
+}
+
 .btn {
   appearance: none;
   border: 1px solid var(--border);

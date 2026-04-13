@@ -10,7 +10,7 @@
 // 5. SW broadcasts { type: 'SW_UPDATED' } to all clients (e.g. other tabs).
 // 6. Clients reload or show notification.
 
-const CACHE_VERSION = 'promptroot-v9';
+const CACHE_VERSION = 'promptroot-v10';
 const CACHE_NAME = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -87,6 +87,16 @@ const NETWORK_FIRST_PATTERNS = [
   /github\.com\/.*\/contents\//
 ];
 
+// Heavy third-party CDN deps that change rarely and dominate load time.
+// These keep cache-first; everything else (our own HTML/JS/CSS) is network-first
+// so navbar/UI updates ship without requiring a hard refresh.
+const CACHE_FIRST_PATTERNS = [
+  /gstatic\.com\/firebasejs\//,
+  /cdn\.jsdelivr\.net\//,
+  /fonts\.googleapis\.com\//,
+  /fonts\.gstatic\.com\//
+];
+
 // Install event - cache critical static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -157,9 +167,16 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(networkFirstStrategy(request));
     return;
   }
-  event.respondWith(
-    cacheFirstStrategy(request)
-  );
+
+  // Cache-first only for heavy, rarely-changing CDN deps.
+  if (CACHE_FIRST_PATTERNS.some(pattern => pattern.test(request.url))) {
+    event.respondWith(cacheFirstStrategy(request));
+    return;
+  }
+
+  // Default: network-first for our own app code (HTML/JS/CSS) so updates
+  // appear immediately. Falls back to cache when offline.
+  event.respondWith(networkFirstStrategy(request));
 });
 
 async function networkFirstStrategy(request) {

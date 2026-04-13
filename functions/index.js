@@ -10,6 +10,14 @@ const { webcrypto: crypto } = require('crypto');
 
 admin.initializeApp();
 
+const ALLOWED_ORIGINS = ['https://promptroot.io', 'http://localhost:3000', 'http://localhost:5000'];
+function setCors(req, res) {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.set('Access-Control-Allow-Origin', origin);
+  }
+}
+
 function formatJulesError(error, statusCode) {
   return 'Failed to create Jules session. Most likely causes: (1) API rate limit - wait a few minutes, (2) Invalid API key - check your settings, (3) Repository access - verify permissions.';
 }
@@ -242,7 +250,7 @@ exports.runJulesHttp = functions.https.onRequest(async (req, res) => {
     url: req.url
   });
 
-  res.set('Access-Control-Allow-Origin', '*');
+  setCors(req, res);
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -468,7 +476,7 @@ exports.getJulesKeyInfo = functions.https.onCall(async (data, context) => {
 });
 
 exports.githubOAuthExchange = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
+  setCors(req, res);
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -545,7 +553,7 @@ exports.githubOAuthExchange = functions.https.onRequest(async (req, res) => {
 });
 
 exports.getGitHubUser = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
+  setCors(req, res);
   res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -684,7 +692,7 @@ function checkRateLimit(tokenHash) {
  * Actions: create, list, revoke.
  */
 exports.manageAgentKeys = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
+  setCors(req, res);
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -784,7 +792,7 @@ exports.manageAgentKeys = functions.https.onRequest(async (req, res) => {
  * Rate limit: 60 req/min per token (in-memory per instance).
  */
 exports.agentApi = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
+  setCors(req, res);
   res.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -1252,7 +1260,7 @@ async function verifyIdToken(req) {
  * Returns { jobId }.
  */
 exports.callOpenclawGateway = onRequest({ secrets: [relaySharedSecret] }, async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
+  setCors(req, res);
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
@@ -1314,7 +1322,7 @@ exports.callOpenclawGateway = onRequest({ secrets: [relaySharedSecret] }, async 
  * Returns { status: 'pending'|'complete'|'error'|'not_found', output? }.
  */
 exports.pollOpenclawJob = onRequest({ secrets: [relaySharedSecret] }, async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
+  setCors(req, res);
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }

@@ -8,7 +8,7 @@
 }
 
 .openclaw-detect-status__icon {
-  color: var(--success-color, #22c55e);
+  color: var(--success);
   flex-shrink: 0;
 }
 
@@ -20,7 +20,7 @@
 .openclaw-detect-status__title {
   font-weight: 600;
   font-size: 15px;
-  color: var(--success-color, #22c55e);
+  color: var(--success);
 }
 
 .openclaw-detect-status__actions {
@@ -55,14 +55,14 @@
   align-items: flex-start;
   gap: 10px;
   padding: 12px;
-  border: 1px solid var(--border-color, #e0e0e0);
+  border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .openclaw-mode-option:has(input:checked) {
-  border-color: var(--primary-color, #1a73e8);
-  background: var(--primary-bg-light, #f0f6ff);
+  border-color: var(--accent);
+  background: var(--accent-bg-subtle);
 }
 
 .openclaw-mode-option input[type="radio"] {
@@ -90,7 +90,7 @@
   font-weight: 500;
   padding: 1px 6px;
   border-radius: 10px;
-  background: var(--primary-color, #1a73e8);
-  color: #fff;
+  background: var(--accent);
+  color: var(--bg);
   vertical-align: middle;
 }

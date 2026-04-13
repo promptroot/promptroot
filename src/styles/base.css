@@ -35,6 +35,8 @@ body {
 
 /* Base variables, reset, and global styles */
 :root {
+  color-scheme: dark;
+
   /* ===== BASE STRUCTURE ===== */
   --bg: #0a0e1a;
   --surface: #141829;              /* Unified surface: cards, inputs, code blocks */

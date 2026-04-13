@@ -45,65 +45,17 @@
       </div>
 
       <div id="openclawContent" class="hidden">
-
-        <!-- Connected status card (styled like extension detection) -->
-        <div id="openclawStatus" class="panel pad-md mb-lg hidden">
+        <div class="panel pad-md mb-lg">
           <div class="openclaw-detect-status">
-            <span class="icon icon-lg openclaw-detect-status__icon" aria-hidden="true">check_circle</span>
+            <span id="openclawStatusIcon" class="icon icon-lg color-muted" aria-hidden="true">radio_button_unchecked</span>
             <div class="openclaw-detect-status__info">
-              <div class="openclaw-detect-status__title">OpenClaw Connected</div>
+              <div id="openclawStatusTitle" class="openclaw-detect-status__title color-muted">Not configured</div>
               <div id="openclawStatusDetail" class="small-text muted-text"></div>
               <div id="openclawRelayStatus" class="small-text muted-text mt-xs"></div>
             </div>
             <div class="openclaw-detect-status__actions">
-              <button id="openclawEditBtn" class="btn sm">Edit</button>
-              <button id="openclawDeleteBtn" class="btn sm danger">Disconnect</button>
+              <a href="../../pages/profile/profile.html#agentApiSection" class="btn sm">Configure</a>
             </div>
-          </div>
-        </div>
-
-        <!-- Connection form -->
-        <div id="openclawForm" class="panel pad-md mb-lg">
-          <div class="section-label mb-sm"><span class="icon icon-inline" aria-hidden="true">link</span> Connect OpenClaw</div>
-
-          <div class="openclaw-mode-selector mb-md">
-            <label class="openclaw-mode-option">
-              <input type="radio" name="openclawMode" value="relay" id="openclawModeRelay" checked />
-              <div>
-                <div class="fw-600">Use PromptRoot Relay <span class="badge">Recommended</span></div>
-                <div class="small-text muted-text">OpenClaw connects outbound — no tunnel or domain needed.</div>
-              </div>
-            </label>
-            <label class="openclaw-mode-option">
-              <input type="radio" name="openclawMode" value="custom" id="openclawModeCustom" />
-              <div>
-                <div class="fw-600">Use my own URL</div>
-                <div class="small-text muted-text">Cloudflare Tunnel or self-hosted gateway (advanced).</div>
-              </div>
-            </label>
-          </div>
-
-          <!-- Relay fields -->
-          <div id="openclawRelayFields" class="mb-md">
-            <label class="section-label mb-sm" for="openclawRelayToken">Agent Token</label>
-            <p class="small-text muted-text mb-sm">
-              Generate a <code class="code-inline">pra_...</code> token on the
-              <a href="/pages/profile/profile.html#agentApiSection" rel="noopener">Agent API page</a>,
-              then add it to OpenClaw as <code class="code-inline">PROMPTROOT_AGENT_TOKEN</code>.
-            </p>
-            <input type="password" id="openclawRelayToken" class="form-control" placeholder="pra_..." autocomplete="off" />
-          </div>
-
-          <!-- Custom URL fields -->
-          <div id="openclawCustomFields" class="mb-md hidden">
-            <label class="section-label mb-sm" for="openclawGatewayUrl">Gateway URL</label>
-            <input type="url" id="openclawGatewayUrl" class="form-control mb-sm" placeholder="https://gateway.example.com" />
-            <label class="section-label mb-sm mt-sm" for="openclawGatewayToken">Gateway Token</label>
-            <input type="password" id="openclawGatewayToken" class="form-control" placeholder="Your OpenClaw gateway token" autocomplete="off" />
-          </div>
-
-          <div class="openclaw-form-actions">
-            <button id="openclawSaveBtn" class="btn primary">Save</button>
           </div>
         </div>
       </div>

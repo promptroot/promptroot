@@ -28,11 +28,25 @@ export async function getOpenclawConfig(uid) {
     return {
       useRelay: !!doc.useRelay,
       gatewayUrl: doc.gatewayUrl || null,
-      hasToken: !!doc.key
+      hasToken: !!doc.key || !!doc.tokenHash,
+      tokenHash: doc.tokenHash || null,
+      tokenLabel: doc.tokenLabel || null
     };
   } catch {
     return null;
   }
+}
+
+export async function setOpenclawRelay(uid, tokenHash, tokenLabel) {
+  const db = getDb();
+  if (!db) throw new Error('Firestore not initialized');
+  await setDoc(OPENCLAW.KEY_COLLECTION, uid, {
+    useRelay: true,
+    tokenHash,
+    tokenLabel,
+    storedAt: getServerTimestamp()
+  }, { merge: false }, CACHE_KEY);
+  return true;
 }
 
 export async function encryptAndStoreOpenclawKey(token, uid, { gatewayUrl = null, useRelay = true } = {}) {

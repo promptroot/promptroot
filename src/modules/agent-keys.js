@@ -1,6 +1,7 @@
 import { showToast } from './toast.js';
 import { copyText } from '../utils/clipboard.js';
 import { AGENT_API, AGENT_KEY_UI_TEXT, TIMEOUTS } from '../utils/constants.js';
+import { getOpenclawConfig, setOpenclawRelay } from './openclaw-keys.js';
 
 // ===== Agent Key Management Module =====
 // Handles generation, storage (via Cloud Function), and revocation of Agent API tokens.
@@ -107,9 +108,13 @@ export async function renderAgentKeysList(user) {
   loadingItem.textContent = AGENT_KEY_UI_TEXT.LOADING;
   listEl.appendChild(loadingItem);
 
-  const idToken = await user.getIdToken();
+  const [idToken, openclawConfig] = await Promise.all([
+    user.getIdToken(),
+    getOpenclawConfig(user.uid)
+  ]);
   const data = await callManageKeys(idToken, { action: 'list' });
   const tokens = data.tokens || [];
+  const activeHash = openclawConfig?.tokenHash || null;
 
   listEl.textContent = '';
 
@@ -122,7 +127,7 @@ export async function renderAgentKeysList(user) {
   }
 
   tokens.forEach(token => {
-    listEl.appendChild(buildTokenRow(token, user));
+    listEl.appendChild(buildTokenRow(token, user, activeHash));
   });
 }
 
@@ -132,7 +137,9 @@ export async function renderAgentKeysList(user) {
  * @param {object} user - Firebase user
  * @returns {HTMLElement}
  */
-function buildTokenRow(token, user) {
+function buildTokenRow(token, user, activeHash) {
+  const isActive = token.tokenHash === activeHash;
+
   const row = document.createElement('div');
   row.className = 'agent-key-row';
   row.dataset.hash = token.tokenHash;
@@ -143,6 +150,13 @@ function buildTokenRow(token, user) {
   const label = document.createElement('div');
   label.className = 'agent-key-label fw-600';
   label.textContent = token.label || '(unlabeled)';
+
+  if (isActive) {
+    const badge = document.createElement('span');
+    badge.className = 'agent-key-openclaw-badge';
+    badge.textContent = 'Connected';
+    label.appendChild(badge);
+  }
 
   const meta = document.createElement('div');
   meta.className = 'agent-key-meta muted-text small-text';
@@ -161,6 +175,14 @@ function buildTokenRow(token, user) {
 
   const actions = document.createElement('div');
   actions.className = 'agent-key-actions';
+
+  if (!isActive) {
+    const openclawBtn = document.createElement('button');
+    openclawBtn.className = 'btn sm';
+    openclawBtn.textContent = 'Connect';
+    openclawBtn.onclick = () => handleSetOpenclawClick(token.tokenHash, token.label, user);
+    actions.appendChild(openclawBtn);
+  }
 
   const revokeBtn = document.createElement('button');
   revokeBtn.className = 'btn sm danger';
@@ -255,6 +277,17 @@ function showGeneratedToken(token) {
  * @param {string} label
  * @param {object} user
  */
+async function handleSetOpenclawClick(tokenHash, label, user) {
+  try {
+    await setOpenclawRelay(user.uid, tokenHash, label);
+    showToast('OpenClaw token updated', 'success');
+    await renderAgentKeysList(user);
+  } catch (err) {
+    console.error('Failed to set OpenClaw token:', err);
+    showToast('Failed to update OpenClaw token', 'error');
+  }
+}
+
 async function handleRevokeClick(tokenHash, label, user) {
   if (!confirm(AGENT_KEY_UI_TEXT.REVOKE_CONFIRM)) return;
 

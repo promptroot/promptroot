@@ -16,7 +16,19 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  border-bottom: 1px solid var(--border);
+}
+
+.agent-key-openclaw-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--bg);
+  vertical-align: middle;
+  margin-left: 6px;
 }
 
 .agent-key-row:last-child {
@@ -40,6 +52,9 @@
 
 .agent-key-actions {
   flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
 /* One-time token reveal */

@@ -87,9 +87,6 @@ const NETWORK_FIRST_PATTERNS = [
   /github\.com\/.*\/contents\//
 ];
 
-// Heavy third-party CDN deps that change rarely and dominate load time.
-// These keep cache-first; everything else (our own HTML/JS/CSS) is network-first
-// so navbar/UI updates ship without requiring a hard refresh.
 const CACHE_FIRST_PATTERNS = [
   /gstatic\.com\/firebasejs\//,
   /cdn\.jsdelivr\.net\//,
@@ -168,14 +165,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first only for heavy, rarely-changing CDN deps.
   if (CACHE_FIRST_PATTERNS.some(pattern => pattern.test(request.url))) {
     event.respondWith(cacheFirstStrategy(request));
     return;
   }
 
-  // Default: network-first for our own app code (HTML/JS/CSS) so updates
-  // appear immediately. Falls back to cache when offline.
   event.respondWith(networkFirstStrategy(request));
 });
 

@@ -19,14 +19,27 @@ function initApp() {
     installBtn.dataset.bound = 'true';
     installBtn.addEventListener('click', () => {
       installBtn.disabled = true;
-      const originalLabel = installBtn.innerHTML;
-      installBtn.innerHTML = '<span class="icon icon-inline" aria-hidden="true">hourglass_top</span> Opening Marketplace...';
+
+      const originalContent = Array.from(installBtn.childNodes);
+
+      const loadingIcon = document.createElement('span');
+      loadingIcon.className = 'icon icon-inline';
+      loadingIcon.setAttribute('aria-hidden', 'true');
+      loadingIcon.textContent = 'hourglass_top';
+
+      installBtn.replaceChildren(loadingIcon, document.createTextNode(' Opening Marketplace...'));
 
       window.open(VSCODE_EXTENSION_URL, '_blank', 'noopener');
 
-      installBtn.innerHTML = '<span class="icon icon-inline" aria-hidden="true">check_circle</span> Marketplace opened';
+      const successIcon = document.createElement('span');
+      successIcon.className = 'icon icon-inline';
+      successIcon.setAttribute('aria-hidden', 'true');
+      successIcon.textContent = 'check_circle';
+
+      installBtn.replaceChildren(successIcon, document.createTextNode(' Marketplace opened'));
+
       setTimeout(() => {
-        installBtn.innerHTML = originalLabel;
+        installBtn.replaceChildren(...originalContent);
         installBtn.disabled = false;
       }, TIMEOUTS.actionFeedback);
     });

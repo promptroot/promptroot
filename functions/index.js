@@ -21,6 +21,10 @@ function setCors(req, res) {
 function formatJulesError(error, statusCode) {
   return 'Failed to create Jules session. Most likely causes: (1) API rate limit - wait a few minutes, (2) Invalid API key - check your settings, (3) Repository access - verify permissions.';
 }
+// Export for testing
+if (process.env.NODE_ENV === 'test') {
+  exports.formatJulesError = formatJulesError;
+}
 
 async function decryptJulesKey(docData, uid) {
   try {

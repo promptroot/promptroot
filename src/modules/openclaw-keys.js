@@ -88,3 +88,36 @@ export async function deleteStoredOpenclawKey(uid) {
     return false;
   }
 }
+
+export async function decryptOpenclawKey(uid) {
+  try {
+    const db = getDb();
+    if (!db) return null;
+    const doc = await getDoc(OPENCLAW.KEY_COLLECTION, uid, CACHE_KEY);
+    if (!doc || !doc.key || !doc.iv || !doc.salt) return null;
+
+    const ciphertext = Uint8Array.from(atob(doc.key), c => c.charCodeAt(0));
+    const iv = Uint8Array.from(atob(doc.iv), c => c.charCodeAt(0));
+    const salt = Uint8Array.from(atob(doc.salt), c => c.charCodeAt(0));
+
+    const enc = new TextEncoder();
+    const keyMaterial = await window.crypto.subtle.importKey(
+      'raw', enc.encode(uid), { name: 'PBKDF2' }, false, ['deriveKey']
+    );
+    const key = await window.crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    );
+    const plaintext = await window.crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      ciphertext
+    );
+    return new TextDecoder().decode(plaintext);
+  } catch {
+    return null;
+  }
+}

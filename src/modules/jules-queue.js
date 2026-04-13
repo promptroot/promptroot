@@ -1909,17 +1909,12 @@ export async function deleteSelectedQueueItems() {
   if (!confirmed) return;
   
   try {
-    const deletePromises = [];
-
-    for (const id of queueSelections) {
-      deletePromises.push(deleteFromJulesQueue(user.uid, id));
-    }
-    
-    for (const [docId, indices] of Object.entries(subtaskSelections)) {
-      if (queueSelections.includes(docId)) continue;
-      
-      deletePromises.push(deleteSelectedSubtasks(docId, indices));
-    }
+    const deletePromises = [
+      ...queueSelections.map(id => deleteFromJulesQueue(user.uid, id)),
+      ...Object.entries(subtaskSelections)
+        .filter(([docId]) => !queueSelections.includes(docId))
+        .map(([docId, indices]) => deleteSelectedSubtasks(docId, indices))
+    ];
 
     const results = await Promise.allSettled(deletePromises);
     const succeeded = results.filter(r => r.status === 'fulfilled').length;

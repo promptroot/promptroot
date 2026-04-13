@@ -86,7 +86,10 @@ async function loadCopens(user) {
   const copenList = document.getElementById('copenList');
   if (!copenList) return;
 
-  copenList.innerHTML = '<div class="muted-text text-center pad-md">Loading...</div>';
+  const loadingDiv = document.createElement('div');
+  loadingDiv.className = 'muted-text text-center pad-md';
+  loadingDiv.textContent = 'Loading...';
+  copenList.replaceChildren(loadingDiv);
 
   try {
     const copens = await getUserCopens(user.uid);
@@ -94,7 +97,10 @@ async function loadCopens(user) {
     renderCopenList(copens);
   } catch (error) {
     console.error('Error loading copens:', error);
-    copenList.innerHTML = '<div class="muted-text text-center pad-md">Error loading copens</div>';
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'muted-text text-center pad-md';
+    errorDiv.textContent = 'Error loading copens';
+    copenList.replaceChildren(errorDiv);
   }
 }
 
@@ -540,7 +546,8 @@ async function initApp() {
           const deleted = await deleteStoredJulesKey(currentUser.uid);
           if (deleted) {
             // Restore button
-            resetJulesKeyBtn.innerHTML = '<span class=\"icon icon-inline\" aria-hidden=\"true\">delete</span> Delete Jules API Key';
+            resetJulesKeyBtn.replaceChildren(document.createTextNode(' Delete Jules API Key'));
+            resetJulesKeyBtn.insertAdjacentHTML('afterbegin', '<span class=\"icon icon-inline\" aria-hidden=\"true\">delete</span>');
             resetJulesKeyBtn.disabled = false;
             
             await loadJulesKeyStatus(currentUser);
@@ -550,7 +557,8 @@ async function initApp() {
           }
         } catch (error) {
           showToast('Failed to delete API key: ' + error.message, 'error');
-          resetJulesKeyBtn.innerHTML = '<span class=\"icon icon-inline\" aria-hidden=\"true\">delete</span> Delete Jules API Key';
+          resetJulesKeyBtn.replaceChildren(document.createTextNode(' Delete Jules API Key'));
+          resetJulesKeyBtn.insertAdjacentHTML('afterbegin', '<span class=\"icon icon-inline\" aria-hidden=\"true\">delete</span>');
           resetJulesKeyBtn.disabled = false;
         }
       });
@@ -573,7 +581,10 @@ async function initApp() {
       } else {
         const profileUserName = document.getElementById('profileUserName');
         if (profileUserName) {
-          profileUserName.innerHTML = '<div class="muted-text text-center pad-xl">Please sign in to view your profile.</div>';
+          const signInDiv = document.createElement('div');
+          signInDiv.className = 'muted-text text-center pad-xl';
+          signInDiv.textContent = 'Please sign in to view your profile.';
+          profileUserName.replaceChildren(signInDiv);
         }
         const copenManagementSection = document.getElementById('copenManagementSection');
         if (copenManagementSection) {

@@ -54,6 +54,16 @@ const STATIC_ASSETS = [
   
   // Pages
   '/pages/ide-extension/ide-extension.html',
+  '/pages/wiki/wiki.html',
+
+  // Wiki modules and page init
+  '/src/pages/wiki-page.js',
+  '/src/modules/wiki-index.js',
+  '/src/modules/wiki-renderer.js',
+  '/src/modules/wiki-tree.js',
+  '/src/modules/wiki-timeline.js',
+  '/src/modules/wiki-graph.js',
+  '/src/modules/wiki-search.js',
   
   // External dependencies (high priority - largest performance win)
   'https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js',

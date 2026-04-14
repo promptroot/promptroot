@@ -96,7 +96,8 @@
       { "source": "/privacy", "destination": "/pages/privacy/privacy.html" },
       { "source": "/ide-extension", "destination": "/pages/ide-extension/ide-extension.html" },
       { "source": "/agent-api", "destination": "/pages/agent-api/agent-api.html" },
-      { "source": "/openclaw", "destination": "/pages/openclaw/openclaw.html" }
+      { "source": "/openclaw", "destination": "/pages/openclaw/openclaw.html" },
+      { "source": "/wiki", "destination": "/pages/wiki/wiki.html" }
     ]
   }
 }

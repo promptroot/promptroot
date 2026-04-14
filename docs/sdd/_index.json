@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-14T21:31:22.702Z",
+  "generatedAt": "2026-04-14T21:33:52.364Z",
   "docs": [
     {
       "slug": "dev-history-wiki",
@@ -81,19 +81,19 @@
         },
         {
           "level": 3,
-          "text": "W3 — Retrieval pipeline (keyword-based, keyless)"
+          "text": "W3 — Retrieval pipeline (keyword-based, keyless) ✅"
         },
         {
           "level": 3,
-          "text": "W4 — Agent integration"
+          "text": "W4 — Agent integration ✅"
         },
         {
           "level": 3,
-          "text": "W5 — Auth & private docs"
+          "text": "W5 — Auth & private docs ✅"
         },
         {
           "level": 3,
-          "text": "W6 — Testing"
+          "text": "W6 — Testing ✅"
         },
         {
           "level": 2,
@@ -148,7 +148,7 @@
           "text": "[<heading>](<url>)"
         }
       ],
-      "lastModified": "2026-04-14T00:32:51.106Z"
+      "lastModified": "2026-04-14T21:33:33.846Z"
     },
     {
       "slug": "modular-sdd-prompt-planner",

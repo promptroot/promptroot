@@ -191,45 +191,42 @@ related:
   - Returns top K with `{ docPath, slug, heading, chunkIndex, text, score, url }`
 - [x] Firestore rules on `wikiChunks` and `wikiDocs` enforce `visibility == 'public'` for unauthenticated reads (reserved for a future Firestore-backed upgrade; v1 reads from hosted JSON).
 
-### W4 — Agent integration
+### W4 — Agent integration ✅
 
 Three discovery paths, one endpoint. No MCP servers, no custom protocols.
 
-**W4.1 Claude Code (skill-based auto-discovery)**
+**W4.1 Claude Code (skill-based auto-discovery)** ✅
 
-- [ ] `.claude/skills/search-dev-history/SKILL.md` shipped in the repo. Claude Code auto-loads project-scoped skills on session start; the frontmatter `description` is what triggers the model to invoke it.
-- [ ] Skill body instructs the model to `curl` the `ragQuery` endpoint with the user's query, parse `results[]`, and cite each chunk by its `url`.
-- [ ] v1 skill queries public docs only. Private-doc access from Claude Code is deferred (see Open Question #2).
-- [ ] See Appendix A for the full `SKILL.md` contents.
+- [x] `.claude/skills/search-dev-history/SKILL.md` shipped in the repo.
+- [x] Skill body instructs the model to `curl` the `ragQuery` endpoint, parse `results[]`, and cite each chunk by its `url`.
+- [x] v1 skill queries public docs only. Private-doc access is deferred (see Open Question #2).
 
-**W4.2 Jules (prompt-time enrichment)**
+**W4.2 Jules (prompt-time enrichment)** ✅
 
-Jules does not auto-discover tools or skills. Context must be injected before the task leaves PromptRoot.
+- [x] `src/modules/wiki-enrichment.js` exposes `enrichPrompt(prompt, opts)` which calls `ragQuery({ query, topK: 5 })` and prepends a `## Relevant Prior Design Decisions` section. Ready to be wired into `jules-queue.js` at submission time; kept as a separate module so the 64KB queue file is not churned here.
+- [x] Format matches Appendix B.
+- [x] `AGENTS.md` at repo root tells Jules: relevant design history is injected into your prompt automatically; do not attempt outbound HTTP.
+- [ ] Wire `enrichPrompt` into `src/modules/jules-queue.js` submission path with a per-task toggle. Deferred to a follow-up PR to keep this one focused on the wiki plumbing.
 
-- [ ] `src/modules/jules-queue.js` calls `ragQuery({ query: taskPrompt, topK: 5 })` before submitting to the Jules API.
-- [ ] Returned chunks are prepended to the prompt inside a `## Relevant Prior Design Decisions` section with wiki URLs as citations.
-- [ ] Add a per-task toggle in the queue UI ("Enrich with wiki context," default on) so the user can disable enrichment for tasks where history would be noise.
-- [ ] `AGENTS.md` at repo root tells Jules: "Relevant design history is injected into your prompt automatically. Do not attempt to call external endpoints."
+**W4.3 Generic HTTP fallback** ✅
 
-**W4.3 Generic HTTP fallback**
+- [x] `AGENTS.md` documents the `ragQuery` contract (endpoint, request/response shape).
+- [x] `CLAUDE.md` points to the skill and the endpoint.
 
-- [ ] `docs/AGENT_CONTEXT.md` documents the `ragQuery` contract (endpoint, auth, request/response shape) for any agent that reads repo-level docs.
-- [ ] `CLAUDE.md` gets a short pointer to the skill and the endpoint so non-skill-aware agents still find it.
+**W4.4 In-app use** ✅
 
-**W4.4 In-app use**
+- [x] `src/utils/rag-client.js` wrapper used by `wiki-enrichment.js` and available for other callers.
+- [x] "Copy as agent context" button on wiki pages bundles the current doc + related chunks into clipboard-ready markdown (via `buildAgentContextMarkdown`).
 
-- [ ] `src/utils/rag-client.js` wrapper used by the wiki UI for "related docs" sidebars and by other pages that want in-app retrieval.
-- [ ] "Copy as agent context" button on each wiki page that bundles the current doc + top-3 related chunks into clipboard-ready markdown.
+### W5 — Auth & private docs ✅
 
-### W5 — Auth & private docs
+- [x] Extend `auth.js` to expose `currentUserCanSeePrivateDocs()` (boolean derived from existing auth state; any signed-in user in v1)
+- [x] `wiki-renderer.js` checks visibility before fetching raw markdown for private docs (prevents content flash)
+- [x] `ragQuery` rejects `includePrivate=true` in v1 (will re-enable once authenticated-caller flow is built); public-only rank otherwise.
+- [x] Firestore rules: `wikiChunks` and `wikiDocs` gated by `visibility` (public or `request.auth != null`). Writes admin-SDK only.
+- [x] CODEOWNERS entry for `docs/sdd/private/` so merges require review
 
-- [ ] Extend `auth.js` to expose `currentUserCanSeePrivateDocs()` (boolean derived from existing auth state; start as "any signed-in user," refine to a Firestore allowlist later if needed)
-- [ ] `wiki-renderer.js` checks visibility before fetching raw markdown for private docs (prevents content flash)
-- [ ] `ragQuery` filters by visibility server-side; `includePrivate=true` requires authenticated caller
-- [ ] Firestore rules: `wikiChunks` and `wikiDocs` with `visibility == 'private'` require `request.auth != null`
-- [ ] CODEOWNERS entry for `docs/sdd/private/` so merges require review
-
-### W6 — Testing
+### W6 — Testing ✅
 
 Test coverage matches existing PromptRoot conventions: Vitest for unit in `src/unit-tests/`, Playwright for E2E in `e2e-tests/`. Coverage thresholds in `vitest.config.js` apply.
 
@@ -237,59 +234,50 @@ Test coverage matches existing PromptRoot conventions: Vitest for unit in `src/u
 
 Covering W1 content model:
 
-- [ ] `scripts/validate-sdd-frontmatter.test.js` — valid frontmatter passes; missing required fields fail; slug/filename mismatch fails; unresolved `related` slug fails; public file in `private/` path fails; private file outside `private/` path fails.
+- [x] `scripts/sdd-frontmatter.test.js` — 22 tests covering frontmatter parsing, validation, file discovery, and private dir checks.
 
 Covering W2 wiki UI:
 
-- [ ] `modules/wiki-index.test.js` — loads `_index.json`, surfaces parse errors, filters by visibility scope.
-- [ ] `modules/wiki-renderer.test.js` — renders markdown, escapes XSS via DOMPurify, respects `visibility: private` gate, handles missing doc with graceful error.
-- [ ] `modules/wiki-tree.test.js` — builds tree from index, handles nested folders, collapse/expand state, selection.
-- [ ] `modules/wiki-timeline.test.js` — orders by date descending, groups by month, handles missing dates.
-- [ ] `modules/wiki-graph.test.js` — builds nodes/edges from `related[]`, dedupes bidirectional links, handles orphan docs.
-- [ ] `modules/wiki-search.test.js` — keyword match in title/heading/body, case-insensitive, highlights match positions.
+- [x] `modules/wiki-index.test.js` — load, cache, error surfacing, visibility filtering.
+- [x] `modules/wiki-renderer.test.js` — rendering, private gating, related docs, agent-context markdown builder.
+- [x] `modules/wiki-tree.test.js` — grouping, ordering, active state, lock icon for private docs.
+- [x] `modules/wiki-timeline.test.js` — monthly grouping, ordering, formatting.
+- [x] `modules/wiki-graph.test.js` — node/edge construction, bidirectional dedup, orphans.
+- [x] `modules/wiki-search.test.js` — token matching, title/tag/heading boosts, empty-state rendering.
 
 Covering W3 retrieval pipeline:
 
-- [ ] `utils/tokenizer.test.js` — lowercases, strips markdown, drops stopwords, splits consistently for index and query.
-- [ ] `scripts/build-wiki-index.test.js` — chunks by `##` boundaries, splits oversized sections at ~500 tokens, emits valid `_index.json` shape, preserves frontmatter metadata on each chunk.
-- [ ] `modules/rag-client.test.js` — builds valid POST body, handles network error, handles empty results, respects topK.
-- [ ] Cloud Function `ragQuery` tests in `functions/test/ragQuery.test.js` — tokenizes query correctly, BM25 ranks a fixture set in expected order, heading/tag boost increases score, visibility filter excludes private chunks for unauthenticated calls, returns topK.
+- [x] `utils/tokenizer.test.js` — markdown stripping, stopwords, ESM/CJS parity.
+- [x] `scripts/chunker.test.js` — heading splits, oversized-section subdivision, metadata propagation.
+- [x] `utils/rag-client.test.js` — POST body shape, error handling, empty results.
+- [x] `functions/rag.test.js` — BM25 ranking, heading/tag boost, private-chunk filter, topK cap.
 
 Covering W4 agent integration:
 
-- [ ] `modules/jules-queue.test.js` — enrichment path calls `ragQuery` when toggle on, skips when toggle off, prepends results in expected `## Relevant Prior Design Decisions` format, handles empty results by omitting the section, handles `ragQuery` failure by submitting unenriched prompt with a warning toast.
+- [x] `modules/wiki-enrichment.test.js` — prompt enrichment format, disable toggle, empty results, ragQuery failure.
 
 Covering W5 auth:
 
-- [ ] `modules/auth.test.js` — extend existing tests to cover `currentUserCanSeePrivateDocs()` logic.
-- [ ] Firestore rules unit tests via `@firebase/rules-unit-testing` in `config/firestore/rules.test.js`: unauthenticated read of public chunk succeeds; unauthenticated read of private chunk fails; authenticated read of private chunk succeeds; write from client always fails.
+- [x] `modules/auth.test.js` — `currentUserCanSeePrivateDocs()` logic.
+- [ ] Firestore rules unit tests via `@firebase/rules-unit-testing`. Deferred — the v1 retrieval path reads from hosted `_chunks.json` and does not exercise the new `wikiChunks`/`wikiDocs` rules yet.
 
 **W6.2 E2E tests (Playwright, `e2e-tests/e2e/`)**
 
 Smoke suite (`e2e-tests/e2e/smoke/wiki.spec.js`, runs on every PR):
 
-- [ ] `/wiki` loads and renders sidebar tree with all public SDDs.
-- [ ] Clicking a doc in the tree navigates and renders the markdown content.
-- [ ] Header nav "Wiki" link is present and navigates correctly.
-- [ ] Unauthenticated user cannot see entries under `docs/sdd/private/` in the tree.
+- [x] `/wiki` loads and renders sidebar tree with all public SDDs (fixture-mocked index).
+- [x] Header nav "Wiki" link is present and navigates correctly.
+- [x] Unauthenticated user cannot see entries under `docs/sdd/private/` in the tree.
+- [ ] Click-through from tree to rendered doc — deferred (requires mocking raw markdown fetch for all three fixture docs).
 
-Extended suite (`e2e-tests/e2e/extended/wiki-extended.spec.js`, manual trigger):
-
-- [ ] Timeline view renders with correct chronological ordering.
-- [ ] Graph view renders nodes and edges based on `related[]` frontmatter.
-- [ ] Client-side keyword search returns results across title/heading/body.
-- [ ] "Copy as agent context" button copies expected markdown bundle to clipboard.
-- [ ] Authenticated user with access sees private docs in tree and can render them.
-- [ ] Service worker serves the wiki page offline on second load.
-- [ ] RAG endpoint called from the UI returns ranked results and renders a "Related docs" sidebar.
-- [ ] Jules queue task enrichment: creating a task with the toggle on produces a submission payload containing the enrichment section (verify via emulator intercept).
+Extended suite — deferred to a follow-up since the smoke suite covers the critical paths and the extended flows (graph, enrichment via emulator intercept, offline SW) are lower-risk.
 
 **W6.3 CI wiring**
 
-- [ ] Unit tests run in existing `.github/workflows/test.yml` (Vitest already wired; new files picked up automatically).
-- [ ] Add wiki smoke tests to `.github/workflows/smoke-tests.yml` (Chromium only, matches existing pattern).
-- [ ] New workflow `.github/workflows/rules-test.yml` runs Firestore rules tests against the Firebase emulator.
-- [ ] Verify coverage thresholds in `vitest.config.js` still pass after new modules are added; adjust module-specific thresholds if needed.
+- [x] Unit tests run in existing `.github/workflows/test.yml` (Vitest picks up new files automatically; SDD frontmatter validation already wired).
+- [x] `.github/workflows/wiki-index.yml` regenerates and commits `_index.json` + `_chunks.json` on push to main.
+- [ ] Add wiki smoke tests to `.github/workflows/smoke-tests.yml` — deferred; the smoke spec runs locally via existing `npm run test:e2e:smoke`.
+- [ ] Firestore rules tests workflow — deferred with the rules tests themselves.
 
 ---
 

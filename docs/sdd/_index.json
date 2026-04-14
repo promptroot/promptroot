@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-14T21:33:52.364Z",
+  "generatedAt": "2026-04-14T21:44:36.821Z",
   "docs": [
     {
       "slug": "dev-history-wiki",
@@ -148,7 +148,7 @@
           "text": "[<heading>](<url>)"
         }
       ],
-      "lastModified": "2026-04-14T21:33:33.846Z"
+      "lastModified": "2026-04-14T21:44:00.709Z"
     },
     {
       "slug": "modular-sdd-prompt-planner",

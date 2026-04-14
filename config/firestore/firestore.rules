@@ -76,6 +76,20 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Wiki docs - public docs readable by anyone; private docs require auth.
+    match /wikiDocs/{slug} {
+      allow read: if resource.data.visibility == 'public'
+                  || (request.auth != null && resource.data.visibility == 'private');
+      allow write: if false;
+    }
+
+    // Wiki chunks - same visibility gate as wikiDocs. Admin SDK only for writes.
+    match /wikiChunks/{chunkId} {
+      allow read: if resource.data.visibility == 'public'
+                  || (request.auth != null && resource.data.visibility == 'private');
+      allow write: if false;
+    }
+
     // Deny all other access by default
     match /{document=**} {
       allow read, write: if false;

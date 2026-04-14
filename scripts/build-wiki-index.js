@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve, relative, basename } from 'node:path';
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { listSddFiles, parseFrontmatter, isUnderPrivateDir } from './lib/sdd-frontmatter.js';
+import { chunkDoc } from './lib/chunker.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '..');
@@ -20,6 +21,7 @@ function extractHeadings(body) {
 function buildIndex() {
   const files = listSddFiles(sddRoot);
   const docs = [];
+  const chunks = [];
 
   for (const file of files) {
     const text = readFileSync(file, 'utf8');
@@ -27,7 +29,7 @@ function buildIndex() {
     const closeIdx = text.indexOf('\n---', 4);
     const body = text.slice(closeIdx + 4).replace(/^\r?\n/, '');
     const stat = statSync(file);
-    docs.push({
+    const doc = {
       slug: fm.slug,
       title: fm.title,
       date: fm.date,
@@ -40,19 +42,33 @@ function buildIndex() {
       private: isUnderPrivateDir(sddRoot, file),
       headings: extractHeadings(body),
       lastModified: stat.mtime.toISOString()
-    });
+    };
+    docs.push(doc);
+    for (const chunk of chunkDoc(doc, body)) {
+      chunks.push(chunk);
+    }
   }
 
   docs.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   return {
-    version: 1,
-    generatedAt: new Date().toISOString(),
-    docs
+    index: {
+      version: 1,
+      generatedAt: new Date().toISOString(),
+      docs
+    },
+    chunks: {
+      version: 1,
+      generatedAt: new Date().toISOString(),
+      chunks
+    }
   };
 }
 
-const index = buildIndex();
-const outPath = resolve(sddRoot, '_index.json');
-writeFileSync(outPath, JSON.stringify(index, null, 2) + '\n', 'utf8');
-console.log(`Wrote ${relative(repoRoot, outPath)} (${index.docs.length} docs)`);
+const { index, chunks } = buildIndex();
+const indexPath = resolve(sddRoot, '_index.json');
+const chunksPath = resolve(sddRoot, '_chunks.json');
+writeFileSync(indexPath, JSON.stringify(index, null, 2) + '\n', 'utf8');
+writeFileSync(chunksPath, JSON.stringify(chunks, null, 2) + '\n', 'utf8');
+console.log(`Wrote ${relative(repoRoot, indexPath)} (${index.docs.length} docs)`);
+console.log(`Wrote ${relative(repoRoot, chunksPath)} (${chunks.chunks.length} chunks)`);

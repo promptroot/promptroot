@@ -19,6 +19,10 @@ export function setCurrentUser(user) {
   currentUser = user;
 }
 
+export function currentUserCanSeePrivateDocs() {
+  return !!getCurrentUser();
+}
+
 export async function signInWithGitHub(forceAccountSelection = false) {
   try {
     const auth = getAuth();

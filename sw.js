@@ -10,7 +10,7 @@
 // 5. SW broadcasts { type: 'SW_UPDATED' } to all clients (e.g. other tabs).
 // 6. Clients reload or show notification.
 
-const CACHE_VERSION = 'promptroot-v9';
+const CACHE_VERSION = 'promptroot-v10';
 const CACHE_NAME = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -64,7 +64,10 @@ const STATIC_ASSETS = [
   '/src/modules/wiki-timeline.js',
   '/src/modules/wiki-graph.js',
   '/src/modules/wiki-search.js',
-  
+  '/src/modules/wiki-enrichment.js',
+  '/src/utils/rag-client.js',
+  '/src/utils/tokenizer.js',
+
   // External dependencies (high priority - largest performance win)
   'https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js',

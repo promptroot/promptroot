@@ -324,6 +324,14 @@ cd functions && npm run deploy      # Deploy functions to Firebase
 - `vitest.config.js` - Unit test configuration with coverage thresholds
 - `playwright.config.js` - E2E test configuration
 
+## Dev history wiki
+
+SDDs live in `docs/sdd/*.md` and are browsable at `/wiki`. A project-scoped
+skill at `.claude/skills/search-dev-history/SKILL.md` queries the RAG
+endpoint for historical context. Use it before proposing non-trivial
+architectural changes or when the user references a past decision. See
+`AGENTS.md` for the contract.
+
 ## Documentation
 
 - `docs/CODE_STYLE_GUIDE.md` - JavaScript/CSS coding standards

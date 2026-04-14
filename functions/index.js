@@ -7,6 +7,7 @@ const relaySharedSecret = defineSecret('RELAY_SHARED_SECRET');
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
 const { webcrypto: crypto } = require('crypto');
+const { rank: ragRank } = require('./rag');
 
 admin.initializeApp();
 
@@ -1372,5 +1373,56 @@ exports.pollOpenclawJob = onRequest({ secrets: [relaySharedSecret] }, async (req
   } catch (err) {
     logger.error('pollOpenclawJob error:', err.message);
     res.status(500).json({ error: err.message || 'Internal error' });
+  }
+});
+
+const WIKI_CHUNKS_URL = 'https://promptroot.ai/docs/sdd/_chunks.json';
+const WIKI_CACHE_TTL_MS = 5 * 60 * 1000;
+let wikiChunksCache = { data: null, fetchedAt: 0 };
+
+async function loadWikiChunks() {
+  const now = Date.now();
+  if (wikiChunksCache.data && now - wikiChunksCache.fetchedAt < WIKI_CACHE_TTL_MS) {
+    return wikiChunksCache.data;
+  }
+  const resp = await fetch(WIKI_CHUNKS_URL, { headers: { 'cache-control': 'no-cache' } });
+  if (!resp.ok) throw new Error(`Failed to fetch wiki chunks: ${resp.status}`);
+  const payload = await resp.json();
+  const chunks = Array.isArray(payload.chunks) ? payload.chunks : [];
+  wikiChunksCache = { data: chunks, fetchedAt: now };
+  return chunks;
+}
+
+if (process.env.NODE_ENV === 'test') {
+  exports._setWikiChunksForTest = (chunks) => {
+    wikiChunksCache = { data: chunks, fetchedAt: Date.now() };
+  };
+  exports._loadWikiChunks = loadWikiChunks;
+}
+
+exports.ragQuery = onRequest({ cors: true }, async (req, res) => {
+  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+  if (req.method !== 'POST') { res.status(405).json({ error: 'POST required' }); return; }
+  try {
+    const { query, topK, includePrivate } = req.body || {};
+    if (typeof query !== 'string' || query.trim().length === 0) {
+      res.status(400).json({ error: 'query is required' });
+      return;
+    }
+    if (includePrivate) {
+      res.status(403).json({ error: 'private docs are not accessible via this endpoint in v1' });
+      return;
+    }
+    const chunks = await loadWikiChunks();
+    const results = ragRank({
+      query,
+      chunks,
+      topK: Math.min(Math.max(parseInt(topK, 10) || 5, 1), 20),
+      includePrivate: false
+    });
+    res.json({ results });
+  } catch (err) {
+    logger.error('ragQuery error:', err.message);
+    res.status(500).json({ error: 'Internal error' });
   }
 });

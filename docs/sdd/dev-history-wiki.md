@@ -178,18 +178,18 @@ related:
 - [x] Header nav entry + Firebase rewrite for `/wiki`
 - [x] Service worker: add wiki page assets to `STATIC_ASSETS`
 
-### W3 — Retrieval pipeline (keyword-based, keyless)
+### W3 — Retrieval pipeline (keyword-based, keyless) ✅
 
-- [ ] `scripts/build-wiki-index.js` (Node): walk `docs/sdd/`, parse frontmatter, chunk by heading, tokenize, write Firestore docs + chunks, emit `_index.json`. Zero external API calls.
-- [ ] Shared tokenizer module used by both the indexer and the Cloud Function so query-time and index-time tokenization cannot drift
-- [ ] `.github/workflows/wiki-index.yml`: runs on push to main, executes the script, commits updated `_index.json`
-- [ ] Cloud Function `ragQuery` in `functions/index.js`:
+- [x] `scripts/build-wiki-index.js` (Node): walk `docs/sdd/`, parse frontmatter, chunk by heading, tokenize, emit `_index.json` + `_chunks.json`. Zero external API calls. (v1 hosts chunks as a static JSON file rather than Firestore; upgrade path documented in §3.4)
+- [x] Shared tokenizer: `src/utils/tokenizer.js` (ESM, frontend) mirrored by `scripts/lib/tokenizer.cjs` (CJS, build + Cloud Function). Parity test in `src/unit-tests/utils/tokenizer.test.js` guards against drift.
+- [x] `.github/workflows/wiki-index.yml`: runs on push to main that touches `docs/sdd/**`, executes the script, commits updated index + chunks.
+- [x] Cloud Function `ragQuery` in `functions/index.js`:
   - Input: `{ query: string, topK?: number, includePrivate?: boolean }`
-  - Tokenize query with shared tokenizer
-  - Fetch chunks from `wikiChunks` filtered by visibility (if `includePrivate`, require authenticated user)
-  - Rank via BM25 over `tokens[]`, with heading/tag matches boosted
-  - Return top K with `{ docPath, heading, text, score, url }`
-- [ ] Firestore rules on `wikiChunks` and `wikiDocs` enforce `visibility == 'public'` for unauthenticated reads
+  - Tokenizes query with shared tokenizer
+  - Fetches hosted `_chunks.json` with a 5-minute in-memory cache
+  - Ranks via BM25 over `tokens[]`, with heading and tag matches boosted
+  - Returns top K with `{ docPath, slug, heading, chunkIndex, text, score, url }`
+- [x] Firestore rules on `wikiChunks` and `wikiDocs` enforce `visibility == 'public'` for unauthenticated reads (reserved for a future Firestore-backed upgrade; v1 reads from hosted JSON).
 
 ### W4 — Agent integration
 

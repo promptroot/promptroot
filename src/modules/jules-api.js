@@ -170,7 +170,18 @@ export async function loadJulesProfileInfo(uid) {
   };
 }
 
-export async function callRunJulesFunction(promptText, sourceId, branch = 'master', title = '') {
+function shouldEnrichWithWiki(optFlag) {
+  if (optFlag === true) return true;
+  if (optFlag === false) return false;
+  try {
+    return typeof localStorage !== 'undefined'
+      && localStorage.getItem('promptroot.wikiEnrichment') === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export async function callRunJulesFunction(promptText, sourceId, branch = 'master', title = '', options = {}) {
   const user = getAuth()?.currentUser || null;
   if (!user) {
     handleError(JULES_MESSAGES.NOT_LOGGED_IN, { source: 'callRunJulesFunction' }, { category: ErrorCategory.AUTH });
@@ -181,6 +192,16 @@ export async function callRunJulesFunction(promptText, sourceId, branch = 'maste
     throw new Error('No repository selected');
   }
 
+  let effectivePrompt = promptText;
+  if (shouldEnrichWithWiki(options.enrichWithWiki)) {
+    try {
+      const { enrichPrompt } = await import('./wiki-enrichment.js');
+      effectivePrompt = await enrichPrompt(promptText || '', { topK: 5 });
+    } catch (err) {
+      console.warn('Wiki enrichment failed, submitting unenriched prompt:', err);
+    }
+  }
+
   const julesBtn = document.getElementById('julesBtn');
   const originalText = julesBtn?.textContent;
   if (julesBtn) {
@@ -189,7 +210,7 @@ export async function callRunJulesFunction(promptText, sourceId, branch = 'maste
   }
 
   try {
-    const sessionUrl = await runJulesAPI(promptText, sourceId, branch, title, user);
+    const sessionUrl = await runJulesAPI(effectivePrompt, sourceId, branch, title, user);
     
     // Invalidate session cache to ensure new session appears in profile
     clearCache(CACHE_KEYS.JULES_ACCOUNT, user.uid);

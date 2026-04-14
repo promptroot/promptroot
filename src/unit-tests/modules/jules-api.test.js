@@ -240,8 +240,51 @@ describe('jules-api', () => {
       });
       
       const result = await callRunJulesFunction('test prompt', 'owner/repo', 'main', 'Test Title');
-      
+
       expect(result).toBe('https://jules.example.com/session/123');
+    });
+
+    it('enriches prompt with wiki context when options.enrichWithWiki is true', async () => {
+      mockAuth.currentUser = {
+        uid: 'test-user',
+        getIdToken: vi.fn().mockResolvedValue('firebase-token')
+      };
+      global.document.getElementById = vi.fn().mockReturnValue(null);
+
+      vi.doMock('../../modules/wiki-enrichment.js', () => ({
+        enrichPrompt: vi.fn(async (p) => `## Relevant Prior Design Decisions\nCTX\n\n${p}`)
+      }));
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ sessionUrl: 'https://jules.example.com/session/99' })
+      });
+
+      await callRunJulesFunction('do the thing', 'owner/repo', 'main', 'T', { enrichWithWiki: true });
+
+      const payloadArg = mockFetch.mock.calls.at(-1)[1];
+      const body = JSON.parse(payloadArg.body);
+      expect(body.promptText).toContain('Relevant Prior Design Decisions');
+      expect(body.promptText).toContain('do the thing');
+    });
+
+    it('submits unenriched prompt when options.enrichWithWiki is false', async () => {
+      mockAuth.currentUser = {
+        uid: 'test-user',
+        getIdToken: vi.fn().mockResolvedValue('firebase-token')
+      };
+      global.document.getElementById = vi.fn().mockReturnValue(null);
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ sessionUrl: 'https://jules.example.com/session/100' })
+      });
+
+      await callRunJulesFunction('plain prompt', 'owner/repo', 'main', 'T', { enrichWithWiki: false });
+
+      const payloadArg = mockFetch.mock.calls.at(-1)[1];
+      const body = JSON.parse(payloadArg.body);
+      expect(body.promptText).toBe('plain prompt');
     });
   });
 

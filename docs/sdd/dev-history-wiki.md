@@ -203,10 +203,10 @@ Three discovery paths, one endpoint. No MCP servers, no custom protocols.
 
 **W4.2 Jules (prompt-time enrichment)** ✅
 
-- [x] `src/modules/wiki-enrichment.js` exposes `enrichPrompt(prompt, opts)` which calls `ragQuery({ query, topK: 5 })` and prepends a `## Relevant Prior Design Decisions` section. Ready to be wired into `jules-queue.js` at submission time; kept as a separate module so the 64KB queue file is not churned here.
+- [x] `src/modules/wiki-enrichment.js` exposes `enrichPrompt(prompt, opts)` which calls `ragQuery({ query, topK: 5 })` and prepends a `## Relevant Prior Design Decisions` section.
 - [x] Format matches Appendix B.
 - [x] `AGENTS.md` at repo root tells Jules: relevant design history is injected into your prompt automatically; do not attempt outbound HTTP.
-- [ ] Wire `enrichPrompt` into `src/modules/jules-queue.js` submission path with a per-task toggle. Deferred to a follow-up PR to keep this one focused on the wiki plumbing.
+- [x] `callRunJulesFunction` in `src/modules/jules-api.js` (single chokepoint for all Jules submissions) gates enrichment on `options.enrichWithWiki` or `localStorage.promptroot.wikiEnrichment === 'true'`, lazy-imports `wiki-enrichment.js`, and falls back to the unenriched prompt on failure. UI toggle deferred.
 
 **W4.3 Generic HTTP fallback** ✅
 
@@ -276,7 +276,7 @@ Extended suite — deferred to a follow-up since the smoke suite covers the crit
 
 - [x] Unit tests run in existing `.github/workflows/test.yml` (Vitest picks up new files automatically; SDD frontmatter validation already wired).
 - [x] `.github/workflows/wiki-index.yml` regenerates and commits `_index.json` + `_chunks.json` on push to main.
-- [ ] Add wiki smoke tests to `.github/workflows/smoke-tests.yml` — deferred; the smoke spec runs locally via existing `npm run test:e2e:smoke`.
+- [x] Wiki smoke tests run automatically in `.github/workflows/smoke-tests.yml` (the workflow globs `e2e-tests/e2e/smoke/`, no per-spec wiring needed).
 - [ ] Firestore rules tests workflow — deferred with the rules tests themselves.
 
 ---

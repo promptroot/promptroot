@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve, relative, basename } from 'node:path';
+import { dirname, resolve, relative } from 'node:path';
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { listSddFiles, parseFrontmatter, isUnderPrivateDir } from './lib/sdd-frontmatter.js';
 import { chunkDoc } from './lib/chunker.js';

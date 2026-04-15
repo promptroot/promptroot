@@ -61,7 +61,13 @@ const STYLE = [
       'font-size': '11px',
       'text-valign': 'bottom',
       'text-halign': 'center',
-      'text-margin-y': 6,
+      'text-margin-y': 8,
+      'text-wrap': 'wrap',
+      'text-max-width': '120px',
+      'text-background-color': '#0f1220',
+      'text-background-opacity': 0.85,
+      'text-background-padding': '3px',
+      'text-background-shape': 'roundrectangle',
       'width': 28,
       'height': 28,
       'border-width': 1,
@@ -97,7 +103,16 @@ export async function renderGraph({ container, docs, onSelect }) {
     container,
     elements: { nodes: data.nodes, edges: data.edges },
     style: STYLE,
-    layout: { name: 'cose', animate: false, padding: 24 }
+    layout: {
+      name: 'cose',
+      animate: false,
+      padding: 40,
+      nodeRepulsion: 12000,
+      idealEdgeLength: 180,
+      nodeOverlap: 30,
+      componentSpacing: 120,
+      gravity: 0.25
+    }
   });
 
   cy.on('tap', 'node', evt => {

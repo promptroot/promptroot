@@ -12,7 +12,7 @@ function chunk(slug, heading, text, opts = {}) {
   return {
     id: `${slug}__${opts.idx || 0}`,
     slug,
-    docPath: `docs/sdd/${slug}.md`,
+    docPath: `wiki/${slug}.md`,
     heading,
     chunkIndex: opts.idx || 0,
     text,

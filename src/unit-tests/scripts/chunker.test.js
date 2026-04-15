@@ -42,7 +42,7 @@ describe('chunker', () => {
     const doc = {
       slug: 'demo',
       title: 'Demo',
-      docPath: 'docs/sdd/demo.md',
+      docPath: 'wiki/demo.md',
       visibility: 'public',
       tags: ['infra'],
       date: '2026-04-13'
@@ -53,7 +53,7 @@ describe('chunker', () => {
       expect(chunks).toHaveLength(2);
       expect(chunks[0]).toMatchObject({
         slug: 'demo',
-        docPath: 'docs/sdd/demo.md',
+        docPath: 'wiki/demo.md',
         heading: 'Intro',
         chunkIndex: 0,
         visibility: 'public',

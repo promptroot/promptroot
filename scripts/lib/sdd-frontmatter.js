@@ -84,7 +84,7 @@ export function validate(parsed, { filename, isInPrivateDir, knownSlugs }) {
     errors.push(`file under private/ must declare visibility: private (got: ${parsed.visibility})`);
   }
   if (!isInPrivateDir && parsed.visibility === 'private') {
-    errors.push('file declaring visibility: private must live under docs/sdd/private/');
+    errors.push('file declaring visibility: private must live under wiki/private/');
   }
 
   if (Array.isArray(parsed.related) && knownSlugs) {

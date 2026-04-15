@@ -7,7 +7,7 @@ import { chunkDoc } from './lib/chunker.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '..');
-const sddRoot = resolve(repoRoot, 'docs', 'sdd');
+const sddRoot = resolve(repoRoot, 'wiki');
 
 function extractHeadings(body) {
   const headings = [];

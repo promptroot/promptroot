@@ -1376,7 +1376,7 @@ exports.pollOpenclawJob = onRequest({ secrets: [relaySharedSecret] }, async (req
   }
 });
 
-const WIKI_CHUNKS_URL = 'https://promptroot.ai/docs/sdd/_chunks.json';
+const WIKI_CHUNKS_URL = 'https://promptroot.ai/wiki/_chunks.json';
 const WIKI_CACHE_TTL_MS = 5 * 60 * 1000;
 let wikiChunksCache = { data: null, fetchedAt: 0 };
 

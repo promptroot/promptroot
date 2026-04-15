@@ -5,13 +5,13 @@ Guidance for coding agents (Jules, Claude Code, etc.) working in this repo.
 ## Dev history wiki
 
 Prior design decisions and SDDs live at https://promptroot.ai/wiki and in
-`docs/sdd/*.md`. The markdown files are the source of truth.
+`wiki/*.md`. The markdown files are the source of truth.
 
 ### Jules
 
 PromptRoot's Jules queue injects relevant wiki excerpts into your prompt
 automatically before submission (see
-`docs/sdd/dev-history-wiki.md` § W4.2). Look for a
+`wiki/dev-history-wiki.md` § W4.2). Look for a
 `## Relevant Prior Design Decisions` section near the top of your prompt.
 Do not attempt outbound HTTP requests to fetch additional context; you
 cannot reach them, and what matters is already in the prompt.

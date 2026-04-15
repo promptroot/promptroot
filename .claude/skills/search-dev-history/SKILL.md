@@ -34,7 +34,7 @@ supported in v1.
     {
       "results": [
         {
-          "docPath": "docs/sdd/vscode-extension-store.md",
+          "docPath": "wiki/vscode-extension-store.md",
           "slug": "vscode-extension-store",
           "heading": "A3. Update package.json Metadata",
           "text": "...chunk content...",

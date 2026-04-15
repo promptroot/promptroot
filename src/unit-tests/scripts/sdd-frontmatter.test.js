@@ -149,7 +149,7 @@ describe('validate', () => {
     const fm = baseFm();
     fm.visibility = 'private';
     const errs = validate(fm, opts());
-    expect(errs.some(e => e.includes('must live under docs/sdd/private/'))).toBe(true);
+    expect(errs.some(e => e.includes('must live under wiki/private/'))).toBe(true);
   });
 
   it('fails when private-dir file declares visibility: public', () => {

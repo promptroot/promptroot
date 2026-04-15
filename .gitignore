@@ -52,6 +52,7 @@ logs/
 *CLOUD_FUNCTIONS*.md
 *INTEGRATION*.md
 *REFERENCE*.md
+!wiki/**/*.md
 
 CNAME
 promptroot-b02a2-firebase-adminsdk-fbsvc-890e52d264.json

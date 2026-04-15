@@ -41,14 +41,14 @@ describe('wiki-renderer', () => {
       const fetchImpl = vi.fn().mockResolvedValue({
         ok: true, status: 200, text: async () => '# raw'
       });
-      const out = await fetchDocMarkdown('docs/sdd/a.md', { fetchImpl });
+      const out = await fetchDocMarkdown('wiki/a.md', { fetchImpl });
       expect(out).toBe('# raw');
-      expect(fetchImpl).toHaveBeenCalledWith('/docs/sdd/a.md', { cache: 'no-cache' });
+      expect(fetchImpl).toHaveBeenCalledWith('/wiki/a.md', { cache: 'no-cache' });
     });
 
     it('throws on non-OK response', async () => {
       const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 404 });
-      await expect(fetchDocMarkdown('docs/sdd/missing.md', { fetchImpl }))
+      await expect(fetchDocMarkdown('wiki/missing.md', { fetchImpl }))
         .rejects.toThrow(/404/);
     });
   });
@@ -60,7 +60,7 @@ describe('wiki-renderer', () => {
 
     it('blocks private docs when caller cannot see them', async () => {
       const out = await renderDoc({
-        slug: 'p', visibility: 'private', docPath: 'docs/sdd/p.md'
+        slug: 'p', visibility: 'private', docPath: 'wiki/p.md'
       });
       expect(out).toEqual({ html: null, blocked: true });
     });
@@ -71,7 +71,7 @@ describe('wiki-renderer', () => {
         text: async () => '---\nslug: a\n---\n\n# Hi'
       });
       const out = await renderDoc({
-        slug: 'a', visibility: 'public', docPath: 'docs/sdd/a.md'
+        slug: 'a', visibility: 'public', docPath: 'wiki/a.md'
       }, { fetchImpl });
       expect(out.blocked).toBe(false);
       expect(out.html).toContain('Hi');
@@ -83,7 +83,7 @@ describe('wiki-renderer', () => {
         ok: true, status: 200, text: async () => '# secret'
       });
       const out = await renderDoc({
-        slug: 'p', visibility: 'private', docPath: 'docs/sdd/p.md'
+        slug: 'p', visibility: 'private', docPath: 'wiki/p.md'
       }, { fetchImpl });
       expect(out.blocked).toBe(false);
     });

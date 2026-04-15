@@ -4,7 +4,7 @@ This directory holds every Software Design Document for PromptRoot. Each file is
 
 ## How to add an SDD
 
-1. Copy `_template.md` to a new file at `docs/sdd/<slug>.md` (or `docs/sdd/private/<slug>.md` if it must be gated).
+1. Copy `_template.md` to a new file at `wiki/<slug>.md` (or `wiki/private/<slug>.md` if it must be gated).
 2. Fill in the frontmatter (see schema below). The `slug` must match the filename stem.
 3. Write the document. Use `##` headings to delimit sections; the indexer chunks on those boundaries.
 4. Open a PR. CI runs `scripts/validate-sdd-frontmatter.js` and will fail the PR on schema violations.
@@ -31,13 +31,13 @@ related:                                # required, array of slugs (may be empty
 - **slug.** Must equal the filename without `.md`. Kebab-case, lowercase.
 - **date.** ISO 8601 (`YYYY-MM-DD`). Used by the wiki timeline view.
 - **status.** One of the five values above. New docs typically start at `proposal`, move to `approved` once work begins, then `in-progress`, then `shipped`. `archived` for superseded docs that should remain searchable but flagged as historical.
-- **visibility.** `public` for everything by default. `private` only for docs that contain genuinely sensitive content (incident details, unreleased features, credentials-adjacent material). Files under `docs/sdd/private/` must declare `visibility: private`; files outside that path must declare `visibility: public`. CI enforces both directions.
+- **visibility.** `public` for everything by default. `private` only for docs that contain genuinely sensitive content (incident details, unreleased features, credentials-adjacent material). Files under `wiki/private/` must declare `visibility: private`; files outside that path must declare `visibility: public`. CI enforces both directions.
 - **related.** Slugs of other SDDs that this one references or supersedes. Powers the wiki graph view and the "related docs" sidebar in agent responses.
 
 ## File layout
 
 ```
-docs/sdd/
+wiki/
   README.md                  this file
   _template.md               scaffold for new SDDs
   _index.json                generated; do not edit by hand

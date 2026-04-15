@@ -34,7 +34,7 @@ const FIXTURE_INDEX = {
       tags: ['infra', 'rag'],
       visibility: 'public',
       related: [],
-      docPath: 'docs/sdd/dev-history-wiki.md',
+      docPath: 'wiki/dev-history-wiki.md',
       private: false,
       headings: [{ level: 2, text: 'Objective' }],
       lastModified: '2026-04-13T00:00:00.000Z'
@@ -48,7 +48,7 @@ const FIXTURE_INDEX = {
       tags: [],
       visibility: 'private',
       related: [],
-      docPath: 'docs/sdd/private/secret.md',
+      docPath: 'wiki/private/secret.md',
       private: true,
       headings: [],
       lastModified: '2026-04-01T00:00:00.000Z'
@@ -59,7 +59,7 @@ const FIXTURE_INDEX = {
 test.describe('Wiki smoke', () => {
   test.beforeEach(async ({ page }) => {
     await mockExternalResources(page);
-    await page.route('**/docs/sdd/_index.json', route => {
+    await page.route('**/wiki/_index.json', route => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',

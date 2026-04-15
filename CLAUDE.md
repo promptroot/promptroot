@@ -326,7 +326,7 @@ cd functions && npm run deploy      # Deploy functions to Firebase
 
 ## Dev history wiki
 
-SDDs live in `docs/sdd/*.md` and are browsable at `/wiki`. A project-scoped
+SDDs live in `wiki/*.md` and are browsable at `/wiki`. A project-scoped
 skill at `.claude/skills/search-dev-history/SKILL.md` queries the RAG
 endpoint for historical context. Use it before proposing non-trivial
 architectural changes or when the user references a past decision. See

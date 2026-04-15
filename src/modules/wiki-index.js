@@ -1,4 +1,4 @@
-const INDEX_URL = '/docs/sdd/_index.json';
+const INDEX_URL = '/wiki/_index.json';
 
 let cachedIndex = null;
 let inflight = null;

@@ -1,7 +1,115 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-14T21:44:36.821Z",
+  "generatedAt": "2026-04-15T03:36:38.537Z",
   "docs": [
+    {
+      "slug": "vscode-wiki-integration",
+      "title": "VS Code Extension — Wiki Integration & Agent Discovery",
+      "date": "2026-04-14",
+      "status": "proposal",
+      "owner": "jesse",
+      "tags": [
+        "vscode",
+        "extension",
+        "rag",
+        "wiki",
+        "agents"
+      ],
+      "visibility": "public",
+      "related": [
+        "dev-history-wiki",
+        "vscode-extension-store"
+      ],
+      "docPath": "wiki/vscode-wiki-integration.md",
+      "private": false,
+      "headings": [
+        {
+          "level": 2,
+          "text": "1. Objective"
+        },
+        {
+          "level": 2,
+          "text": "2. Current State"
+        },
+        {
+          "level": 2,
+          "text": "3. Architecture"
+        },
+        {
+          "level": 3,
+          "text": "3.1 Three discovery vectors"
+        },
+        {
+          "level": 3,
+          "text": "3.2 Vector A — Palette command (explicit user action)"
+        },
+        {
+          "level": 3,
+          "text": "3.3 Vector B — Chat participant `@promptroot`"
+        },
+        {
+          "level": 3,
+          "text": "3.4 Vector C — Language Model Tool"
+        },
+        {
+          "level": 3,
+          "text": "3.5 Shared layer"
+        },
+        {
+          "level": 3,
+          "text": "3.6 Settings"
+        },
+        {
+          "level": 2,
+          "text": "4. Workstreams"
+        },
+        {
+          "level": 3,
+          "text": "W1 — Shared client and enrichment"
+        },
+        {
+          "level": 3,
+          "text": "W2 — Palette command"
+        },
+        {
+          "level": 3,
+          "text": "W3 — Chat participant"
+        },
+        {
+          "level": 3,
+          "text": "W4 — Language Model Tool"
+        },
+        {
+          "level": 3,
+          "text": "W5 — Settings and privacy"
+        },
+        {
+          "level": 3,
+          "text": "W6 — Testing"
+        },
+        {
+          "level": 3,
+          "text": "W7 — Packaging and release"
+        },
+        {
+          "level": 2,
+          "text": "5. Resolved Decisions"
+        },
+        {
+          "level": 2,
+          "text": "6. Open Questions"
+        },
+        {
+          "level": 2,
+          "text": "7. Out of Scope (v1)"
+        },
+        {
+          "level": 2,
+          "text": "8. Milestones"
+        }
+      ],
+      "lastModified": "2026-04-15T03:35:24.215Z"
+    },
     {
       "slug": "dev-history-wiki",
       "title": "Development History Wiki (RAG-Accessible)",
@@ -20,7 +128,7 @@
         "vscode-extension-store",
         "modular-sdd-prompt-planner"
       ],
-      "docPath": "docs/sdd/dev-history-wiki.md",
+      "docPath": "wiki/dev-history-wiki.md",
       "private": false,
       "headings": [
         {
@@ -148,7 +256,7 @@
           "text": "[<heading>](<url>)"
         }
       ],
-      "lastModified": "2026-04-14T21:44:00.709Z"
+      "lastModified": "2026-04-15T03:35:24.182Z"
     },
     {
       "slug": "modular-sdd-prompt-planner",
@@ -166,7 +274,7 @@
       "related": [
         "vscode-extension-store"
       ],
-      "docPath": "docs/sdd/modular-sdd-prompt-planner.md",
+      "docPath": "wiki/modular-sdd-prompt-planner.md",
       "private": false,
       "headings": [
         {
@@ -336,7 +444,7 @@
       "related": [
         "modular-sdd-prompt-planner"
       ],
-      "docPath": "docs/sdd/vscode-extension-store.md",
+      "docPath": "wiki/vscode-extension-store.md",
       "private": false,
       "headings": [
         {

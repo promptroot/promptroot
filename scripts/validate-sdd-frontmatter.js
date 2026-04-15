@@ -5,7 +5,7 @@ import { validateAll } from './lib/sdd-frontmatter.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '..');
-const sddRoot = resolve(repoRoot, 'docs', 'sdd');
+const sddRoot = resolve(repoRoot, 'wiki');
 
 const { fileCount, errors } = validateAll(sddRoot);
 

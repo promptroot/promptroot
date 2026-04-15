@@ -52,7 +52,7 @@ Markdown files in git remain the source of truth. The wiki is a read layer plus 
 ### 3.1 Shape
 
 ```
-docs/sdd/                    (source of truth, markdown + frontmatter)
+wiki/                    (source of truth, markdown + frontmatter)
   ├── _template.md
   ├── _index.json            (generated at build time)
   ├── vscode-extension-store.md
@@ -81,13 +81,13 @@ Firestore:
 
 **Ingest (on PR merge to main)**
 1. GH Action runs `scripts/build-wiki-index.js`.
-2. Script walks `docs/sdd/**/*.md`, parses frontmatter.
+2. Script walks `wiki/**/*.md`, parses frontmatter.
 3. Each doc is chunked by `##` heading boundaries (SDDs are structured, so heading chunks retrieve better than naive splits). Oversized sections are subdivided at ~500 tokens.
 4. Each chunk is tokenized (lowercase, strip markdown, split on non-word chars, drop stopwords) and the token array is stored alongside the text. No embeddings, no external API calls, no keys.
-5. Chunks written to Firestore `wikiChunks/*`; doc metadata written to `wikiDocs/*`; `docs/sdd/_index.json` written back to the repo (committed by the action) so the UI can load the full tree without a Firestore round-trip.
+5. Chunks written to Firestore `wikiChunks/*`; doc metadata written to `wikiDocs/*`; `wiki/_index.json` written back to the repo (committed by the action) so the UI can load the full tree without a Firestore round-trip.
 
 **Browse (human)**
-1. User hits `/wiki`. `wiki-page.js` fetches `docs/sdd/_index.json`.
+1. User hits `/wiki`. `wiki-page.js` fetches `wiki/_index.json`.
 2. Sidebar tree renders from the index.
 3. On doc select, the raw markdown is fetched via the same `github-api.js` path the prompt browser uses (cached via the service worker).
 4. `wiki-renderer.js` renders with `marked.js` + DOMPurify. Private docs check auth before fetching.
@@ -115,7 +115,7 @@ The `wikiChunks` schema reserves room for a future `embedding[]` field. If retri
 
 ### 4.1 Frontmatter schema
 
-Every file in `docs/sdd/` must start with:
+Every file in `wiki/` must start with:
 
 ```yaml
 ---
@@ -136,7 +136,7 @@ related:
 
 ### 4.2 Template
 
-`docs/sdd/_template.md` provides a scaffold mirroring the existing SDD structure (Objective, Current State, Architecture/Workstreams, Open Questions, Milestones). Linted in CI.
+`wiki/_template.md` provides a scaffold mirroring the existing SDD structure (Objective, Current State, Architecture/Workstreams, Open Questions, Milestones). Linted in CI.
 
 ### 4.3 Validation
 
@@ -145,7 +145,7 @@ related:
 - `slug` matches filename
 - `related` slugs resolve to existing files
 - `visibility` is `public` or `private`
-- Files under `docs/sdd/private/` must declare `visibility: private`
+- Files under `wiki/private/` must declare `visibility: private`
 - Fails PR on violation
 
 ---
@@ -154,12 +154,12 @@ related:
 
 ### W1 — Content model & repo layout ✅
 
-- [x] Create `docs/sdd/` directory (with `private/` subdirectory)
-- [x] Move existing `docs/SDD_VSCODE_EXTENSION_STORE.md` to `docs/sdd/vscode-extension-store.md` with frontmatter
-- [x] Move existing `docs/SDD_MODULAR_SDD_PROMPT_PLANNER.md` to `docs/sdd/modular-sdd-prompt-planner.md` with frontmatter
-- [x] Move this doc to `docs/sdd/dev-history-wiki.md` with frontmatter
-- [x] Add `docs/sdd/_template.md` scaffold
-- [x] Add `docs/sdd/README.md` with authoring guide
+- [x] Create `wiki/` directory (with `private/` subdirectory)
+- [x] Move existing `docs/SDD_VSCODE_EXTENSION_STORE.md` to `wiki/vscode-extension-store.md` with frontmatter
+- [x] Move existing `docs/SDD_MODULAR_SDD_PROMPT_PLANNER.md` to `wiki/modular-sdd-prompt-planner.md` with frontmatter
+- [x] Move this doc to `wiki/dev-history-wiki.md` with frontmatter
+- [x] Add `wiki/_template.md` scaffold
+- [x] Add `wiki/README.md` with authoring guide
 - [x] Add `scripts/validate-sdd-frontmatter.js` plus shared `scripts/lib/sdd-frontmatter.js`
 - [x] Wire validator into `.github/workflows/test.yml` via `npm run validate:sdd`
 - [x] Leave stub files at old SDD paths pointing to new locations
@@ -168,7 +168,7 @@ related:
 
 - [x] `pages/wiki/wiki.html` entry point following the existing page-init pattern
 - [x] `src/pages/wiki-page.js` initialization module, calls `initializeSharedComponents('wiki')`
-- [x] `src/modules/wiki-index.js` loads `docs/sdd/_index.json`
+- [x] `src/modules/wiki-index.js` loads `wiki/_index.json`
 - [x] `src/modules/wiki-renderer.js` renders a selected doc via `marked.js` + DOMPurify
 - [x] `src/modules/wiki-tree.js` sidebar tree (reuse patterns from `prompt-list.js`)
 - [x] `src/modules/wiki-timeline.js` timeline view driven by frontmatter `date`
@@ -180,9 +180,9 @@ related:
 
 ### W3 — Retrieval pipeline (keyword-based, keyless) ✅
 
-- [x] `scripts/build-wiki-index.js` (Node): walk `docs/sdd/`, parse frontmatter, chunk by heading, tokenize, emit `_index.json` + `_chunks.json`. Zero external API calls. (v1 hosts chunks as a static JSON file rather than Firestore; upgrade path documented in §3.4)
+- [x] `scripts/build-wiki-index.js` (Node): walk `wiki/`, parse frontmatter, chunk by heading, tokenize, emit `_index.json` + `_chunks.json`. Zero external API calls. (v1 hosts chunks as a static JSON file rather than Firestore; upgrade path documented in §3.4)
 - [x] Shared tokenizer: `src/utils/tokenizer.js` (ESM, frontend) mirrored by `scripts/lib/tokenizer.cjs` (CJS, build + Cloud Function). Parity test in `src/unit-tests/utils/tokenizer.test.js` guards against drift.
-- [x] `.github/workflows/wiki-index.yml`: runs on push to main that touches `docs/sdd/**`, executes the script, commits updated index + chunks.
+- [x] `.github/workflows/wiki-index.yml`: runs on push to main that touches `wiki/**`, executes the script, commits updated index + chunks.
 - [x] Cloud Function `ragQuery` in `functions/index.js`:
   - Input: `{ query: string, topK?: number, includePrivate?: boolean }`
   - Tokenizes query with shared tokenizer
@@ -224,7 +224,7 @@ Three discovery paths, one endpoint. No MCP servers, no custom protocols.
 - [x] `wiki-renderer.js` checks visibility before fetching raw markdown for private docs (prevents content flash)
 - [x] `ragQuery` rejects `includePrivate=true` in v1 (will re-enable once authenticated-caller flow is built); public-only rank otherwise.
 - [x] Firestore rules: `wikiChunks` and `wikiDocs` gated by `visibility` (public or `request.auth != null`). Writes admin-SDK only.
-- [x] CODEOWNERS entry for `docs/sdd/private/` so merges require review
+- [x] CODEOWNERS entry for `wiki/private/` so merges require review
 
 ### W6 — Testing ✅
 
@@ -267,7 +267,7 @@ Smoke suite (`e2e-tests/e2e/smoke/wiki.spec.js`, runs on every PR):
 
 - [x] `/wiki` loads and renders sidebar tree with all public SDDs (fixture-mocked index).
 - [x] Header nav "Wiki" link is present and navigates correctly.
-- [x] Unauthenticated user cannot see entries under `docs/sdd/private/` in the tree.
+- [x] Unauthenticated user cannot see entries under `wiki/private/` in the tree.
 - [ ] Click-through from tree to rendered doc — deferred (requires mocking raw markdown fetch for all three fixture docs).
 
 Extended suite — deferred to a follow-up since the smoke suite covers the critical paths and the extended flows (graph, enrichment via emulator intercept, offline SW) are lower-risk.
@@ -287,7 +287,7 @@ Extended suite — deferred to a follow-up since the smoke suite covers the crit
 |----------|----------|
 | Retrieval algorithm? | BM25 keyword search over tokenized chunks. No embeddings, no external API keys. Fits PromptRoot's BYOK philosophy; hosted embeddings would require a project-owned key that violates it. |
 | Embedding fallback? | Reserve an `embedding[]` field on `wikiChunks` for a future local-model upgrade via `@xenova/transformers`. Not implemented in v1. |
-| Where do private docs live? | `docs/sdd/private/` in this public repo, gated by Firestore rules and client-side auth check. Accept that the raw markdown is still readable on GitHub; move to a separate private repo only if a truly sensitive doc demands it. |
+| Where do private docs live? | `wiki/private/` in this public repo, gated by Firestore rules and client-side auth check. Accept that the raw markdown is still readable on GitHub; move to a separate private repo only if a truly sensitive doc demands it. |
 | Versioning? | Git history is sufficient. No separate revision system in v1. |
 | Edit in browser? | No. PR flow only. Revisit in v2 if non-technical contributors need it. |
 | Ranking at scale? | BM25 in-memory over filtered Firestore reads comfortably handles projected 1-year corpus (~500 chunks). Revisit past ~10k chunks. |
@@ -367,7 +367,7 @@ supported in v1.
     {
       "results": [
         {
-          "docPath": "docs/sdd/vscode-extension-store.md",
+          "docPath": "wiki/vscode-extension-store.md",
           "slug": "vscode-extension-store",
           "heading": "A3. Update package.json Metadata",
           "text": "...chunk content...",

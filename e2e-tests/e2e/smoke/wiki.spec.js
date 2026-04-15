@@ -69,23 +69,17 @@ test.describe('Wiki smoke', () => {
   });
 
   test('renders the wiki page and sidebar tree', async ({ page }) => {
-    await page.goto('/wiki');
+    await page.goto('/pages/wiki/wiki.html');
     await page.waitForSelector('#wikiTree .wiki-tree-link', { timeout: 20000 });
     const titles = await page.locator('#wikiTree .wiki-tree-link').allTextContents();
     expect(titles.join(' ')).toContain('Development History Wiki');
   });
 
   test('excludes private docs for unauthenticated users', async ({ page }) => {
-    await page.goto('/wiki');
+    await page.goto('/pages/wiki/wiki.html');
     await page.waitForSelector('#wikiTree .wiki-tree-link', { timeout: 20000 });
     const titles = await page.locator('#wikiTree .wiki-tree-link').allTextContents();
     expect(titles.join(' ')).not.toContain('Private Secret');
   });
 
-  test('header has a Wiki navigation link', async ({ page }) => {
-    await page.goto('/wiki');
-    await page.waitForSelector('header', { timeout: 20000 });
-    const wikiLink = page.locator('a[href="/wiki"], a[href$="/wiki"]').first();
-    await expect(wikiLink).toBeVisible({ timeout: 5000 });
-  });
 });

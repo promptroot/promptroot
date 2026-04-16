@@ -26,6 +26,7 @@ import { createServer } from 'http';
 import { createHash } from 'crypto';
 import { WebSocketServer } from 'ws';
 import admin from 'firebase-admin';
+import { generateJobId, generateRequestId } from './ids.js';
 
 const PORT = process.env.PORT || 8080;
 const RELAY_SECRET = process.env.RELAY_SHARED_SECRET;
@@ -120,13 +121,6 @@ function readBody(req) {
   });
 }
 
-function generateJobId() {
-  return `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function generateRequestId() {
-  return `oai_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
 
 // --- HTTP server ---
 const CORS_HEADERS = {

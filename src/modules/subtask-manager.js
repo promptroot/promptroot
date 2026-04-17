@@ -38,7 +38,6 @@ export function extractManualSplits(text) {
  */
 export function extractNumberedTasks(text) {
   const tasks = [];
-  const taskRegex = /^Task\s+(\d+):\s*(.+?)$/gim;
   const lines = text.split('\n');
   
   let currentTask = null;

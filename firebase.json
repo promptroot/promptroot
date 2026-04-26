@@ -101,7 +101,8 @@
       { "source": "/wiki", "destination": "/pages/wiki/wiki.html" },
       { "source": "/auth/device", "destination": "/pages/auth-device/auth-device.html" },
       { "source": "/wiki/tenants", "destination": "/pages/tenants/tenants.html" },
-      { "source": "/wiki/edit", "destination": "/pages/wiki-edit/wiki-edit.html" }
+      { "source": "/wiki/edit", "destination": "/pages/wiki-edit/wiki-edit.html" },
+      { "source": "/wiki/history", "destination": "/pages/wiki-history/wiki-history.html" }
     ]
   }
 }

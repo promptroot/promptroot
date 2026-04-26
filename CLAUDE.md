@@ -326,11 +326,24 @@ cd functions && npm run deploy      # Deploy functions to Firebase
 
 ## Dev history wiki
 
-SDDs live in `wiki/*.md` and are browsable at `/wiki`. A project-scoped
-skill at `.claude/skills/search-dev-history/SKILL.md` queries the RAG
-endpoint for historical context. Use it before proposing non-trivial
-architectural changes or when the user references a past decision. See
-`AGENTS.md` for the contract.
+SDDs for the seed `promptroot` tenant live in `wiki/*.md` and are
+browsable at `/wiki`. PromptRoot also hosts SDDs for *other* apps as
+multi-tenant Firestore content — see `wiki/multi-tenant-sdd-platform.md`
+for the platform design.
+
+Pages: `/wiki` (browse), `/wiki/edit` (create/update SDD),
+`/wiki/history` (version timeline), `/wiki/tenants` (tenant CRUD),
+`/auth/device` (CLI/MCP device-flow confirmation).
+
+Cloud Function endpoints: `ragQuery` (BM25 search, tenant-aware),
+`createSdd`, `updateSdd`, `getSdd`, `listSdds`, `listVersions`,
+`restoreVersion`, `createTenant`, `listTenants`, `startDeviceAuth`,
+`pollDeviceAuth`, `authorizeDevice`, `listSessions`, `revokeSession`.
+
+Agent integrations: project-scoped Claude Code skill at
+`.claude/skills/search-dev-history/SKILL.md` (read-only) and the
+`@promptroot/mcp-server` npm package (read + write, any MCP-speaking
+agent). See `AGENTS.md` for the contract and tenant resolution order.
 
 ## Documentation
 

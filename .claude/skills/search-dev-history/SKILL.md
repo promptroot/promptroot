@@ -22,12 +22,25 @@ top relevant chunks.
 
 ## How to call
 
+If the user has installed `@promptroot/mcp-server` and you have the
+`promptroot_search_sdds` MCP tool available, prefer that — it handles
+authentication and tenant resolution for you, and unlocks search across
+private tenants.
+
+Otherwise, hit the public ragQuery endpoint:
+
     curl -s -X POST https://us-central1-promptroot-b02a2.cloudfunctions.net/ragQuery \
       -H "Content-Type: application/json" \
-      -d '{"query": "<the user question or topic>", "topK": 5}'
+      -d '{"query": "<the user question or topic>", "topK": 5, "tenantId": "<tenant slug if known>"}'
 
-Returns public dev history only. Private-doc access from Claude Code is not
-supported in v1.
+Tenant resolution:
+
+- If a `.promptroot-tenant` file exists at the repo root, read its single
+  line and pass that as `tenantId`.
+- Otherwise, omit `tenantId` to search the default seed tenant
+  (PromptRoot's own dev history) or all public tenants.
+- Authenticated callers (via the MCP tool) federate across all tenants
+  they belong to.
 
 ## Response shape
 
@@ -36,6 +49,7 @@ supported in v1.
         {
           "docPath": "wiki/vscode-extension-store.md",
           "slug": "vscode-extension-store",
+          "tenantId": "promptroot",
           "heading": "A3. Update package.json Metadata",
           "text": "...chunk content...",
           "score": 0.87,

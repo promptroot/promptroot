@@ -99,7 +99,8 @@
       { "source": "/agent-api", "destination": "/pages/agent-api/agent-api.html" },
       { "source": "/openclaw", "destination": "/pages/openclaw/openclaw.html" },
       { "source": "/wiki", "destination": "/pages/wiki/wiki.html" },
-      { "source": "/auth/device", "destination": "/pages/auth-device/auth-device.html" }
+      { "source": "/auth/device", "destination": "/pages/auth-device/auth-device.html" },
+      { "source": "/wiki/tenants", "destination": "/pages/tenants/tenants.html" }
     ]
   }
 }

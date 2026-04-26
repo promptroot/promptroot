@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>Edit SDD - PromptRoot</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="../../src/styles.css" />
+  <script src="../../src/font-init.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.0/marked.min.js"></script>
+  <script type="module" src="../../src/firebase-init.js"></script>
+  <script type="module" src="../../src/sw-register.js"></script>
+</head>
+<body data-page="wiki-edit">
+
+  <div class="wrap wiki-edit-wrap">
+    <main class="card pad-lg wiki-edit-card">
+      <header class="wiki-edit-header">
+        <h2 class="section-title-lg font-22 mb-0">
+          <span class="icon icon-inline" aria-hidden="true">edit_note</span>
+          <span id="wikiEditTitle">New SDD</span>
+        </h2>
+        <div class="wiki-edit-actions">
+          <span id="wikiEditDraftStatus" class="wiki-edit-draft-status" aria-live="polite"></span>
+          <button id="wikiEditCancelBtn" class="btn small" type="button">Cancel</button>
+          <button id="wikiEditSaveBtn" class="btn primary small" type="button">
+            <span class="icon icon-inline" aria-hidden="true">save</span> Save
+          </button>
+        </div>
+      </header>
+
+      <div id="wikiEditNotSignedIn" class="alert alert-warning" hidden>
+        Sign in to create or edit SDDs.
+      </div>
+
+      <div id="wikiEditError" class="wiki-edit-error" role="alert" aria-live="polite" hidden></div>
+
+      <div class="wiki-edit-layout">
+        <section class="wiki-edit-frontmatter">
+          <h3 class="wiki-edit-section-title">Frontmatter</h3>
+          <div class="form-row">
+            <label class="form-label" for="fmTitle">Title</label>
+            <input id="fmTitle" class="input" type="text" required />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="fmSlug">Slug</label>
+            <input id="fmSlug" class="input" type="text" pattern="[a-z0-9]+(-[a-z0-9]+)*" required />
+            <small class="form-help">Lowercase kebab-case. Cannot be changed after create.</small>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="fmDate">Date</label>
+            <input id="fmDate" class="input" type="date" required />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="fmStatus">Status</label>
+            <select id="fmStatus" class="input" required>
+              <option value="proposal">proposal</option>
+              <option value="approved">approved</option>
+              <option value="in-progress">in-progress</option>
+              <option value="shipped">shipped</option>
+              <option value="archived">archived</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="fmOwner">Owner</label>
+            <input id="fmOwner" class="input" type="text" required />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="fmTags">Tags</label>
+            <input id="fmTags" class="input" type="text" placeholder="comma, separated" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="fmRelated">Related slugs</label>
+            <input id="fmRelated" class="input" type="text" placeholder="comma, separated" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="fmVisibility">Visibility</label>
+            <select id="fmVisibility" class="input">
+              <option value="public" selected>public</option>
+              <option value="private">private</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="changeNote">Change note (optional)</label>
+            <input id="changeNote" class="input" type="text" placeholder="Add discovery section" />
+          </div>
+        </section>
+
+        <section class="wiki-edit-body">
+          <div class="wiki-edit-tabs" role="tablist" aria-label="Editor view">
+            <button class="wiki-edit-tab is-active" data-pane="edit" role="tab" aria-selected="true">Edit</button>
+            <button class="wiki-edit-tab" data-pane="preview" role="tab" aria-selected="false">Preview</button>
+          </div>
+          <div class="wiki-edit-pane wiki-edit-pane--edit" data-pane="edit">
+            <textarea id="wikiEditTextarea" spellcheck="false" placeholder="# SDD: ..."></textarea>
+          </div>
+          <div class="wiki-edit-pane wiki-edit-pane--preview markdown-body" data-pane="preview" hidden></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="../../src/shared-init.js"></script>
+  <script type="module" src="../../src/pages/wiki-edit-page.js"></script>
+</body>
+</html>

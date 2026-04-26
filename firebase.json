@@ -30,7 +30,8 @@
     }
   },
   "firestore": {
-    "rules": "config/firestore/firestore.rules"
+    "rules": "config/firestore/firestore.rules",
+    "indexes": "firestore.indexes.json"
   },
   "storage": {
     "rules": "config/storage.rules"
@@ -97,7 +98,8 @@
       { "source": "/ide-extension", "destination": "/pages/ide-extension/ide-extension.html" },
       { "source": "/agent-api", "destination": "/pages/agent-api/agent-api.html" },
       { "source": "/openclaw", "destination": "/pages/openclaw/openclaw.html" },
-      { "source": "/wiki", "destination": "/pages/wiki/wiki.html" }
+      { "source": "/wiki", "destination": "/pages/wiki/wiki.html" },
+      { "source": "/auth/device", "destination": "/pages/auth-device/auth-device.html" }
     ]
   }
 }

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>Authorize Device - PromptRoot</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="../../src/styles.css" />
+  <script src="../../src/font-init.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script type="module" src="../../src/firebase-init.js"></script>
+  <script type="module" src="../../src/sw-register.js"></script>
+</head>
+<body data-page="auth-device">
+
+  <div class="wrap">
+    <main class="card pad-lg auth-device-card">
+      <h2 class="section-title-lg font-28 mb-lg">
+        <span class="icon icon-inline" aria-hidden="true">devices</span> Authorize Device
+      </h2>
+
+      <p class="auth-device-intro">
+        A CLI or extension on another device wants to act on your behalf.
+        Confirm the code below matches the one shown on that device,
+        then click <strong>Authorize</strong>.
+      </p>
+
+      <form id="authDeviceForm" class="auth-device-form" autocomplete="off">
+        <label class="form-label" for="authDeviceCodeInput">User code</label>
+        <input
+          id="authDeviceCodeInput"
+          name="userCode"
+          class="auth-device-input"
+          type="text"
+          inputmode="text"
+          autocapitalize="characters"
+          maxlength="9"
+          placeholder="XXXX-XXXX"
+          aria-describedby="authDeviceCodeHelp"
+          required
+        />
+        <p id="authDeviceCodeHelp" class="form-help">
+          Format: 4 letters/digits, a hyphen, then 4 more (e.g. <code>WDJB-MJHT</code>).
+        </p>
+
+        <button id="authDeviceSubmit" class="btn primary" type="submit">
+          <span class="icon icon-inline" aria-hidden="true">verified_user</span> Authorize
+        </button>
+      </form>
+
+      <div id="authDeviceStatus" class="auth-device-status" role="status" aria-live="polite" hidden></div>
+
+      <details class="auth-device-help">
+        <summary>What is this?</summary>
+        <p>
+          PromptRoot uses a device flow to give CLIs and editor extensions access
+          to your account without asking for a password or generating a separate
+          token. The CLI shows you a code; you confirm here while signed in.
+        </p>
+        <p>
+          You can revoke any active device session anytime from your
+          <a href="/profile">profile</a>.
+        </p>
+      </details>
+    </main>
+  </div>
+
+  <script type="module" src="../../src/shared-init.js"></script>
+  <script type="module" src="../../src/pages/auth-device-page.js"></script>
+</body>
+</html>

@@ -1426,3 +1426,21 @@ exports.ragQuery = onRequest({ cors: true }, async (req, res) => {
     res.status(500).json({ error: 'Internal error' });
   }
 });
+
+const wikiEndpoints = require('./wiki');
+const deviceFlowEndpoints = require('./wiki-device-flow');
+
+exports.createSdd = wikiEndpoints.createSdd;
+exports.updateSdd = wikiEndpoints.updateSdd;
+exports.listSdds = wikiEndpoints.listSdds;
+exports.getSdd = wikiEndpoints.getSdd;
+exports.listVersions = wikiEndpoints.listVersions;
+exports.restoreVersion = wikiEndpoints.restoreVersion;
+exports.createTenant = wikiEndpoints.createTenant;
+exports.listTenants = wikiEndpoints.listTenants;
+
+exports.startDeviceAuth = deviceFlowEndpoints.startDeviceAuth;
+exports.pollDeviceAuth = deviceFlowEndpoints.pollDeviceAuth;
+exports.authorizeDevice = deviceFlowEndpoints.authorizeDevice;
+exports.listSessions = deviceFlowEndpoints.listSessions;
+exports.revokeSession = deviceFlowEndpoints.revokeSession;

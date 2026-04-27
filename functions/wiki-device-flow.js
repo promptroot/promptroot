@@ -115,7 +115,8 @@ const pollDeviceAuth = onRequest({ cors: false }, async (req, res) => {
       return;
     }
     if (data.status !== 'authorized' || !data.uid) {
-      res.json({ status: 'pending', pollIntervalSeconds: POLL_INTERVAL_SECONDS });
+      logger.warn('pollDeviceAuth: unexpected status', { status: data.status, deviceCode });
+      sendError(res, 500, 'Unexpected device auth state');
       return;
     }
 

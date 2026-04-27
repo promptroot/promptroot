@@ -2,7 +2,7 @@ import { initializeSharedComponents } from '../shared-init.js';
 import { authorizeDevice } from '../modules/wiki-api.js';
 import { getAuth } from '../modules/firebase-service.js';
 
-const USER_CODE_RE = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+const USER_CODE_RE = /^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/;
 
 function $(id) { return document.getElementById(id); }
 
@@ -36,7 +36,7 @@ function normalizeInput(value) {
 }
 
 function autoInsertHyphen(input) {
-  let v = input.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  let v = input.value.toUpperCase().replace(/[^A-HJ-NP-Z2-9-]/g, '');
   if (v.length > 4 && v[4] !== '-') {
     v = `${v.slice(0, 4)}-${v.slice(4, 8)}`;
   }

@@ -1,6 +1,6 @@
 const admin = require('firebase-admin');
 const fetch = require('node-fetch');
-const { chunkDoc } = require('../scripts/lib/chunker.cjs');
+const { chunkDoc } = require('./lib/chunker.cjs');
 
 const TTL_MS = 5 * 60 * 1000;
 const SEED_TENANT_ID = 'promptroot';

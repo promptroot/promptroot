@@ -1,4 +1,4 @@
-const { tokenize } = require('../scripts/lib/tokenizer.cjs');
+const { tokenize } = require('./lib/tokenizer.cjs');
 
 const K1 = 1.5;
 const B = 0.75;

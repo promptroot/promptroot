@@ -7,8 +7,8 @@ const {
   tenantIsReadable,
   authError
 } = require('./wiki-auth');
-const { chunkDoc } = require('../scripts/lib/chunker.cjs');
-const { validateFrontmatter, validateTenant } = require('../scripts/lib/sdd-validate.cjs');
+const { chunkDoc } = require('./lib/chunker.cjs');
+const { validateFrontmatter, validateTenant } = require('./lib/sdd-validate.cjs');
 
 const ALLOWED_ORIGINS = [
   'https://promptroot.io',

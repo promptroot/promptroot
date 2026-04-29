@@ -71,14 +71,15 @@
   gap: 4px;
 }
 
-.wiki-edit-frontmatter .input,
-.wiki-edit-frontmatter select {
+.wiki-edit-frontmatter .form-control {
   padding: 6px 8px;
   border-radius: 4px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
   font-size: 13px;
+}
+
+.wiki-edit-frontmatter select.form-control {
+  padding-right: 28px;
+  background-position: right 8px center;
 }
 
 .wiki-edit-body {

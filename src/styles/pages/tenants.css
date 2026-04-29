@@ -128,15 +128,6 @@
   gap: 4px;
 }
 
-.tenants-form .input {
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg-elev);
-  color: var(--text);
-  font-size: 14px;
-}
-
 .tenants-status {
   margin-top: 8px;
   padding: 8px 10px;

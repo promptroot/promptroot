@@ -22,9 +22,16 @@
 
   <div class="wrap">
     <main class="card pad-lg tenants-card">
-      <h2 class="section-title-lg font-28 mb-lg">
-        <span class="icon icon-inline" aria-hidden="true">workspaces</span> Wiki Tenants
-      </h2>
+      <div class="page-header mb-lg">
+        <h2 class="section-title-lg font-28 mb-0">
+          <span class="icon icon-inline" aria-hidden="true">workspaces</span> Wiki Tenants
+        </h2>
+        <div class="toolbar-actions">
+          <a class="btn sm" href="/wiki">
+            <span class="icon icon-inline" aria-hidden="true">arrow_back</span> Back to Wiki
+          </a>
+        </div>
+      </div>
 
       <p class="tenants-intro">
         Each tenant owns its own collection of SDDs. Use one tenant per app or
@@ -39,7 +46,7 @@
       <section class="tenants-section">
         <header class="tenants-section-header">
           <h3>Your tenants</h3>
-          <button id="tenantsRefreshBtn" class="btn small" type="button" title="Refresh">
+          <button id="tenantsRefreshBtn" class="btn sm" type="button" title="Refresh">
             <span class="icon icon-inline" aria-hidden="true">refresh</span> Refresh
           </button>
         </header>
@@ -54,40 +61,38 @@
         <header class="tenants-section-header">
           <h3>Create new tenant</h3>
         </header>
-        <form id="tenantsCreateForm" class="tenants-form" autocomplete="off">
+        <form id="tenantsCreateForm" class="tenants-form" autocomplete="off" novalidate>
           <div class="form-row">
             <label class="form-label" for="tenantSlugInput">Slug</label>
             <input
               id="tenantSlugInput"
               name="slug"
-              class="input"
+              class="form-control"
               type="text"
               placeholder="my-app"
-              pattern="[a-z0-9]+(-[a-z0-9]+)*"
               minlength="2"
               maxlength="64"
-              required
             />
             <small class="form-help">Lowercase, kebab-case. Used in URLs and agent config.</small>
           </div>
           <div class="form-row">
             <label class="form-label" for="tenantNameInput">Name</label>
-            <input id="tenantNameInput" name="name" class="input" type="text" required />
+            <input id="tenantNameInput" name="name" class="form-control" type="text" />
           </div>
           <div class="form-row">
             <label class="form-label" for="tenantDescInput">Description</label>
-            <input id="tenantDescInput" name="description" class="input" type="text" />
+            <input id="tenantDescInput" name="description" class="form-control" type="text" />
           </div>
           <div class="form-row">
             <label class="form-label" for="tenantVisibilitySelect">Visibility</label>
-            <select id="tenantVisibilitySelect" name="visibility" class="input">
+            <select id="tenantVisibilitySelect" name="visibility" class="form-control">
               <option value="private" selected>Private (members only)</option>
               <option value="public">Public (anyone can read)</option>
             </select>
           </div>
           <div class="form-row">
             <label class="form-label" for="tenantRepoInput">GitHub repo (optional)</label>
-            <input id="tenantRepoInput" name="githubRepo" class="input" type="text" placeholder="owner/repo" />
+            <input id="tenantRepoInput" name="githubRepo" class="form-control" type="text" placeholder="owner/repo" />
             <small class="form-help">Used to auto-resolve the tenant from a clone of this repo.</small>
           </div>
           <button id="tenantsCreateBtn" class="btn primary" type="submit">

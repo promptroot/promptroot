@@ -103,7 +103,7 @@ function renderTenants(tenants) {
     const actions = document.createElement('div');
     actions.className = 'tenants-list-actions';
     const viewBtn = document.createElement('a');
-    viewBtn.className = 'btn small';
+    viewBtn.className = 'btn sm';
     viewBtn.href = `/wiki?tenant=${encodeURIComponent(tenant.slug)}`;
     viewBtn.textContent = 'View SDDs';
     actions.appendChild(viewBtn);
@@ -134,8 +134,16 @@ async function handleCreate(event) {
   const visibility = $('tenantVisibilitySelect').value;
   const githubRepo = $('tenantRepoInput').value.trim() || null;
 
+  if (!slug) {
+    setStatus('Slug is required.', 'error');
+    return;
+  }
   if (!SLUG_PATTERN.test(slug)) {
-    setStatus('Slug must be lowercase kebab-case.', 'error');
+    setStatus('Slug must be lowercase kebab-case (e.g. "my-app").', 'error');
+    return;
+  }
+  if (slug.length < 2 || slug.length > 64) {
+    setStatus('Slug must be between 2 and 64 characters.', 'error');
     return;
   }
   if (!name) {

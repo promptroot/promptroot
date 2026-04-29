@@ -31,8 +31,8 @@
         </h2>
         <div class="wiki-edit-actions">
           <span id="wikiEditDraftStatus" class="wiki-edit-draft-status" aria-live="polite"></span>
-          <button id="wikiEditCancelBtn" class="btn small" type="button">Cancel</button>
-          <button id="wikiEditSaveBtn" class="btn primary small" type="button">
+          <button id="wikiEditCancelBtn" class="btn sm" type="button">Cancel</button>
+          <button id="wikiEditSaveBtn" class="btn primary sm" type="button">
             <span class="icon icon-inline" aria-hidden="true">save</span> Save
           </button>
         </div>
@@ -49,20 +49,20 @@
           <h3 class="wiki-edit-section-title">Frontmatter</h3>
           <div class="form-row">
             <label class="form-label" for="fmTitle">Title</label>
-            <input id="fmTitle" class="input" type="text" required />
+            <input id="fmTitle" class="form-control" type="text" required />
           </div>
           <div class="form-row">
             <label class="form-label" for="fmSlug">Slug</label>
-            <input id="fmSlug" class="input" type="text" pattern="[a-z0-9]+(-[a-z0-9]+)*" required />
+            <input id="fmSlug" class="form-control" type="text" pattern="[a-z0-9]+(-[a-z0-9]+)*" required />
             <small class="form-help">Lowercase kebab-case. Cannot be changed after create.</small>
           </div>
           <div class="form-row">
             <label class="form-label" for="fmDate">Date</label>
-            <input id="fmDate" class="input" type="date" required />
+            <input id="fmDate" class="form-control" type="date" required />
           </div>
           <div class="form-row">
             <label class="form-label" for="fmStatus">Status</label>
-            <select id="fmStatus" class="input" required>
+            <select id="fmStatus" class="form-control" required>
               <option value="proposal">proposal</option>
               <option value="approved">approved</option>
               <option value="in-progress">in-progress</option>
@@ -72,26 +72,26 @@
           </div>
           <div class="form-row">
             <label class="form-label" for="fmOwner">Owner</label>
-            <input id="fmOwner" class="input" type="text" required />
+            <input id="fmOwner" class="form-control" type="text" required />
           </div>
           <div class="form-row">
             <label class="form-label" for="fmTags">Tags</label>
-            <input id="fmTags" class="input" type="text" placeholder="comma, separated" />
+            <input id="fmTags" class="form-control" type="text" placeholder="comma, separated" />
           </div>
           <div class="form-row">
             <label class="form-label" for="fmRelated">Related slugs</label>
-            <input id="fmRelated" class="input" type="text" placeholder="comma, separated" />
+            <input id="fmRelated" class="form-control" type="text" placeholder="comma, separated" />
           </div>
           <div class="form-row">
             <label class="form-label" for="fmVisibility">Visibility</label>
-            <select id="fmVisibility" class="input">
+            <select id="fmVisibility" class="form-control">
               <option value="public" selected>public</option>
               <option value="private">private</option>
             </select>
           </div>
           <div class="form-row">
             <label class="form-label" for="changeNote">Change note (optional)</label>
-            <input id="changeNote" class="input" type="text" placeholder="Add discovery section" />
+            <input id="changeNote" class="form-control" type="text" placeholder="Add discovery section" />
           </div>
         </section>
 

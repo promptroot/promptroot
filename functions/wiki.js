@@ -7,7 +7,6 @@ const {
   tenantIsReadable,
   authError
 } = require('./wiki-auth');
-const { chunkDoc } = require('./lib/chunker.cjs');
 const { validateFrontmatter, validateTenant } = require('./lib/sdd-validate.cjs');
 
 const ALLOWED_ORIGINS = [
@@ -172,7 +171,6 @@ const updateSdd = onRequest({ cors: false }, async (req, res) => {
     const prev = existing.data();
     const mergedFrontmatter = {
       title: prev.title,
-      slug: prev.slug,
       date: prev.date,
       status: prev.status,
       owner: prev.owner,

@@ -11,7 +11,8 @@ export async function loginViaDeviceFlow({ deviceLabel } = {}) {
   const label = deviceLabel || `${hostname()} CLI`;
   const start = await callFunction('startDeviceAuth', { deviceLabel: label }, { authenticated: false });
 
-  const url = start.verificationUrl || deviceFlowVerificationUrl();
+  const override = process.env.PROMPTROOT_DEVICE_FLOW_URL;
+  const url = override || start.verificationUrl || deviceFlowVerificationUrl();
   process.stderr.write(`\nVisit: ${url}\nEnter code: ${start.userCode}\n\n`);
 
   const intervalSec = Math.max(1, start.pollIntervalSeconds || 5);

@@ -168,7 +168,7 @@ async function save() {
         changeNote
       });
       clearDraft();
-      const target = `/wiki?tenant=${encodeURIComponent(state.tenantId)}&doc=${encodeURIComponent(result.slug)}`;
+      const target = `/pages/wiki/wiki.html?tenant=${encodeURIComponent(state.tenantId)}&doc=${encodeURIComponent(result.slug)}`;
       window.location.href = target;
     } else {
       await updateSdd({
@@ -179,7 +179,7 @@ async function save() {
         changeNote
       });
       clearDraft();
-      const target = `/wiki?tenant=${encodeURIComponent(state.tenantId)}&doc=${encodeURIComponent(state.slug)}`;
+      const target = `/pages/wiki/wiki.html?tenant=${encodeURIComponent(state.tenantId)}&doc=${encodeURIComponent(state.slug)}`;
       window.location.href = target;
     }
   } catch (err) {
@@ -191,8 +191,8 @@ async function save() {
 function cancel() {
   if (state.unsavedSinceLastDraft && !confirm('Discard unsaved changes?')) return;
   const dest = state.tenantId
-    ? `/wiki?tenant=${encodeURIComponent(state.tenantId)}${state.slug ? `&doc=${encodeURIComponent(state.slug)}` : ''}`
-    : '/wiki';
+    ? `/pages/wiki/wiki.html?tenant=${encodeURIComponent(state.tenantId)}${state.slug ? `&doc=${encodeURIComponent(state.slug)}` : ''}`
+    : '/pages/wiki/wiki.html';
   window.location.href = dest;
 }
 

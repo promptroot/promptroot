@@ -120,7 +120,7 @@ async function init() {
   state.tenantId = tenantId;
   state.slug = slug;
   $('wikiHistoryTitle').textContent = `${slug} history`;
-  $('wikiHistoryBackLink').href = `/wiki?tenant=${encodeURIComponent(tenantId)}&doc=${encodeURIComponent(slug)}`;
+  $('wikiHistoryBackLink').href = `/pages/wiki/wiki.html?tenant=${encodeURIComponent(tenantId)}&doc=${encodeURIComponent(slug)}`;
   $('wikiHistoryRestoreBtn').addEventListener('click', handleRestore);
 
   const auth = getAuth();

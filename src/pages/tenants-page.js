@@ -104,7 +104,7 @@ function renderTenants(tenants) {
     actions.className = 'tenants-list-actions';
     const viewBtn = document.createElement('a');
     viewBtn.className = 'btn sm';
-    viewBtn.href = `/wiki?tenant=${encodeURIComponent(tenant.slug)}`;
+    viewBtn.href = `/pages/wiki/wiki.html?tenant=${encodeURIComponent(tenant.slug)}`;
     viewBtn.textContent = 'View SDDs';
     actions.appendChild(viewBtn);
     li.appendChild(actions);

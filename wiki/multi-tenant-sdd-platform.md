@@ -2,7 +2,7 @@
 title: Multi-Tenant SDD Platform — PromptRoot as the Wiki Host
 slug: multi-tenant-sdd-platform
 date: 2026-04-26
-status: in-progress
+status: shipped
 owner: jesse
 tags: [platform, wiki, rag, multi-tenant, firestore, sdd]
 visibility: public
@@ -16,7 +16,8 @@ related:
 **Project:** PromptRoot (web app + Cloud Functions + agent integrations)
 **Document Type:** Software Design Document (SDD)
 **Date:** 2026-04-26
-**Status:** in-progress (PR #814)
+**Last updated:** 2026-04-29
+**Status:** shipped (PR #814 — implementation complete, pending merge + production deploy)
 
 ---
 
@@ -337,96 +338,225 @@ No file ever lands in the myplanet repo. No git involvement (unless §3.8 mirror
 - [x] Indexes for tenant lookup by `ownerUid`, `slug`, `githubRepo` (6 composite indexes)
 - [x] Migration script: import existing `wiki/*.md` files as the seed tenant `promptroot`
 
-### W2 — Tenant CRUD UI ✅ Complete (PR #814)
+### W2 — Tenant CRUD UI ⚠ Partial (PR #814) — create + list only
 
-- [x] `pages/tenants/tenants.html` + `src/pages/tenants-page.js`
-- [x] wiki-api client via `src/modules/wiki-api.js` (CRUD via Cloud Functions)
-- [x] Reuse `confirm-modal.js`, existing form components
-- [x] List tenant members with count
-- [x] Create new tenant form (slug, name, description, visibility, optional GitHub repo)
+**Shipped:**
+- [x] `pages/tenants/tenants.html` + `src/pages/tenants-page.js` (210 lines)
+- [x] `src/modules/wiki-api.js` client (CRUD via Cloud Functions)
+- [x] List user's owned/joined tenants with name, slug, visibility pill, member count, description, GitHub mirror
+- [x] "Create new tenant" form: slug, name, description, visibility, optional GitHub repo (with kebab-case + length validation, JS-driven error messages via `tenantsCreateStatus`)
+- [x] Per-tenant "View SDDs" link to `/wiki?tenant=...`
+- [x] "Refresh" button
+- [x] Standard `.form-control`, `.btn sm`, `.page-header` + `.toolbar-actions` patterns; `novalidate` form with custom validation (matches the style guide)
+
+**Deferred (API absent or UI absent):**
+- [ ] **Invite member by GitHub handle** — no API, no UI. `members[]` is currently set to `[ownerUid]` at create time and never modified.
+- [ ] **Transfer ownership** — no API, no UI.
+- [ ] **Delete tenant (soft-delete with 30-day recovery)** — no API, no UI, no tombstone field, no scheduled hard-delete Cloud Function.
+- [ ] **Edit existing tenant settings** (rename, change visibility, attach/detach GitHub repo, toggle mirror) — no API, no UI.
+- [ ] **Per-tenant "Mirror to GitHub" toggle** — depends on W7.
+
+These are required before a multi-user tenant is actually usable; v1 only supports the single-owner case.
 
 ### W3 — In-app SDD editor ✅ Complete (PR #814)
 
-- [x] `pages/wiki-edit/wiki-edit.html` + `src/pages/wiki-edit-page.js`
-- [x] Split pane: frontmatter form (left), markdown editor (center), live preview (right)
-- [x] Frontmatter form components (status dropdown, tags, related docs, visibility, change note)
-- [x] Auto-save draft to localStorage every 10s; explicit Save creates the version
-- [x] Load existing SDD via `?tenant=X&slug=Y` URL params
+- [x] `pages/wiki-edit/wiki-edit.html` + `src/pages/wiki-edit-page.js` (~400 lines)
+- [x] Frontmatter form: title, slug (immutable after create), date, status dropdown, owner, tags (comma-separated), related slugs (comma-separated), visibility, change note
+- [x] Markdown body textarea with Edit/Preview tab toggle (preview reuses `marked.js` + `DOMPurify`)
+- [x] Auto-save draft to localStorage on input/change events; explicit Save creates the persisted version via `createSdd`/`updateSdd`
+- [x] Load existing SDD via `?tenant=X&slug=Y` URL params; new SDD via `?tenant=X` only
+- [x] Cancel button navigates back to `/wiki?tenant=...&doc=...` (with discard-draft confirm if unsaved)
+- [x] JS-side validation (title, slug regex, date, owner all required) with styled error display
 - [x] Markdown editor styling in `src/styles/pages/wiki-edit.css`
+
+**Deferred:**
+- [ ] **Side-by-side split-pane preview** — original §3.5 called for live three-pane layout; v1 uses tabbed Edit/Preview which is functionally equivalent but visually less rich.
+- [ ] **Tag chips, related-doc multi-select** — original §3.5 called for proper component widgets; v1 uses comma-separated text inputs which work but are less polished.
 
 ### W4 — Version history UI ✅ Complete (PR #814)
 
 - [x] `pages/wiki-history/wiki-history.html` + `src/pages/wiki-history-page.js`
-- [x] Timeline list: version timestamp, author, change note
-- [x] Click a row → full-pane render of that version
-- [x] Restore button: writes the old body as a new version (non-destructive)
+- [x] Timeline list pane (left): version timestamp, author display name, change note
+- [x] Detail pane (right): full markdown render of selected version (reuses `marked.js` + `DOMPurify`)
+- [x] "Restore this version" button: writes the old body as a new version via `restoreVersion` (non-destructive — the old version row stays)
+- [x] "← Back to Wiki" link in standard `.page-header` pattern
+
+**Deferred:**
+- [ ] **Side-by-side diff between two versions** — original §3.6 called for compare mode using `diff-match-patch` (~10KB lazy-loaded); v1 only does single-version view. Diff view tracked as follow-up.
 
 ### W5 — Index pipeline (Firestore-driven) ❌ Deferred to follow-up
 
-- [ ] Cloud Function `onSddWrite` (Firestore trigger) → rebuild tenant index
-- [ ] Write `_chunks.json` and `_index.json` per tenant to Cloud Storage
+**Not built. v1 substitutes a simpler in-memory pipeline:**
+
+- v1 (shipped): `functions/wiki-chunks.js` lazy-loads all SDDs from Firestore into a per-tenant in-memory chunk cache on first `ragQuery` call, refreshes every 5 minutes (TTL). Trade-off: cold cache after each function instance restart, ~hundreds-of-ms first-query latency for tenants with many SDDs.
+- v2 (deferred): Firestore trigger `onSddWrite(tenants/{tid}/sdds/{slug})` → write `gs://promptroot-sdds/{tid}/_chunks.json` and `_index.json` → invalidate ragQuery cache. Eliminates cold-cache latency, makes index queryable by other services.
+
+**Deferred items:**
+- [ ] Cloud Function `onSddWrite` Firestore trigger
+- [ ] Cloud Storage bucket `promptroot-sdds` provisioning + lifecycle rules
 - [ ] Storage rules: tenant-scoped read for members; public read only for public tenants
-- **Note:** v1 uses in-memory BM25 cache (5-min TTL) for ragQuery; Cloud Storage indexing deferred
+- [ ] `wiki-chunks.js` updated to fetch from Cloud Storage instead of Firestore
+- [ ] Debounce: cap rebuild at 1× per tenant per 30s to avoid runaway writes from rapid edits
+
+**Estimated effort:** 1-2 days. Not blocking v1 launch since in-memory cache is correct, just less performant.
 
 ### W6 — `ragQuery` v2 ✅ Complete (PR #814)
 
-- [x] Add `tenantId` and `tenantIds` parameters; default resolution rules per §3.4
-- [x] Per-tenant in-memory cache (5-min TTL)
-- [x] Auth check for private tenants — verify caller is in `members[]`
-- [x] Federated query: rank across tenants, tag each result with its `tenantId`
-- [x] Backwards compatibility: no `tenantId` from public callers continues to work
-- [x] Cloud Function `wiki-chunks.js`: load all SDDs from Firestore, chunk on-the-fly, cache per tenant
+- [x] Added `tenantId` (single) and `tenantIds` (multi) parameters; default resolution rules per §3.4
+- [x] Per-tenant in-memory cache (5-min TTL) keyed on tenant id
+- [x] Auth check for private tenants — `tenantIsAccessible(tenantId, uid)` verifies caller is in `members[]` or that the tenant is public
+- [x] Federated query: ranks across all accessible tenants, returns each result tagged with its `tenantId`
+- [x] Backwards compatibility: no `tenantId` from anonymous callers falls back to the seed `promptroot` tenant (or queries all `visibility: public` tenants when authenticated without a specific tenant)
+- [x] Bundled-chunks fallback: when the seed tenant doesn't exist in Firestore yet, `loadBundledChunks()` fetches `https://promptroot.ai/wiki/_chunks.json` so the public wiki survives an empty Firestore (used during pre-migration period)
+- [x] BM25 scoring with heading boost (1.5×) and tag boost (1.25×) preserved from v1
+- [x] Cloud Function `functions/wiki-chunks.js` (119 lines): dedicated tenant chunk loader and accessibility checks
+- [x] Cloud Function `functions/rag.js` (75 lines): BM25 scorer extracted from the v1 `index.js` glob
 
 ### W7 — Optional git mirror ❌ Deferred to follow-up
 
-- [ ] Per-tenant setting in tenant CRUD UI: enable/disable + GitHub repo + branch
-- [ ] Cloud Function `mirrorSddToGithub` invoked on SDD save
-- [ ] Mirror failure surfaces as toast (non-blocking)
-- **Note:** Requires elevated GitHub OAuth scope for repo write access; tracked as separate follow-up
+**Not built. The `tenants/{tid}.githubRepo` field exists and is editable at create time, and the v1 schema already has a `mirrorEnabled: false` field per tenant, but no code reads it.**
+
+**Deferred items:**
+- [ ] Per-tenant settings UI to toggle `mirrorEnabled`, change `githubRepo`, choose a target branch
+- [ ] Cloud Function `mirrorSddToGithub` triggered on `onSddWrite`
+- [ ] GitHub OAuth scope upgrade: current `read:user` is read-only; mirror requires `repo` (private) or `public_repo` (public-only) scope
+- [ ] User re-consent flow: existing users would need to re-authorize to grant the elevated scope
+- [ ] Failure surface: non-blocking toast in editor when mirror fails (Firestore write still succeeds)
+- [ ] Commit message format: `wiki: {slug} — {changeNote || 'edit'}`, author = editor's GitHub identity
+
+**Why deferred:** the OAuth scope upgrade is user-visible and needs a separate rollout (existing sessions break until re-consent). Tracking separately keeps PR #814 free of auth-flow churn.
+
+**Estimated effort:** 2-3 days including scope migration.
 
 ### W8 — Agent discovery updates ✅ Complete (PR #814)
 
-- [x] Update `.claude/skills/search-dev-history/SKILL.md` to document MCP tool availability + tenant resolution
-- [x] Rewrite `AGENTS.md` for multi-tenant (tenant resolution order, MCP preferred, Claude Code skill fallback)
-- [x] Add CLI helper: `npx promptroot-tenant-init` writes `.promptroot-tenant` and `AGENTS.md` to the repo
-- [x] Update `CLAUDE.md` "Dev history wiki" section with new pages and endpoints
+- [x] `.claude/skills/search-dev-history/SKILL.md` updated to document MCP tool availability and tenant resolution; preserves read-only HTTP fallback for non-MCP agents
+- [x] `AGENTS.md` complete rewrite: tenant resolution order (explicit → `.promptroot-tenant` file → git remote → error), MCP preferred path, Claude Code skill fallback, raw HTTP fallback with curl example
+- [x] CLI helper `mcp-server/bin/promptroot-tenant-init.js` (97 lines): interactive tenant picker, writes `.promptroot-tenant` marker, generates `AGENTS.md` template tailored to the chosen tenant
+- [x] `CLAUDE.md` "Dev history wiki" section updated with new pages, all 13 Cloud Function endpoints, and agent integrations
+- [x] `mcp-server/README.md`: install, auth, tenant resolution, tool list, env var config (`PROMPTROOT_API_BASE`, `PROMPTROOT_DEVICE_FLOW_VERIFICATION_URL`, `PROMPTROOT_CREDENTIALS_PATH`)
 
 ### W12 — Cloud Function write API + MCP server + device flow auth ✅ Complete (PR #814)
 
-- [x] Cloud Function endpoints: `createSdd`, `updateSdd`, `listSdds`, `getSdd`, `listVersions`, `restoreVersion`
-- [x] Cloud Function endpoints: `createTenant`, `listTenants`
-- [x] Auth middleware in `functions/wiki-auth.js`: bearer token → UID → tenant membership check
-- [x] Device flow endpoints: `startDeviceAuth`, `pollDeviceAuth`, `authorizeDevice`
-- [x] Browser page `pages/auth-device/auth-device.html` for device-flow user confirmation
-- [x] `userSessions/{sessionId}` Firestore collection with revocation rules
-- [x] `@promptroot/mcp-server` npm package (7 tools, 3 executables, 36 unit tests)
-- [x] MCP server: tenant resolution (explicit → `.promptroot-tenant` → git remote)
-- [x] MCP server: credential storage in `~/.config/promptroot/credentials.json` (chmod 600)
-- [x] CLI binaries: `promptroot-mcp-server`, `promptroot-mcp-login`, `promptroot-tenant-init`
+**Cloud Function HTTP API (`functions/wiki.js`, 465 lines):**
+- [x] SDD CRUD: `createSdd`, `updateSdd`, `listSdds`, `getSdd`, `listVersions`, `restoreVersion`
+- [x] Tenant CRUD (create + list only): `createTenant`, `listTenants`
+- [x] Manual CORS via `setCors()` + `ALLOWED_ORIGINS` allowlist (functions are configured `cors: false` to bypass the SDK's CORS handling so we can do auth-aware origin checks)
+- [x] All write paths use Firestore batches for atomic doc + version writes
+- [x] Generates `versionId` from base36 timestamp + 8 random chars (sortable + unique)
+
+**Device-flow auth (`functions/wiki-device-flow.js`, ~280 lines):**
+- [x] `startDeviceAuth`: returns `{ deviceCode, userCode, verificationUrl, expiresIn, interval }` and writes a `deviceAuthRequests/{deviceCode}` doc with 10-min TTL
+- [x] `pollDeviceAuth`: returns `{ status: 'authorized', sessionToken }` once user authorizes; explicit error on unexpected status (post-review fix — was previously silent fallthrough)
+- [x] `authorizeDevice`: browser-side endpoint that consumes the `userCode`, mints a session token, writes `userSessions/{sessionId}`
+- [x] `listSessions` / `revokeSession`: API endpoints exist, no UI consumer yet (see deferred below)
+- [x] `USER_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'` (excludes ambiguous `I`, `O`, `0`, `1`); client regex matches (post-review fix)
+- [x] Session tokens: `prs_`-prefixed, SHA-256 hashed before storage, 64-char random tail
+
+**Auth resolution (`functions/wiki-auth.js`):**
+- [x] `resolveBearer(authorization)`: routes `prs_`-prefixed tokens through `userSessions/` lookup, all other tokens through `admin.auth().verifyIdToken()`
+- [x] `requireMembership(uid, tenantId)`: throws if user is not in `members[]`
+- [x] `tenantIsReadable(uid, tenantId)`: returns `{ ok, reason, tenant }` for visibility-aware reads
+
+**Browser device-flow confirmation page:**
+- [x] `pages/auth-device/auth-device.html` + `src/pages/auth-device-page.js`
+- [x] Auto-fill `userCode` from `?code=` query param
+- [x] Hyphen auto-insert as user types
+- [x] Strict regex match against `USER_CODE_ALPHABET` (post-review fix; was previously `[A-Z0-9]` which let users type ambiguous chars and get a confusing server reject)
+
+**MCP server (`mcp-server/`):**
+- [x] `@promptroot/mcp-server` npm package, 7 modules in `src/`:
+  - `config.js` (env var resolution: API base, device-flow URL, credentials path)
+  - `credentials.js` (read/write `~/.config/promptroot/credentials.json` Unix or `%APPDATA%\promptroot\credentials.json` Windows; chmod 600 on Unix)
+  - `api.js` (HTTP POST wrapper, session-token bearer header, structured `ApiError` for upstream)
+  - `device-flow.js` (`loginViaDeviceFlow` orchestrates start → print code → poll until authorized)
+  - `tenant-resolver.js` (`.promptroot-tenant` marker → `parseGithubRepoFromRemote()` → API match)
+  - `tools.js` (7 MCP tool definitions with JSON Schema input validation)
+  - `server.js` (MCP stdio server)
+- [x] 3 executables in `bin/`:
+  - `promptroot-mcp-server.js` (entry for `claude mcp add`)
+  - `promptroot-mcp-login.js` (interactive `claude mcp login` CLI)
+  - `promptroot-tenant-init.js` (interactive picker, writes `.promptroot-tenant` and `AGENTS.md`)
+- [x] 36 unit tests across 5 test files using Node.js built-in test runner
+- [x] `package.json` declares `bin` entries, `@modelcontextprotocol/sdk` dependency, `node --test` script
+
+**Critical post-review fix — Firebase deploy scope:**
+- [x] `wiki.js`, `wiki-chunks.js`, and `rag.js` originally required from `../scripts/lib/` which is outside the `functions/` source dir that Firebase uploads. Cold-start would have failed with module-not-found.
+- [x] Fix: copied `chunker.cjs`, `sdd-validate.cjs`, `tokenizer.cjs` into `functions/lib/` and updated all require paths.
+
+**Deferred from W12:**
+- [ ] **"Active sessions" panel in `/pages/profile/`** — §3.11.5 called for a profile UI listing each session with device label, last used, and Revoke button. API endpoints (`listSessions`, `revokeSession`) ship; UI does not.
+- [ ] **`updateSdd` does not check `mergedFrontmatter` against the original validator on partial updates** — adequate for v1 since the merger preserves required fields, but a strict update validator (require fields present in the merged output) would harden against future changes.
 
 ### W9 — Migration of seed tenant ✅ Complete (PR #814)
 
-- [x] Migration script `functions/migrate-wiki-to-tenant.js`: idempotent import of `wiki/*.md` → `tenants/promptroot/sdds/`
-- [x] Parses YAML frontmatter; writes full body as v1 version
-- [x] Usage: `node functions/migrate-wiki-to-tenant.js [--tenant=promptroot] [--dry-run]`
+- [x] Migration script `functions/migrate-wiki-to-tenant.js` (~190 lines): idempotent import of `wiki/*.md` → `tenants/promptroot/sdds/`
+- [x] Parses YAML frontmatter via existing `scripts/lib/sdd-validate.cjs`
+- [x] Writes the doc + an initial `versions/{generatedId}` snapshot (so the migrated SDDs have a real version row, not just current state)
+- [x] Idempotent: re-running skips docs that already exist with matching `currentVersion`
+- [x] Usage: `npm run migrate:wiki` or `node functions/migrate-wiki-to-tenant.js [--tenant=promptroot] [--dry-run]`
+- [x] Added `migrate:wiki` script to `functions/package.json`
+
+**Pending production action (post-deploy):**
+- [ ] Run the migration against production Firestore once
+- [ ] Verify parity: every SDD in `wiki/*.md` has a corresponding doc under `tenants/promptroot/sdds/`
+- [ ] After verification, decide whether to delete the legacy `wiki/*.md` files or keep them as a forwarding shim (open question §6 #2)
 
 ### W10 — Testing ✅ Complete (PR #814)
 
-- [x] 36 MCP server module tests (config, credentials, api, device-flow, tenant-resolver, tools)
-- [x] 12 SDD validation tests (frontmatter + tenant schemas)
-- [x] 3 cloud-function-url tests (production vs emulator routing)
-- [x] 11 wiki-api client tests (bearer auth, error handling, endpoint routing)
-- [x] All 75 test files passing (1208 tests, 1 skipped)
-- [x] E2E smoke tests passing (wiki page render, tenant visibility)
-- **Remaining:** Firestore rules unit tests (deferred; v1 reads from Firestore, rules reserved for future Storage-backed path)
+**Shipped (1208 unit tests passing across 75 test files, 1 skipped):**
+- [x] 36 MCP server module tests across 5 test files using Node.js built-in `node:test` runner:
+  - `config.test.js` — env var resolution
+  - `credentials.test.js` — read/write/clear with temp dir cleanup
+  - `api.test.js` — fetch mocking, ApiError, missing-auth handling
+  - `tenant-resolver.test.js` — git remote parsing, explicit slug, nonexistent cwd
+  - `tools.test.js` — exactly 7 tool definitions, schemas, kebab-case slug regex
+- [x] 12 SDD validation tests covering both frontmatter and tenant schemas
+- [x] 3 cloud-function-url tests (production vs emulator routing detection)
+- [x] 11 wiki-api client tests (bearer auth header, error handling, endpoint routing)
+- [x] E2E smoke tests passing (wiki page render, tenant visibility, search)
+- [x] CodeQL javascript-typescript analysis passing
+- [x] qlty code quality passing (2 pre-existing vulnerabilities in unrelated code, not introduced by this PR)
+
+**Deferred:**
+- [ ] **Firestore security rules unit tests** — the `@firebase/rules-unit-testing` harness is not wired up. Rules are correct by inspection but not regression-protected against future edits.
+- [ ] **Cloud Function integration tests** — `functions/test/index.test.js` exists but fails on Windows due to `NODE_ENV=test node --test` shell syntax (pre-existing, unrelated to this PR). Tests run in CI on Linux.
+- [ ] **End-to-end MCP server test against a real Cloud Function** — the MCP unit tests mock the HTTP layer; a true integration test that boots the function emulator and runs a tool call is deferred.
 
 ### W11 — Docs and rollout ✅ Complete (PR #814)
 
-- [x] Update `CLAUDE.md` section "Dev history wiki" with new pages and Cloud Function endpoints
-- [x] `AGENTS.md` rewritten for multi-tenant (tenant resolution, MCP preferred, Claude Code skill fallback, raw HTTP)
-- [x] `mcp-server/README.md`: install, auth, tenant resolution, tool list, env var config
-- [x] PR description updated to reflect multi-tenant scope
-- **Rollout:** Feature flag decision deferred to follow-up; API is in place and ready
+- [x] `CLAUDE.md` "Dev history wiki" section updated with all new pages, all 13 Cloud Function endpoints, and the agent integration paths (project-scoped Claude Code skill + MCP server)
+- [x] `AGENTS.md` rewritten for multi-tenant: tenant resolution order, MCP preferred path, Claude Code skill fallback, raw HTTP fallback
+- [x] `mcp-server/README.md`: install, auth, tenant resolution, full tool list, env var config
+- [x] This SDD (`wiki/multi-tenant-sdd-platform.md`) updated to reflect actual delivery
+- [x] PR #814 description rewritten as a high-level "what does this accomplish" summary, with screenshot placeholders and a production test plan
+
+**Deferred:**
+- [ ] **`@promptroot/mcp-server` published to npm** — package.json is finalized, tests pass, but `npm publish` has not been run. Tracked as a post-deploy step.
+- [ ] **Public announcement / changelog entry** — no `CHANGELOG.md` in the repo today; if we add one, this PR is the natural starting point.
+- [ ] **Feature-flag rollout** — original W11 mentioned a feature flag; on review the API surface is independent of the existing Home/Queue/Jules pages, so a flag is not needed. Direct GA on merge + deploy.
+
+### W13 — Post-review hardening ✅ Complete (PR #814)
+
+Findings discovered during in-branch review and addressed before merge:
+
+**Deploy-blocking:**
+- [x] **`functions/lib/` shared CJS files.** `wiki.js`, `wiki-chunks.js`, and `rag.js` originally required from `../scripts/lib/` which is outside the Firebase Functions upload scope. Cold-start in production would have thrown module-not-found. Fix: copied `chunker.cjs`, `sdd-validate.cjs`, `tokenizer.cjs` into `functions/lib/` and updated all require paths. Confirmed all 25 functions load cleanly in the Functions emulator after the fix.
+
+**Logic bugs:**
+- [x] **`auth-device-page.js` user-code regex.** Client validation was `/^[A-Z0-9]{4}-[A-Z0-9]{4}$/` which accepts `I`, `O`, `0`, `1` — characters the server's `USER_CODE_ALPHABET` deliberately excludes. Real users typing those would get a confusing "Invalid or already-used code" rejection. Fix: tightened to `/^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/`; updated input sanitizer to strip those characters as the user types.
+- [x] **`pollDeviceAuth` silent status fallthrough.** Any non-`authorized` status (including malformed/corrupted documents) was returning `pending` indefinitely, leaving CLIs polling forever. Fix: explicit unknown-status path now logs and returns 500 so the CLI surfaces a real error.
+
+**CodeQL findings:**
+- [x] **Duplicate property `slug` in `mergedFrontmatter`** (`functions/wiki.js`, `updateSdd` handler) — first `slug: prev.slug` was shadowed by the spread then re-set. Removed the redundant first occurrence; kept the trailing one which is load-bearing (prevents client-supplied `frontmatter.slug` from renaming the doc).
+- [x] **Unused `chunkDoc` import** (`functions/wiki.js`) — leftover from earlier iteration; chunking actually happens in `wiki-chunks.js`. Removed.
+
+**UI / style-guide consistency pass:**
+- [x] **`btn small` → `btn sm` everywhere.** The wiki PR pages used `class="btn small"` but only `.btn.sm` exists in `buttons.css`. The "small" modifier was a no-op, so all toolbar/action buttons rendered at default size. Fixed in `wiki.html`, `wiki-edit.html`, `wiki-history.html`, `tenants.html`, and `tenants-page.js`.
+- [x] **`class="input"` → `class="form-control"`.** The PR pages used a custom `.input` class with no `appearance: none` rule, so `<select>` elements rendered with the OS-default dropdown arrow. Switched to the standard `.form-control` (modals.css) which has `appearance: none`, the SVG chevron, focus/disabled states. Updated `.wiki-edit-frontmatter` page-specific override to keep the compact look while inheriting standard styling.
+- [x] **Native HTML5 validation replaced with styled UI** on the tenants form: `novalidate` attribute, dead `required`/`pattern` attributes removed, JS-driven error display via the existing `.tenants-status` panel. Added explicit empty-slug and length-bounds checks with clearer messages.
+- [x] **Toolbar actions standardized** — replaced the ad-hoc `.wiki-toolbar-actions` shim with the existing `.toolbar-actions` component class. Added "New SDD" and "Tenants" actions to the `/wiki` toolbar so users can reach tenant management without typing the URL.
+- [x] **Navigation symmetry** — `/wiki/tenants` adopted the standard `.page-header` + `.toolbar-actions` pattern with a "← Back to Wiki" link, matching `/wiki/history`'s Back affordance. The wiki-history Back link gained an `arrow_back` icon for consistency.
 
 ---
 
@@ -472,23 +602,37 @@ No file ever lands in the myplanet repo. No git involvement (unless §3.8 mirror
 
 | Milestone | Workstreams | Status | PR |
 |-----------|-------------|--------|-----|
-| M1: Schema, rules, tenant CRUD | W1, W2 | ✅ Complete | #814 |
-| M2: SDD editor + version history | W3, W4 | ✅ Complete | #814 |
-| M3: Index pipeline + `ragQuery` v2 | W5, W6 | ✅ Complete (W6 only; W5 deferred) | #814 |
-| M4: Write API + MCP server + device flow auth | W12 | ✅ Complete | #814 |
-| M5: Git mirror | W7 | ❌ Deferred to follow-up | — |
+| M1: Schema, rules, tenant CRUD | W1, W2 | ⚠ Partial — W2 create+list only, no edit/invite/transfer/delete | #814 |
+| M2: SDD editor + version history | W3, W4 | ✅ Complete (no diff view in W4) | #814 |
+| M3: Index pipeline + `ragQuery` v2 | W5, W6 | ⚠ Partial — W6 complete; W5 (Firestore-trigger Cloud Storage index) deferred | #814 |
+| M4: Write API + MCP server + device flow auth | W12 | ✅ Complete (`/profile/` sessions UI deferred) | #814 |
+| M5: Git mirror | W7 | ❌ Deferred — needs OAuth scope upgrade | — |
 | M6: Agent discovery + skill updates | W8 | ✅ Complete | #814 |
-| M7: Seed migration + parity verification | W9 | ✅ Complete | #814 |
-| M8: Tests + docs + rollout | W10, W11 | ✅ Complete | #814 |
+| M7: Seed migration + parity verification | W9 | ✅ Script ready; production run pending post-deploy | #814 |
+| M8: Tests + docs + rollout | W10, W11 | ✅ Complete (npm publish pending) | #814 |
+| M9: Post-review hardening | W13 | ✅ Complete | #814 |
 
-**Status Summary:**
-- **PR #814:** Delivers M1, M2, M3 (W6), M4, M6, M7, M8
-- **Deferred to follow-up (separate PR):** M5 (W5, W7) — git mirror and Firestore-driven index pipeline
-- **Total effort:** ~13 days (deferred items ~2 days)
+**Status Summary**
+
+PR #814 ships the complete v1 platform. The deferred items are bounded and separable:
+
+| Workstream | Item | Why deferred | Effort |
+|------------|------|--------------|--------|
+| W2 | Tenant member management UI (invite, transfer, delete) | Single-owner case is functional; multi-user can ship independently | 1-2 days |
+| W3 | Side-by-side editor + tag chips | Tabbed Edit/Preview ships; pure UX upgrade | 1 day |
+| W4 | Side-by-side version diff | Single-version view ships; needs `diff-match-patch` integration | 0.5 day |
+| W5 | Firestore-trigger Cloud Storage index pipeline | In-memory cache is correct, just less performant; pure perf upgrade | 1-2 days |
+| W7 | Git mirror | Needs `repo` OAuth scope upgrade and user re-consent flow | 2-3 days |
+| W12 | `/profile/` "Active sessions" panel | API ships; UI is non-blocking since revocation works at the bearer level | 0.5 day |
+| W10 | Firestore rules unit tests | Rules correct by inspection; not regression-protected against future edits | 1 day |
+| W11 | npm publish `@promptroot/mcp-server` | Manual operational step | 15 min |
+
+Total deferred effort: **~7 days** spread across follow-up PRs that can land independently.
 
 **Ready for production:**
-- API is fully functional (Cloud Functions, MCP server, device flow)
-- Web UI complete (tenant CRUD, SDD editor, version history)
-- Tests comprehensive (1208 passing, 75 test files)
-- Documentation up-to-date (AGENTS.md, CLAUDE.md, mcp-server/README.md)
-- No feature flag needed for first release — launch directly to GA
+- 13 Cloud Function endpoints (CRUD, search, device-flow, sessions)
+- 5 web pages (`/wiki`, `/wiki/edit`, `/wiki/history`, `/wiki/tenants`, `/auth/device`)
+- `@promptroot/mcp-server` package with 7 MCP tools and 3 CLI binaries
+- 1208 unit tests passing (36 MCP, 12 SDD validation, 11 wiki-api, plus regression coverage)
+- All review-discovered bugs fixed; CodeQL clean; deploy-blocking `functions/lib/` issue resolved
+- No feature flag needed — direct GA on merge + deploy

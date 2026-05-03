@@ -4,9 +4,9 @@
   "description": "MCP server exposing the PromptRoot dev-history wiki to coding agents (Claude Code, Cursor, Continue, Cline).",
   "type": "module",
   "bin": {
-    "promptroot-mcp-server": "./bin/promptroot-mcp-server.js",
-    "promptroot-mcp-login": "./bin/promptroot-mcp-login.js",
-    "promptroot-tenant-init": "./bin/promptroot-tenant-init.js"
+    "promptroot-mcp-server": "bin/promptroot-mcp-server.js",
+    "promptroot-mcp-login": "bin/promptroot-mcp-login.js",
+    "promptroot-tenant-init": "bin/promptroot-tenant-init.js"
   },
   "main": "./src/server.js",
   "exports": {
@@ -26,8 +26,16 @@
   "files": [
     "bin",
     "src",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
-  "keywords": ["mcp", "promptroot", "agents", "wiki", "rag", "claude-code"],
+  "keywords": [
+    "mcp",
+    "promptroot",
+    "agents",
+    "wiki",
+    "rag",
+    "claude-code"
+  ],
   "license": "AGPL-3.0-only"
 }

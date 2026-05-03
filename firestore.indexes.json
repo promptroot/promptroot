@@ -39,13 +39,6 @@
       ]
     },
     {
-      "collectionGroup": "versions",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "savedAt", "order": "DESCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "userSessions",
       "queryScope": "COLLECTION",
       "fields": [

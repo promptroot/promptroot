@@ -24,7 +24,7 @@
 
   <div class="wrap wiki-history-wrap">
     <main class="card pad-lg wiki-history-card">
-      <header class="wiki-history-header">
+      <div class="wiki-history-header">
         <h2 class="section-title-lg font-22 mb-0">
           <span class="icon icon-inline" aria-hidden="true">history</span>
           <span id="wikiHistoryTitle">SDD History</span>
@@ -32,7 +32,7 @@
         <a id="wikiHistoryBackLink" class="btn sm" href="/pages/wiki/wiki.html">
           <span class="icon icon-inline" aria-hidden="true">arrow_back</span> Back to Wiki
         </a>
-      </header>
+      </div>
 
       <div id="wikiHistoryError" class="wiki-edit-error" role="alert" aria-live="polite" hidden></div>
 
@@ -43,7 +43,7 @@
           <p id="wikiHistoryEmpty" class="tenants-empty" hidden>No version history.</p>
         </aside>
         <section class="wiki-history-detail-pane">
-          <header class="wiki-history-detail-header" hidden id="wikiHistoryDetailHeader">
+          <div class="wiki-history-detail-header" hidden id="wikiHistoryDetailHeader">
             <div>
               <strong id="wikiHistoryDetailLabel"></strong>
               <span id="wikiHistoryDetailMeta" class="wiki-history-detail-meta"></span>
@@ -51,7 +51,7 @@
             <div class="wiki-history-detail-actions">
               <button id="wikiHistoryRestoreBtn" class="btn sm primary" type="button">Restore this version</button>
             </div>
-          </header>
+          </div>
           <article id="wikiHistoryDetailBody" class="markdown-body wiki-history-detail-body">
             <p class="wiki-placeholder">Pick a version on the left to view it.</p>
           </article>

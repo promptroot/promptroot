@@ -1,5 +1,7 @@
 import { TIMEOUTS } from '../utils/constants.js';
+import { initializeSharedComponents } from '../shared-init.js';
 import { getAuth } from '../modules/firebase-service.js';
+import { listSdds, getSdd } from '../modules/wiki-api.js';
 import {
   loadWikiIndex,
   filterDocsByVisibility,
@@ -14,6 +16,8 @@ import {
   paintDoc,
   buildAgentContextMarkdown
 } from '../modules/wiki-renderer.js';
+import { sanitizeHtml } from '../modules/prompt-renderer.js';
+import { loadMarked } from '../utils/lazy-loaders.js';
 import { renderTree, setActiveTreeItem } from '../modules/wiki-tree.js';
 import { renderTimeline } from '../modules/wiki-timeline.js';
 import { renderGraph } from '../modules/wiki-graph.js';
@@ -29,6 +33,7 @@ let currentBodyMarkdown = null;
 let currentView = 'doc';
 let graphRendered = false;
 let canSeePrivate = false;
+let tenantId = null;
 
 const elements = {};
 
@@ -92,12 +97,28 @@ async function selectDoc(slug) {
     history.replaceState(null, '', `#${slug}`);
   }
   try {
-    const { html, blocked } = await renderDoc(doc);
-    if (!blocked) {
-      const raw = await fetchDocMarkdown(doc.docPath);
-      currentBodyMarkdown = stripFrontmatter(raw);
+    let html;
+    let blocked = false;
+    if (tenantId) {
+      if (doc.visibility === 'private' && !canSeePrivate) {
+        blocked = true;
+        currentBodyMarkdown = null;
+      } else {
+        const result = await getSdd({ tenantId, slug });
+        currentBodyMarkdown = result.body || '';
+        const marked = await loadMarked();
+        html = sanitizeHtml(marked.parse(currentBodyMarkdown));
+      }
     } else {
-      currentBodyMarkdown = null;
+      const rendered = await renderDoc(doc);
+      html = rendered.html;
+      blocked = rendered.blocked;
+      if (!blocked) {
+        const raw = await fetchDocMarkdown(doc.docPath);
+        currentBodyMarkdown = stripFrontmatter(raw);
+      } else {
+        currentBodyMarkdown = null;
+      }
     }
     paintDoc({
       doc,
@@ -177,17 +198,70 @@ function applyVisibility() {
   }
 }
 
+function readTenantParam() {
+  try {
+    return new URL(window.location.href).searchParams.get('tenant') || null;
+  } catch {
+    return null;
+  }
+}
+
+async function loadDocsForCurrentScope() {
+  if (tenantId) {
+    const { sdds } = await listSdds(tenantId);
+    return (sdds || []).map(s => ({
+      slug: s.slug,
+      title: s.title,
+      status: s.status,
+      owner: s.owner,
+      date: s.date,
+      tags: s.tags || [],
+      related: s.related || [],
+      visibility: s.visibility
+    }));
+  }
+  const index = await loadWikiIndex();
+  return index.docs || [];
+}
+
+function applyTenantToToolbar() {
+  if (!tenantId) return;
+  const newSddBtn = document.querySelector('.toolbar-actions a[href*="wiki-edit"]');
+  if (newSddBtn) {
+    newSddBtn.href = `/pages/wiki-edit/wiki-edit.html?tenant=${encodeURIComponent(tenantId)}`;
+  }
+}
+
+function applyTenantTitle() {
+  if (!tenantId) return;
+  const titleEl = document.querySelector('.section-title-lg');
+  if (titleEl) {
+    titleEl.textContent = '';
+    const icon = document.createElement('span');
+    icon.className = 'icon icon-inline';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = 'menu_book';
+    titleEl.appendChild(icon);
+    titleEl.append(` Wiki — ${tenantId}`);
+  }
+}
+
 async function initApp() {
   cacheElements();
   configureWikiRenderer({ canSeePrivate: () => canSeePrivate });
 
+  tenantId = readTenantParam();
+  applyTenantToToolbar();
+  applyTenantTitle();
+
   try {
-    const index = await loadWikiIndex();
-    allDocs = index.docs || [];
+    allDocs = await loadDocsForCurrentScope();
   } catch (err) {
     console.error('Failed to load wiki index', err);
     if (elements.tree) {
-      elements.tree.textContent = 'Failed to load wiki index.';
+      elements.tree.textContent = tenantId
+        ? `Failed to load SDDs for tenant "${tenantId}".`
+        : 'Failed to load wiki index.';
     }
     return;
   }
@@ -227,8 +301,13 @@ function waitForComponents() {
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', waitForComponents);
-} else {
+function bootstrap() {
+  initializeSharedComponents('wiki');
   waitForComponents();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootstrap);
+} else {
+  bootstrap();
 }

@@ -1,7 +1,7 @@
 import { TIMEOUTS } from '../utils/constants.js';
 import { initializeSharedComponents } from '../shared-init.js';
 import { getAuth } from '../modules/firebase-service.js';
-import { listSdds, getSdd } from '../modules/wiki-api.js';
+import { listSdds, getSdd, listTenants } from '../modules/wiki-api.js';
 import {
   loadWikiIndex,
   filterDocsByVisibility,
@@ -280,6 +280,127 @@ function applyTenantToToolbar() {
   }
 }
 
+async function showTenantPicker() {
+  const layout = document.querySelector('.wiki-layout');
+  const toolbar = document.querySelector('.wiki-toolbar');
+  if (toolbar) toolbar.hidden = true;
+  if (layout) layout.hidden = true;
+
+  const main = document.querySelector('main.card.pad-lg');
+  if (!main) return;
+
+  const picker = document.createElement('section');
+  picker.className = 'wiki-picker';
+
+  const head = document.createElement('div');
+  head.className = 'wiki-picker-head';
+
+  const intro = document.createElement('p');
+  intro.className = 'wiki-picker-intro';
+  intro.textContent = 'Pick a wiki to browse, or create a new one for another app.';
+  head.appendChild(intro);
+
+  const newBtn = document.createElement('a');
+  newBtn.className = 'btn sm primary';
+  newBtn.href = '/pages/tenants/tenants.html';
+  const newIcon = document.createElement('span');
+  newIcon.className = 'icon icon-inline';
+  newIcon.setAttribute('aria-hidden', 'true');
+  newIcon.textContent = 'add';
+  newBtn.appendChild(newIcon);
+  newBtn.append(' New wiki');
+  head.appendChild(newBtn);
+
+  picker.appendChild(head);
+
+  const status = document.createElement('div');
+  status.className = 'wiki-picker-status';
+  status.textContent = 'Loading…';
+  picker.appendChild(status);
+
+  const list = document.createElement('ul');
+  list.className = 'wiki-picker-list';
+  list.hidden = true;
+  picker.appendChild(list);
+
+  main.appendChild(picker);
+
+  await waitForAuthUser();
+  const auth = getAuth();
+  if (!auth?.currentUser) {
+    status.textContent = 'Sign in to see your wikis.';
+    return;
+  }
+
+  let tenants;
+  try {
+    ({ tenants } = await listTenants());
+  } catch (err) {
+    status.textContent = `Failed to load tenants: ${err?.message || 'unknown error'}`;
+    return;
+  }
+
+  if (!tenants || tenants.length === 0) {
+    status.textContent = '';
+    const empty = document.createElement('div');
+    empty.className = 'wiki-picker-empty';
+    const p = document.createElement('p');
+    p.textContent = "You don't belong to any wikis yet.";
+    const link = document.createElement('a');
+    link.className = 'btn sm primary';
+    link.href = '/pages/tenants/tenants.html';
+    link.textContent = 'Create one →';
+    empty.appendChild(p);
+    empty.appendChild(link);
+    picker.appendChild(empty);
+    return;
+  }
+
+  status.hidden = true;
+  list.hidden = false;
+
+  for (const t of tenants) {
+    const li = document.createElement('li');
+    li.className = 'wiki-picker-item';
+
+    const link = document.createElement('a');
+    link.className = 'wiki-picker-link';
+    link.href = `/pages/wiki/wiki.html?tenant=${encodeURIComponent(t.slug)}`;
+
+    const name = document.createElement('div');
+    name.className = 'wiki-picker-name';
+    name.textContent = t.name || t.slug;
+    link.appendChild(name);
+
+    const meta = document.createElement('div');
+    meta.className = 'wiki-picker-meta';
+    const slugEl = document.createElement('code');
+    slugEl.textContent = t.slug;
+    meta.appendChild(slugEl);
+    meta.appendChild(document.createTextNode(' · '));
+    const vis = document.createElement('span');
+    vis.textContent = t.visibility || 'private';
+    meta.appendChild(vis);
+    if (typeof t.memberCount === 'number') {
+      meta.appendChild(document.createTextNode(' · '));
+      const members = document.createElement('span');
+      members.textContent = `${t.memberCount} member${t.memberCount === 1 ? '' : 's'}`;
+      meta.appendChild(members);
+    }
+    link.appendChild(meta);
+
+    if (t.description) {
+      const desc = document.createElement('div');
+      desc.className = 'wiki-picker-desc';
+      desc.textContent = t.description;
+      link.appendChild(desc);
+    }
+
+    li.appendChild(link);
+    list.appendChild(li);
+  }
+}
+
 function applyTenantTitle() {
   if (!tenantId) return;
   const titleEl = document.querySelector('.section-title-lg');
@@ -301,6 +422,11 @@ async function initApp() {
   tenantId = readTenantParam();
   applyTenantToToolbar();
   applyTenantTitle();
+
+  if (!tenantId) {
+    await showTenantPicker();
+    return;
+  }
 
   try {
     allDocs = await loadDocsForCurrentScope();

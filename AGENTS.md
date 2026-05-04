@@ -1,73 +1,87 @@
 # AGENTS.md
 
-Guidance for coding agents (Jules, Claude Code, etc.) working in this repo.
+Guidance for coding agents (Claude Code, Cursor, Continue, Cline, Jules, …) working in any PromptRoot-connected repo.
 
 ## Dev history wiki
 
-Prior design decisions and SDDs live at https://promptroot.ai/wiki, with
-markdown source at `wiki/*.md` for the seed `promptroot` tenant. Other
-apps store SDDs server-side in their own tenant under PromptRoot — there
-is no per-repo `wiki/` folder for those.
+Prior design decisions and SDDs (Software Design Documents) are stored in PromptRoot's multi-tenant wiki at https://promptroot.ai/wiki. Each app has its own tenant. Read before changing non-trivial code; write when you make a decision worth recording.
 
 ## Tenant resolution
 
-Every agent integration treats SDDs as scoped to a tenant. Resolve the
-tenant in this order:
+Every read and write is scoped to one tenant. Resolve in this order:
 
-1. Tool argument or env (`PROMPTROOT_TENANT_ID`).
-2. `.promptroot-tenant` file at the repo root, single line containing the
-   tenant slug. Run `npx promptroot-tenant-init` to create one.
-3. `git remote get-url origin` matched against `tenants[].githubRepo` for
-   the authenticated user.
+1. **Explicit** — caller passes `tenantId` (or `--tenant <slug>`).
+2. **`.promptroot-tenant`** file at the repo root (single line: the tenant slug). Run `npx promptroot-tenant-init` to create one.
+3. **`git remote get-url origin`** matched against `tenants[].githubRepo` for the signed-in user.
 
-If none resolve, fall back to public-tenant search; reject writes.
+Read paths fall back to public tenants if nothing resolves; write paths error and prompt for `--tenant <slug>`.
 
-## Discovery surfaces
+## Discovery surfaces (pick the one that fits the agent)
 
-### MCP (preferred for any MCP-speaking agent)
+### A. MCP tools (preferred for any MCP-speaking agent)
 
-Install the server:
+```sh
+npm install -g @promptroot/mcp-server
+promptroot-mcp-login                              # one-time GitHub OAuth
+claude mcp add -s user promptroot promptroot-mcp-server
+```
 
-    npm install -g @promptroot/mcp-server
-    promptroot-mcp-login         # one-time GitHub OAuth via device flow
-    claude mcp add promptroot npx @promptroot/mcp-server
+Tools registered:
 
-Tools registered: `promptroot_search_sdds`, `promptroot_list_sdds`,
-`promptroot_get_sdd`, `promptroot_create_sdd`, `promptroot_update_sdd`,
-`promptroot_list_versions`, `promptroot_restore_version`. Cursor,
-Continue, and Cline pick up the same server with their own MCP registries.
+| Tool | Purpose |
+|------|---------|
+| `promptroot_search_sdds` | BM25 search; federated across tenants you can read. |
+| `promptroot_list_sdds` | List SDDs in a tenant. |
+| `promptroot_get_sdd` | Fetch one SDD body + frontmatter (optionally a past version). |
+| `promptroot_create_sdd` | Create a new SDD. |
+| `promptroot_update_sdd` | Update — writes a new version; old preserved. |
+| `promptroot_list_versions` | Version history. |
+| `promptroot_restore_version` | Non-destructive rollback. |
 
-### Claude Code skill (read-only fallback)
+See [`mcp-server/README.md`](mcp-server/README.md) for full tool schemas, env vars, and troubleshooting.
 
-`.claude/skills/search-dev-history/SKILL.md` queries the public ragQuery
-endpoint. Use this when the MCP server is not installed.
+### B. CLI binaries (when MCP isn't an option)
 
-### Jules
+The same `@promptroot/mcp-server` package ships standalone binaries you can shell out to:
 
-PromptRoot's Jules queue injects relevant wiki excerpts into your prompt
-automatically before submission. Look for a
-`## Relevant Prior Design Decisions` section near the top of your prompt.
-Do not attempt outbound HTTP requests; what matters is already in scope.
+- `promptroot-mcp-login` — auth.
+- `promptroot-tenant-init` — pick a tenant, write the marker file.
+- `promptroot-sdd-push <file.md>` — push a markdown file with YAML frontmatter; creates or updates as appropriate.
 
-### Other agents (raw HTTP)
+If your agent has terminal access but no MCP support, this is the cleanest write path. Required frontmatter keys: `title`, `slug`, `date`, `status`, `owner`, `visibility`. Supported flags: `--tenant <slug>`, `--note "msg"`.
 
-Any agent can POST to:
+### C. Claude Code skill (read-only fallback)
 
-    POST https://us-central1-promptroot-b02a2.cloudfunctions.net/ragQuery
-    Content-Type: application/json
+`.claude/skills/search-dev-history/SKILL.md` queries the public `ragQuery` endpoint without auth. Works only for public tenants. Use when MCP isn't installed and you only need to search.
 
-    {
-      "query": "<user question>",
-      "topK": 5,
-      "tenantId": "<slug or omit for public>"
-    }
+### D. Jules
 
-Returns `{ results: [{ docPath, slug, tenantId, heading, text, score, url }, ...] }`.
+PromptRoot's Jules queue auto-injects relevant wiki excerpts into your prompt before submission as `## Relevant Prior Design Decisions`. Don't try outbound HTTP — what matters is already in scope.
 
-Authenticated callers can pass `Authorization: Bearer <session-token>`
-(from the device flow) to federate across all their tenants.
+### E. Raw HTTP (any agent)
+
+For search:
+
+```
+POST https://us-central1-promptroot-b02a2.cloudfunctions.net/ragQuery
+Content-Type: application/json
+
+{ "query": "<question>", "topK": 5, "tenantId": "<slug or omit for public>" }
+```
+
+Authenticated callers can pass `Authorization: Bearer <prs_session-token>` (from device flow) to federate across all their tenants. Returns `{ results: [{ docPath, slug, tenantId, heading, text, score, url }, ...] }`.
+
+For create/update/list/etc., see the Cloud Function endpoints documented in `CLAUDE.md` under "Dev history wiki."
+
+## When to write an SDD
+
+- Architectural decision with trade-offs that won't be obvious from the code six months later.
+- Non-obvious workaround for a third-party bug or constraint.
+- Migration plan with checkpoints (status: `in-progress` → `shipped`).
+- Incident postmortem.
+
+When in doubt, search first (`promptroot_search_sdds` or the equivalent) — if there's already an SDD on the topic, update it instead of creating a sibling.
 
 ## Conventions
 
-See `CLAUDE.md` for project structure, testing commands, and coding
-conventions that apply to all changes.
+See `CLAUDE.md` for project structure, testing commands, and coding conventions that apply to all changes.

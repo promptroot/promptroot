@@ -1,12 +1,13 @@
 {
   "name": "@promptroot/mcp-server",
-  "version": "0.1.0",
-  "description": "MCP server exposing the PromptRoot dev-history wiki to coding agents (Claude Code, Cursor, Continue, Cline).",
+  "version": "0.1.1",
+  "description": "MCP server + CLI for the PromptRoot dev-history wiki. Lets coding agents (Claude Code, Cursor, Continue, Cline) and humans search, read, and write SDDs.",
   "type": "module",
   "bin": {
     "promptroot-mcp-server": "bin/promptroot-mcp-server.js",
     "promptroot-mcp-login": "bin/promptroot-mcp-login.js",
-    "promptroot-tenant-init": "bin/promptroot-tenant-init.js"
+    "promptroot-tenant-init": "bin/promptroot-tenant-init.js",
+    "promptroot-sdd-push": "bin/promptroot-sdd-push.js"
   },
   "main": "./src/server.js",
   "exports": {

@@ -208,6 +208,7 @@ function readTenantParam() {
 
 async function loadDocsForCurrentScope() {
   if (tenantId) {
+    await waitForAuthUser();
     const { sdds } = await listSdds(tenantId);
     return (sdds || []).map(s => ({
       slug: s.slug,
@@ -222,6 +223,53 @@ async function loadDocsForCurrentScope() {
   }
   const index = await loadWikiIndex();
   return index.docs || [];
+}
+
+function waitForAuthUser() {
+  return new Promise((resolve) => {
+    const auth = getAuth();
+    if (auth?.currentUser) {
+      resolve(auth.currentUser);
+      return;
+    }
+    if (!auth?.onAuthStateChanged) {
+      resolve(null);
+      return;
+    }
+    const unsub = auth.onAuthStateChanged((user) => {
+      unsub();
+      resolve(user);
+    });
+  });
+}
+
+function setTreeMessage(text) {
+  if (!elements.tree) return;
+  elements.tree.textContent = '';
+  const msg = document.createElement('div');
+  msg.className = 'wiki-tree-empty';
+  msg.textContent = text;
+  elements.tree.appendChild(msg);
+}
+
+function showEmptyTenantState() {
+  setTreeMessage(`No SDDs in tenant "${tenantId}" yet.`);
+  if (elements.placeholder) {
+    elements.placeholder.hidden = false;
+    const heading = elements.placeholder.querySelector('p');
+    if (heading) {
+      heading.textContent = `No SDDs in "${tenantId}" yet — create the first one.`;
+    }
+  }
+}
+
+function showSignedOutState() {
+  setTreeMessage(`Sign in to view SDDs in "${tenantId}".`);
+  if (elements.placeholder) {
+    elements.placeholder.hidden = false;
+    const heading = elements.placeholder.querySelector('p');
+    if (heading) heading.textContent = 'Sign in to browse this tenant.';
+  }
 }
 
 function applyTenantToToolbar() {
@@ -258,11 +306,18 @@ async function initApp() {
     allDocs = await loadDocsForCurrentScope();
   } catch (err) {
     console.error('Failed to load wiki index', err);
-    if (elements.tree) {
-      elements.tree.textContent = tenantId
-        ? `Failed to load SDDs for tenant "${tenantId}".`
-        : 'Failed to load wiki index.';
+    if (tenantId && err?.message === 'Not signed in') {
+      showSignedOutState();
+    } else {
+      setTreeMessage(tenantId
+        ? `Failed to load SDDs for tenant "${tenantId}": ${err?.message || 'unknown error'}`
+        : 'Failed to load wiki index.');
     }
+    return;
+  }
+
+  if (tenantId && allDocs.length === 0) {
+    showEmptyTenantState();
     return;
   }
 

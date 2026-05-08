@@ -54,8 +54,14 @@
     "ignore": [
       "firebase.json",
       "**/.*",
+      ".git/**",
+      ".github/**",
       "**/node_modules/**",
-      "functions/**"
+      "functions/**",
+      "emulator-data/**",
+      "playwright-report/**",
+      "test-results/**",
+      "vscode-extension/**"
     ],
     "headers": [
       {

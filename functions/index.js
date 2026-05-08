@@ -1485,6 +1485,8 @@ exports.listVersions = wikiEndpoints.listVersions;
 exports.restoreVersion = wikiEndpoints.restoreVersion;
 exports.createTenant = wikiEndpoints.createTenant;
 exports.listTenants = wikiEndpoints.listTenants;
+exports.updateTenant = wikiEndpoints.updateTenant;
+exports.deleteTenant = wikiEndpoints.deleteTenant;
 
 exports.startDeviceAuth = deviceFlowEndpoints.startDeviceAuth;
 exports.pollDeviceAuth = deviceFlowEndpoints.pollDeviceAuth;

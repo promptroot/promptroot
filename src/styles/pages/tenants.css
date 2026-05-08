@@ -145,3 +145,30 @@
   border-color: var(--danger, #c0392b);
   background: color-mix(in srgb, var(--danger, #c0392b) 12%, transparent);
 }
+
+.tenants-list-item {
+  flex-wrap: wrap;
+}
+
+.tenants-edit-panel {
+  width: 100%;
+  display: grid;
+  gap: 10px;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+}
+
+.tenants-edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn.danger {
+  color: var(--danger, #c0392b);
+  border-color: var(--danger, #c0392b);
+}
+
+.btn.danger:hover {
+  background: color-mix(in srgb, var(--danger, #c0392b) 12%, transparent);
+}

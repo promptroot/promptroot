@@ -379,6 +379,7 @@
 }
 
 .wiki-graph-view {
+  position: relative;
   height: 60vh;
   min-height: 400px;
 }
@@ -390,6 +391,44 @@
   border: 1px solid var(--color-border, #2c3148);
   border-radius: 8px;
 }
+
+.wiki-graph-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  margin: 0;
+  padding: 8px 12px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(15, 18, 32, 0.85);
+  border: 1px solid var(--color-border, #2c3148);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--color-text-muted, #a0a8c0);
+  pointer-events: none;
+}
+
+.wiki-graph-legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.wiki-graph-legend__dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.wiki-graph-legend__dot--shipped    { background: #3ec46d; }
+.wiki-graph-legend__dot--in-progress { background: #f0a830; }
+.wiki-graph-legend__dot--proposal   { background: #7c8ff5; }
+.wiki-graph-legend__dot--archived   { background: #777; }
+.wiki-graph-legend__dot--unknown    { background: #4a7fff; }
 
 /* Wiki tenant picker (shown when no ?tenant= is set) */
 .wiki-picker {

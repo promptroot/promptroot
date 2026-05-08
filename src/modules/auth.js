@@ -47,7 +47,7 @@ export async function signInWithGitHub(forceAccountSelection = false) {
         token: result.credential.accessToken,
         timestamp: Date.now()
       };
-      sessionStorage.setItem('github_access_token', JSON.stringify(tokenData));
+      localStorage.setItem('github_access_token', JSON.stringify(tokenData));
     } else {
       console.warn('GitHub sign-in succeeded but no access token was returned. Falling back to unauthenticated GitHub requests.', {
         hasCredential: !!result.credential
@@ -85,7 +85,7 @@ export async function signOutUser() {
         clearJulesKeyCache(auth.currentUser.uid);
       }
       await auth.signOut();
-      sessionStorage.removeItem('github_access_token');
+      localStorage.removeItem('github_access_token');
       
       updateAuthUI(null);
     }
@@ -121,7 +121,7 @@ export async function updateAuthUI(user) {
     // Check if we need to reconnect GitHub (user is signed in but session token is missing)
     const providerData = user.providerData || [];
     const hasGitHubProvider = providerData.some(p => p.providerId === 'github.com');
-    const hasToken = !!sessionStorage.getItem('github_access_token');
+    const hasToken = !!localStorage.getItem('github_access_token');
     const needsReconnect = hasGitHubProvider && !hasToken;
 
     if (needsReconnect) {

@@ -1,8 +1,10 @@
 import { initializeSharedComponents } from '../shared-init.js';
 import { getAuth } from '../modules/firebase-service.js';
-import { listTenants, createTenant } from '../modules/wiki-api.js';
+import { listTenants, createTenant, updateTenant, deleteTenant } from '../modules/wiki-api.js';
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+let currentUid = null;
 
 function $(id) { return document.getElementById(id); }
 
@@ -102,13 +104,150 @@ function renderTenants(tenants) {
 
     const actions = document.createElement('div');
     actions.className = 'tenants-list-actions';
+
     const viewBtn = document.createElement('a');
     viewBtn.className = 'btn sm';
     viewBtn.href = `/pages/wiki/wiki.html?tenant=${encodeURIComponent(tenant.slug)}`;
     viewBtn.textContent = 'View SDDs';
     actions.appendChild(viewBtn);
-    li.appendChild(actions);
 
+    if (tenant.ownerUid === currentUid) {
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn sm';
+      editBtn.type = 'button';
+      editBtn.textContent = 'Edit';
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn sm danger';
+      deleteBtn.type = 'button';
+      deleteBtn.textContent = 'Delete';
+
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+
+      // Inline edit panel
+      const editPanel = document.createElement('div');
+      editPanel.className = 'tenants-edit-panel';
+      editPanel.hidden = true;
+
+      const mkField = (labelText, id, value, type = 'text') => {
+        const row = document.createElement('div');
+        row.className = 'form-row';
+        const label = document.createElement('label');
+        label.className = 'form-label';
+        label.htmlFor = id;
+        label.textContent = labelText;
+        const input = document.createElement('input');
+        input.id = id;
+        input.className = 'form-control';
+        input.type = type;
+        input.value = value || '';
+        row.appendChild(label);
+        row.appendChild(input);
+        return { row, input };
+      };
+
+      const { row: nameRow, input: nameInput } = mkField('Name', `edit-name-${tenant.slug}`, tenant.name);
+      const { row: descRow, input: descInput } = mkField('Description', `edit-desc-${tenant.slug}`, tenant.description);
+      const { row: repoRow, input: repoInput } = mkField('GitHub repo', `edit-repo-${tenant.slug}`, tenant.githubRepo);
+
+      const visRow = document.createElement('div');
+      visRow.className = 'form-row';
+      const visLabel = document.createElement('label');
+      visLabel.className = 'form-label';
+      visLabel.htmlFor = `edit-vis-${tenant.slug}`;
+      visLabel.textContent = 'Visibility';
+      const visSelect = document.createElement('select');
+      visSelect.id = `edit-vis-${tenant.slug}`;
+      visSelect.className = 'form-control';
+      for (const [val, text] of [['private', 'Private (members only)'], ['public', 'Public (anyone can read)']]) {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = text;
+        if (val === tenant.visibility) opt.selected = true;
+        visSelect.appendChild(opt);
+      }
+      visRow.appendChild(visLabel);
+      visRow.appendChild(visSelect);
+
+      const editActions = document.createElement('div');
+      editActions.className = 'tenants-edit-actions';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'btn primary sm';
+      saveBtn.type = 'button';
+      saveBtn.textContent = 'Save';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn sm';
+      cancelBtn.type = 'button';
+      cancelBtn.textContent = 'Cancel';
+
+      const editStatus = document.createElement('div');
+      editStatus.className = 'tenants-status';
+      editStatus.setAttribute('role', 'status');
+      editStatus.setAttribute('aria-live', 'polite');
+      editStatus.hidden = true;
+
+      editActions.appendChild(saveBtn);
+      editActions.appendChild(cancelBtn);
+      editPanel.appendChild(nameRow);
+      editPanel.appendChild(descRow);
+      editPanel.appendChild(visRow);
+      editPanel.appendChild(repoRow);
+      editPanel.appendChild(editActions);
+      editPanel.appendChild(editStatus);
+
+      editBtn.addEventListener('click', () => {
+        editPanel.hidden = !editPanel.hidden;
+        editStatus.hidden = true;
+      });
+
+      cancelBtn.addEventListener('click', () => { editPanel.hidden = true; });
+
+      saveBtn.addEventListener('click', async () => {
+        const name = nameInput.value.trim();
+        if (!name) {
+          editStatus.textContent = 'Name is required.';
+          editStatus.dataset.level = 'error';
+          editStatus.hidden = false;
+          return;
+        }
+        saveBtn.disabled = true;
+        try {
+          await updateTenant({
+            slug: tenant.slug,
+            name,
+            description: descInput.value.trim(),
+            visibility: visSelect.value,
+            githubRepo: repoInput.value.trim() || null
+          });
+          editPanel.hidden = true;
+          await refreshTenants();
+        } catch (err) {
+          editStatus.textContent = err.message || 'Failed to save.';
+          editStatus.dataset.level = 'error';
+          editStatus.hidden = false;
+          saveBtn.disabled = false;
+        }
+      });
+
+      deleteBtn.addEventListener('click', async () => {
+        if (!confirm(`Delete tenant "${tenant.name}" (${tenant.slug})? This cannot be undone.`)) return;
+        deleteBtn.disabled = true;
+        try {
+          await deleteTenant({ slug: tenant.slug });
+          await refreshTenants();
+        } catch (err) {
+          setStatus(err.message || 'Failed to delete tenant.', 'error');
+          deleteBtn.disabled = false;
+        }
+      });
+
+      li.appendChild(editPanel);
+    }
+
+    li.appendChild(actions);
     listEl.appendChild(li);
   }
 }
@@ -178,9 +317,11 @@ async function init() {
   const auth = getAuth();
   const apply = (user) => {
     if (!user) {
+      currentUid = null;
       showSignedOutState();
       return;
     }
+    currentUid = user.uid;
     showSignedInState();
     refreshTenants();
   };

@@ -453,6 +453,52 @@ const listTenants = onRequest({ cors: false }, async (req, res) => {
   });
 });
 
+const updateTenant = onRequest({ cors: false }, async (req, res) => {
+  await withAuth(req, res, async ({ uid }) => {
+    const body = await readJsonBody(req);
+    const { slug, name, description, visibility, githubRepo } = body;
+    if (!slug) throw authError('slug is required', 400);
+
+    const db = admin.firestore();
+    const tenantRef = db.doc(`tenants/${slug}`);
+    const doc = await tenantRef.get();
+    if (!doc.exists) throw authError('Tenant not found', 404);
+    if (doc.data().ownerUid !== uid) throw authError('Only the owner can update this tenant', 403);
+
+    const updates = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    if (name !== undefined) {
+      if (!name || typeof name !== 'string') throw authError('name must be a non-empty string', 400);
+      updates.name = name.trim();
+    }
+    if (description !== undefined) updates.description = description || '';
+    if (visibility !== undefined) {
+      if (!['public', 'private'].includes(visibility)) throw authError('visibility must be public or private', 400);
+      updates.visibility = visibility;
+    }
+    if (githubRepo !== undefined) updates.githubRepo = githubRepo || null;
+
+    await tenantRef.update(updates);
+    res.json({ ok: true });
+  });
+});
+
+const deleteTenant = onRequest({ cors: false }, async (req, res) => {
+  await withAuth(req, res, async ({ uid }) => {
+    const body = await readJsonBody(req);
+    const { slug } = body;
+    if (!slug) throw authError('slug is required', 400);
+
+    const db = admin.firestore();
+    const tenantRef = db.doc(`tenants/${slug}`);
+    const doc = await tenantRef.get();
+    if (!doc.exists) throw authError('Tenant not found', 404);
+    if (doc.data().ownerUid !== uid) throw authError('Only the owner can delete this tenant', 403);
+
+    await tenantRef.delete();
+    res.json({ ok: true });
+  });
+});
+
 module.exports = {
   createSdd,
   updateSdd,
@@ -461,5 +507,7 @@ module.exports = {
   listVersions,
   restoreVersion,
   createTenant,
-  listTenants
+  listTenants,
+  updateTenant,
+  deleteTenant
 };

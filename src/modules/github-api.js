@@ -83,7 +83,7 @@ async function getGitHubAccessToken() {
     const isGitHubAuth = user.providerData.some(p => p.providerId === 'github.com');
     if (!isGitHubAuth) return null;
 
-    const tokenDataStr = sessionStorage.getItem('github_access_token');
+    const tokenDataStr = localStorage.getItem('github_access_token');
     if (!tokenDataStr) return null;
 
     const parsed = JSON.parse(tokenDataStr);
@@ -93,14 +93,14 @@ async function getGitHubAccessToken() {
     
     // Validate token is a non-empty string and timestamp is valid
     if (typeof token !== 'string' || !token || !Number.isFinite(timestamp)) {
-      sessionStorage.removeItem('github_access_token');
+      localStorage.removeItem('github_access_token');
       return null;
     }
     
     // Validate timestamp is not in the future and not expired
     const now = Date.now();
     if (timestamp > now || now - timestamp > TOKEN_MAX_AGE) {
-      sessionStorage.removeItem('github_access_token');
+      localStorage.removeItem('github_access_token');
       return null;
     }
 

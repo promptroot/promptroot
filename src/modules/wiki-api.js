@@ -31,6 +31,8 @@ async function callFunction(name, payload, { token } = {}) {
 
 export const createTenant = (input) => callFunction('createTenant', input);
 export const listTenants = () => callFunction('listTenants', {});
+export const updateTenant = (input) => callFunction('updateTenant', input);
+export const deleteTenant = (input) => callFunction('deleteTenant', input);
 export const createSdd = (input) => callFunction('createSdd', input);
 export const updateSdd = (input) => callFunction('updateSdd', input);
 export const listSdds = (tenantId) => callFunction('listSdds', { tenantId });

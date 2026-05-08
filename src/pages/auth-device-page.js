@@ -1,6 +1,7 @@
 import { initializeSharedComponents } from '../shared-init.js';
 import { authorizeDevice } from '../modules/wiki-api.js';
 import { getAuth } from '../modules/firebase-service.js';
+import { signInWithGitHub } from '../modules/auth.js';
 
 const USER_CODE_RE = /^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/;
 
@@ -47,8 +48,16 @@ function autoInsertHyphen(input) {
 async function ensureSignedIn() {
   const auth = getAuth();
   if (auth?.currentUser) return auth.currentUser;
-  const next = encodeURIComponent(window.location.pathname + window.location.search);
-  window.location.href = `/?auth=required&next=${next}`;
+
+  // Keep the device-flow page in-place and complete sign-in via popup.
+  // Redirecting to home can lose the code context and leave CLI polling pending.
+  await signInWithGitHub();
+
+  if (auth?.currentUser) {
+    return auth.currentUser;
+  }
+
+  setStatus('Sign in is required to authorize this device. Please complete GitHub sign-in and try again.', 'error');
   return null;
 }
 

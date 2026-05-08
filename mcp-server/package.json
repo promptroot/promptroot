@@ -14,6 +14,7 @@
     ".": "./src/server.js"
   },
   "scripts": {
+    "postinstall": "node ./bin/postinstall.js",
     "start": "node ./bin/promptroot-mcp-server.js",
     "login": "node ./bin/promptroot-mcp-login.js",
     "test": "node --test"

@@ -10,7 +10,7 @@
 // 5. SW broadcasts { type: 'SW_UPDATED' } to all clients (e.g. other tabs).
 // 6. Clients reload or show notification.
 
-const CACHE_VERSION = 'promptroot-v10';
+const CACHE_VERSION = 'promptroot-v11';
 const CACHE_NAME = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -83,6 +83,8 @@ const STATIC_ASSETS = [
 const CACHE_EXCLUDE_PATTERNS = [
   /\/api\//,
   /github\.com\/api/,
+  /apis\.google\.com\/js\/api\.js/,
+  /avatars\.githubusercontent\.com/,
   /firestore\.googleapis\.com/,
   /identitytoolkit\.googleapis\.com/,
   /securetoken\.googleapis\.com/,
@@ -97,7 +99,8 @@ const CACHE_EXCLUDE_PATTERNS = [
 const NETWORK_FIRST_PATTERNS = [
   /raw\.githubusercontent\.com.*\.md$/,
   /gist\.githubusercontent\.com/,
-  /github\.com\/.*\/contents\//
+  /github\.com\/.*\/contents\//,
+  /\/src\/pages\/auth-device-page\.js$/
 ];
 
 // Install event - cache critical static assets

@@ -1,7 +1,6 @@
 import { initializeSharedComponents } from '../shared-init.js';
 import { authorizeDevice } from '../modules/wiki-api.js';
 import { getAuth } from '../modules/firebase-service.js';
-import { signInWithGitHub } from '../modules/auth.js';
 
 const USER_CODE_RE = /^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/;
 
@@ -49,9 +48,20 @@ async function ensureSignedIn() {
   const auth = getAuth();
   if (auth?.currentUser) return auth.currentUser;
 
-  // Keep the device-flow page in-place and complete sign-in via popup.
-  // Redirecting to home can lose the code context and leave CLI polling pending.
-  await signInWithGitHub();
+  const provider = new firebase.auth.GithubAuthProvider();
+  provider.addScope('public_repo');
+
+  try {
+    // Prefer popup for fast completion on desktop browsers.
+    await auth.signInWithPopup(provider);
+  } catch (err) {
+    // Popup can fail with auth/internal-error in restricted browser contexts.
+    // Redirect flow is more reliable and returns to this same page.
+    console.error('auth-device popup sign-in failed, falling back to redirect:', err);
+    setStatus('Completing sign-in via redirect. Return to this page to authorize.', 'info');
+    await auth.signInWithRedirect(provider);
+    return null;
+  }
 
   if (auth?.currentUser) {
     return auth.currentUser;

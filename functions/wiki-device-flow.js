@@ -7,6 +7,8 @@ const { sha256Hex, resolveFirebaseIdToken, authError, SESSION_TOKEN_PREFIX } = r
 const ALLOWED_ORIGINS = [
   'https://promptroot.io',
   'https://promptroot.ai',
+  'https://promptroot-b02a2.web.app',
+  'https://promptroot-b02a2.firebaseapp.com',
   'http://localhost:3000',
   'http://localhost:5000'
 ];

@@ -56,6 +56,20 @@ const STYLE = [
     selector: 'node',
     style: {
       'background-color': '#4a7fff',
+      'label': '',
+      'width': 28,
+      'height': 28,
+      'border-width': 1,
+      'border-color': '#1a1d2e'
+    }
+  },
+  { selector: 'node[status = "shipped"]', style: { 'background-color': '#3ec46d' } },
+  { selector: 'node[status = "in-progress"]', style: { 'background-color': '#f0a830' } },
+  { selector: 'node[status = "proposal"]', style: { 'background-color': '#7c8ff5' } },
+  { selector: 'node[status = "archived"]', style: { 'background-color': '#777' } },
+  {
+    selector: 'node.hovered',
+    style: {
       'label': 'data(label)',
       'color': '#e6e8ee',
       'font-size': '11px',
@@ -68,16 +82,9 @@ const STYLE = [
       'text-background-opacity': 0.85,
       'text-background-padding': '3px',
       'text-background-shape': 'roundrectangle',
-      'width': 28,
-      'height': 28,
-      'border-width': 1,
-      'border-color': '#1a1d2e'
+      'z-index': 9999
     }
   },
-  { selector: 'node[status = "shipped"]', style: { 'background-color': '#3ec46d' } },
-  { selector: 'node[status = "in-progress"]', style: { 'background-color': '#f0a830' } },
-  { selector: 'node[status = "proposal"]', style: { 'background-color': '#7c8ff5' } },
-  { selector: 'node[status = "archived"]', style: { 'background-color': '#777' } },
   {
     selector: 'edge',
     style: {
@@ -119,6 +126,9 @@ export async function renderGraph({ container, docs, onSelect }) {
     const slug = evt.target.id();
     if (onSelect) onSelect(slug);
   });
+
+  cy.on('mouseover', 'node', evt => evt.target.addClass('hovered'));
+  cy.on('mouseout', 'node', evt => evt.target.removeClass('hovered'));
 
   return cy;
 }

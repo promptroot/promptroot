@@ -73,7 +73,7 @@ describe('tokenizer', () => {
     it('scripts/lib/tokenizer.cjs produces identical output for shared fixtures', async () => {
       const { createRequire } = await import('node:module');
       const require = createRequire(import.meta.url);
-      const cjsPath = resolve(here, '../../../scripts/lib/tokenizer.cjs');
+      const cjsPath = resolve(here, '../../../functions/lib/tokenizer.cjs');
       const cjs = require(cjsPath);
       const fixtures = [
         'BM25 retrieval over Firestore chunks',

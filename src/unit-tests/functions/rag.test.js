@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const { rank, computeStats } = require(resolve(here, '../../../functions/rag.js'));
-const { tokenize } = require(resolve(here, '../../../scripts/lib/tokenizer.cjs'));
+const { tokenize } = require(resolve(here, '../../../functions/lib/tokenizer.cjs'));
 
 function chunk(slug, heading, text, opts = {}) {
   return {

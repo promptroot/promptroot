@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { validateFrontmatter, validateTenant } = require('../../../scripts/lib/sdd-validate.cjs');
+const { validateFrontmatter, validateTenant } = require('../../../functions/lib/sdd-validate.cjs');
 
 const goodFm = () => ({
   title: 'A Doc',

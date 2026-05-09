@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { splitByHeading, subdivideOversized, chunkDoc, MAX_TOKENS } from '../../../scripts/lib/chunker.js';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const { splitByHeading, subdivideOversized, chunkDoc, MAX_TOKENS } = require('../../../functions/lib/chunker.cjs');
 
 describe('chunker', () => {
   describe('splitByHeading', () => {
@@ -75,27 +78,4 @@ describe('chunker', () => {
     });
   });
 
-  describe('ESM/CJS parity', () => {
-    it('scripts/lib/chunker.cjs produces identical chunks for shared fixtures', async () => {
-      const { createRequire } = await import('node:module');
-      const require = createRequire(import.meta.url);
-      const cjs = require('../../../scripts/lib/chunker.cjs');
-      const doc = {
-        slug: 'parity',
-        title: 'Parity',
-        docPath: 'wiki/parity.md',
-        visibility: 'public',
-        tags: ['rag'],
-        date: '2026-04-26'
-      };
-      const fixtures = [
-        '## A\nfirst section body\n\n## B\nsecond section body',
-        'Preamble\n\n## Real\nreal content here',
-        '## Heavy\n' + Array.from({ length: 800 }, (_, i) => `word${i}`).join(' ')
-      ];
-      for (const body of fixtures) {
-        expect(cjs.chunkDoc(doc, body)).toEqual(chunkDoc(doc, body));
-      }
-    });
-  });
 });

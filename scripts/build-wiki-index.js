@@ -2,8 +2,11 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, relative } from 'node:path';
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { listSddFiles, parseFrontmatter, isUnderPrivateDir } from './lib/sdd-frontmatter.js';
-import { chunkDoc } from './lib/chunker.js';
+
+const require = createRequire(import.meta.url);
+const { chunkDoc } = require('../functions/lib/chunker.cjs');
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '..');

@@ -51,3 +51,21 @@ test('resolveTenantId', async (t) => {
     assert.strictEqual(result, null);
   });
 });
+
+// Tenants created via the UI store githubRepo as a full URL; the git remote
+// parser returns only "owner/repo". Both sides must normalize to the same form.
+test('githubRepo normalization', async (t) => {
+  await t.test('full URL stored in tenant normalizes to same value as parsed remote', () => {
+    const fromRemote = parseGithubRepoFromRemote('https://github.com/open-learning-exchange/myplanet.git');
+    const fromTenant = parseGithubRepoFromRemote('https://github.com/open-learning-exchange/myplanet');
+    assert.strictEqual(fromRemote, 'open-learning-exchange/myplanet');
+    assert.strictEqual(fromTenant, 'open-learning-exchange/myplanet');
+    assert.strictEqual(fromRemote, fromTenant);
+  });
+
+  await t.test('short owner/repo stored in tenant falls back to itself unchanged', () => {
+    const raw = 'promptroot/promptroot';
+    const normalized = parseGithubRepoFromRemote(raw) ?? raw;
+    assert.strictEqual(normalized, 'promptroot/promptroot');
+  });
+});

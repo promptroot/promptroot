@@ -66,7 +66,10 @@ async function chooseTenant() {
   }
 
   const repo = await detectGitRepo();
-  const guess = repo ? tenants.find(t => t.githubRepo === repo) : null;
+  const guess = repo ? tenants.find(t => {
+    const normalized = parseGithubRepoFromRemote(t.githubRepo) || t.githubRepo;
+    return normalized === repo;
+  }) : null;
   if (guess) {
     stderr.write(`Detected tenant ${guess.slug} from git remote ${repo}.\n`);
     return guess.slug;

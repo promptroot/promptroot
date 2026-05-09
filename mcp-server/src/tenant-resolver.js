@@ -50,7 +50,10 @@ export async function resolveTenantId({ explicit, cwd } = {}) {
   if (repo) {
     try {
       const { tenants } = await callFunction('listTenants', {});
-      const match = (tenants || []).find(t => t.githubRepo === repo);
+      const match = (tenants || []).find(t => {
+        const normalized = parseGithubRepoFromRemote(t.githubRepo) || t.githubRepo;
+        return normalized === repo;
+      });
       if (match) return match.slug;
     } catch {
       /* signed-out or transient — fall through */

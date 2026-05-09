@@ -501,9 +501,34 @@ const deleteTenant = onRequest({ cors: false }, async (req, res) => {
   });
 });
 
+const deleteSdd = onRequest({ cors: false }, async (req, res) => {
+  await withAuth(req, res, async ({ uid }) => {
+    const body = await readJsonBody(req);
+    const { tenantId, slug } = body;
+    if (!tenantId || !slug) throw authError('tenantId and slug are required', 400);
+
+    await requireMembership(uid, tenantId);
+
+    const db = admin.firestore();
+    const sddRef = db.doc(`tenants/${tenantId}/sdds/${slug}`);
+    const snap = await sddRef.get();
+    if (!snap.exists) throw authError(`SDD ${slug} not found`, 404);
+
+    // Delete all versions subcollection docs then the SDD itself
+    const versionsSnap = await sddRef.collection('versions').get();
+    const batch = db.batch();
+    versionsSnap.docs.forEach(d => batch.delete(d.ref));
+    batch.delete(sddRef);
+    await batch.commit();
+
+    res.json({ ok: true });
+  });
+});
+
 module.exports = {
   createSdd,
   updateSdd,
+  deleteSdd,
   listSdds,
   getSdd,
   listVersions,

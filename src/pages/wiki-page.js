@@ -1,7 +1,7 @@
 import { TIMEOUTS } from '../utils/constants.js';
 import { initializeSharedComponents } from '../shared-init.js';
 import { getAuth } from '../modules/firebase-service.js';
-import { listSdds, getSdd, listTenants } from '../modules/wiki-api.js';
+import { listSdds, getSdd, deleteSdd, listTenants } from '../modules/wiki-api.js';
 import {
   loadWikiIndex,
   filterDocsByVisibility,
@@ -24,6 +24,7 @@ import { renderGraph } from '../modules/wiki-graph.js';
 import { searchDocs, renderSearchResults } from '../modules/wiki-search.js';
 import { copyText } from '../utils/clipboard.js';
 import { showToast } from '../modules/toast.js';
+import { showConfirm } from '../modules/confirm-modal.js';
 import { debounce } from '../utils/debounce.js';
 
 let allDocs = [];
@@ -33,6 +34,7 @@ let currentBodyMarkdown = null;
 let currentView = 'doc';
 let graphRendered = false;
 let canSeePrivate = false;
+let isMember = false;
 let tenantId = null;
 
 const elements = {};
@@ -57,6 +59,8 @@ function cacheElements() {
   elements.searchResults = document.getElementById('wikiSearchResults');
   elements.tabs = document.querySelectorAll('.wiki-view-tab');
   elements.copyBtn = document.getElementById('wikiCopyContextBtn');
+  elements.editBtn = document.getElementById('wikiEditBtn');
+  elements.deleteBtn = document.getElementById('wikiDeleteBtn');
 }
 
 function setView(view) {
@@ -127,6 +131,7 @@ async function selectDoc(slug) {
       elements,
       relatedDocs: getRelatedDocs(visibleDocs, slug)
     });
+    updateMemberActions(slug);
   } catch (err) {
     console.error('Failed to render doc', err);
     showToast('Failed to load SDD', 'error');
@@ -186,6 +191,44 @@ function bindCopyButton() {
     const md = buildAgentContextMarkdown(doc, currentBodyMarkdown, getRelatedDocs(visibleDocs, currentSlug));
     const ok = await copyText(md);
     showToast(ok ? 'Copied agent context to clipboard' : 'Copy failed', ok ? 'success' : 'error');
+  });
+}
+
+function updateMemberActions(slug) {
+  if (!elements.editBtn || !elements.deleteBtn) return;
+  const show = isMember && !!tenantId && !!slug;
+  if (show) {
+    const editUrl = `/pages/wiki-edit/wiki-edit.html?tenant=${encodeURIComponent(tenantId)}&slug=${encodeURIComponent(slug)}`;
+    elements.editBtn.href = editUrl;
+  }
+  elements.editBtn.hidden = !show;
+  elements.deleteBtn.hidden = !show;
+}
+
+function bindMemberActions() {
+  if (!elements.deleteBtn) return;
+  elements.deleteBtn.addEventListener('click', async () => {
+    const slug = currentSlug;
+    if (!slug || !tenantId) return;
+    const confirmed = await showConfirm(`Permanently delete "${slug}"? This cannot be undone.`, {
+      title: 'Delete SDD',
+      confirmText: 'Delete',
+      confirmStyle: 'danger'
+    });
+    if (!confirmed) return;
+    try {
+      await deleteSdd({ tenantId, slug });
+      allDocs = allDocs.filter(d => d.slug !== slug);
+      currentSlug = null;
+      applyVisibility();
+      if (elements.placeholder) elements.placeholder.hidden = false;
+      if (elements.header) elements.header.hidden = true;
+      if (elements.bodyEl) elements.bodyEl.hidden = true;
+      history.replaceState(null, '', location.pathname + location.search);
+      showToast(`"${slug}" deleted`, 'success');
+    } catch (err) {
+      showToast(`Delete failed: ${err?.message || 'unknown error'}`, 'error');
+    }
   });
 }
 
@@ -451,6 +494,7 @@ async function initApp() {
   bindTabs();
   bindSearch();
   bindCopyButton();
+  bindMemberActions();
   window.addEventListener('hashchange', handleHashChange);
 
   const initialSlug = location.hash.replace(/^#/, '');
@@ -462,11 +506,13 @@ async function initApp() {
     const auth = getAuth();
     if (auth && typeof auth.onAuthStateChanged === 'function') {
       auth.onAuthStateChanged(user => {
-        const next = !!user;
-        if (next !== canSeePrivate) {
-          canSeePrivate = next;
-          applyVisibility();
-        }
+        const nextPrivate = !!user;
+        const nextMember = !!tenantId && !!user;
+        const visibilityChanged = nextPrivate !== canSeePrivate;
+        canSeePrivate = nextPrivate;
+        isMember = nextMember;
+        if (visibilityChanged) applyVisibility();
+        updateMemberActions(currentSlug);
       });
     }
   } catch (err) {

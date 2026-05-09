@@ -98,6 +98,12 @@ export async function updateSdd(input) {
   return result;
 }
 
+export async function deleteSdd(input) {
+  const result = await callFunction('deleteSdd', input);
+  invalidateSdd(input?.tenantId, input?.slug);
+  return result;
+}
+
 export const listVersions = (input) => callFunction('listVersions', input);
 export const restoreVersion = (input) => callFunction('restoreVersion', input);
 

@@ -1479,6 +1479,7 @@ const deviceFlowEndpoints = require('./wiki-device-flow');
 
 exports.createSdd = wikiEndpoints.createSdd;
 exports.updateSdd = wikiEndpoints.updateSdd;
+exports.deleteSdd = wikiEndpoints.deleteSdd;
 exports.listSdds = wikiEndpoints.listSdds;
 exports.getSdd = wikiEndpoints.getSdd;
 exports.listVersions = wikiEndpoints.listVersions;

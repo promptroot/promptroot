@@ -126,11 +126,6 @@ export async function updateAuthUI(user) {
 
     if (needsReconnect) {
       console.warn('User is signed in but GitHub access token is missing from sessionStorage. Reconnect required.');
-      // Only show toast once per session to avoid spamming
-      if (!getCache('RECONNECT_TOAST_SHOWN', user.uid)) {
-        showToast('GitHub session expired. Please reconnect to enable all features.', 'info');
-        setCache('RECONNECT_TOAST_SHOWN', true, user.uid);
-      }
     }
     
     if (userAvatar && user.photoURL) {

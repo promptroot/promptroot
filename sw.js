@@ -103,6 +103,14 @@ const NETWORK_FIRST_PATTERNS = [
   /\/src\/pages\/auth-device-page\.js$/
 ];
 
+// Heavy CDN deps that change rarely — keep cache-first for perf
+const CACHE_FIRST_PATTERNS = [
+  /gstatic\.com\/firebasejs\//,
+  /cdn\.jsdelivr\.net\//,
+  /fonts\.googleapis\.com\//,
+  /fonts\.gstatic\.com\//
+];
+
 // Install event - cache critical static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -173,9 +181,12 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(networkFirstStrategy(request));
     return;
   }
-  event.respondWith(
-    cacheFirstStrategy(request)
-  );
+  if (CACHE_FIRST_PATTERNS.some(pattern => pattern.test(request.url))) {
+    event.respondWith(cacheFirstStrategy(request));
+    return;
+  }
+
+  event.respondWith(networkFirstStrategy(request));
 });
 
 async function networkFirstStrategy(request) {

@@ -226,7 +226,8 @@ const listSdds = onRequest({ cors: false }, async (req, res) => {
 
     const isMember = Array.isArray(access.tenant.members) && access.tenant.members.includes(uid);
     const db = admin.firestore();
-    let q = db.collection(`tenants/${tenantId}/sdds`);
+    let q = db.collection(`tenants/${tenantId}/sdds`)
+      .select('slug', 'title', 'status', 'owner', 'date', 'tags', 'related', 'visibility', 'currentVersion', 'lastModified');
     if (!isMember) q = q.where('visibility', '==', 'public');
     const snap = await q.get();
 
@@ -256,12 +257,13 @@ const getSdd = onRequest({ cors: false }, async (req, res) => {
     const { tenantId, slug, version } = body;
     if (!tenantId || !slug) throw authError('tenantId and slug are required', 400);
 
-    const access = await tenantIsReadable(uid, tenantId);
-    if (!access.ok) throw authError(`Tenant ${tenantId} not accessible`, access.reason === 'not_found' ? 404 : 403);
-
     const db = admin.firestore();
     const sddRef = db.doc(`tenants/${tenantId}/sdds/${slug}`);
-    const sddSnap = await sddRef.get();
+    const [access, sddSnap] = await Promise.all([
+      tenantIsReadable(uid, tenantId),
+      sddRef.get()
+    ]);
+    if (!access.ok) throw authError(`Tenant ${tenantId} not accessible`, access.reason === 'not_found' ? 404 : 403);
     if (!sddSnap.exists) throw authError(`SDD ${slug} not found`, 404);
     const sdd = sddSnap.data();
 

@@ -1,6 +1,36 @@
 import { test, expect } from '@playwright/test';
 
-async function mockExternalResources(page) {
+const FIXTURE_SDDS = [
+  {
+    slug: 'dev-history-wiki',
+    title: 'Development History Wiki',
+    date: '2026-04-13',
+    status: 'in-progress',
+    owner: 'jesse',
+    tags: ['infra', 'rag'],
+    visibility: 'public',
+    related: [],
+    currentVersion: 'v1'
+  },
+  {
+    slug: 'private-secret',
+    title: 'Private Secret',
+    date: '2026-04-01',
+    status: 'approved',
+    owner: 'jesse',
+    tags: [],
+    visibility: 'private',
+    related: [],
+    currentVersion: 'v1'
+  }
+];
+
+// authUser: null = unauthenticated session (canSeePrivate=false), object = signed-in (canSeePrivate=true)
+async function mockResources(page, { authUser = null } = {}) {
+  // Firebase SDK — provide a currentUser so getIdToken() works for the listSdds API
+  // call, but control canSeePrivate separately via onAuthStateChanged.
+  const fakeApiUser = `{ uid: 'test-user', getIdToken: async () => 'fake-token' }`;
+  const authStateUser = authUser ? `{ uid: 'test-user' }` : 'null';
   await page.route('**/firebasejs/**', route => {
     route.fulfill({
       status: 200,
@@ -9,77 +39,45 @@ async function mockExternalResources(page) {
         window.firebase = {
           initializeApp: () => ({}),
           auth: () => ({
-            onAuthStateChanged: (cb) => { setTimeout(() => cb(null), 0); return () => {}; }
+            currentUser: ${fakeApiUser},
+            onAuthStateChanged: (cb) => { setTimeout(() => cb(${authStateUser}), 0); return () => {}; }
           }),
           firestore: () => ({})
         };
       `
     });
   });
+
   await page.route('**/fonts.gstatic.com/**', route => {
     route.fulfill({ status: 200, body: '' });
   });
-}
 
-const FIXTURE_INDEX = {
-  version: 1,
-  generatedAt: '2026-04-14T00:00:00.000Z',
-  docs: [
-    {
-      slug: 'dev-history-wiki',
-      title: 'Development History Wiki',
-      date: '2026-04-13',
-      status: 'in-progress',
-      owner: 'jesse',
-      tags: ['infra', 'rag'],
-      visibility: 'public',
-      related: [],
-      docPath: 'wiki/dev-history-wiki.md',
-      private: false,
-      headings: [{ level: 2, text: 'Objective' }],
-      lastModified: '2026-04-13T00:00:00.000Z'
-    },
-    {
-      slug: 'private-secret',
-      title: 'Private Secret',
-      date: '2026-04-01',
-      status: 'approved',
-      owner: 'jesse',
-      tags: [],
-      visibility: 'private',
-      related: [],
-      docPath: 'wiki/private/secret.md',
-      private: true,
-      headings: [],
-      lastModified: '2026-04-01T00:00:00.000Z'
-    }
-  ]
-};
-
-test.describe('Wiki smoke', () => {
-  test.beforeEach(async ({ page }) => {
-    await mockExternalResources(page);
-    await page.route('**/wiki/_index.json', route => {
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(FIXTURE_INDEX)
-      });
+  // Mock the listSdds Cloud Function
+  await page.route('**/listSdds**', route => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ tenantId: 'promptroot', sdds: FIXTURE_SDDS })
     });
   });
+}
 
+test.describe('Wiki smoke', () => {
   test('renders the wiki page and sidebar tree', async ({ page }) => {
-    await page.goto('/pages/wiki/wiki.html');
+    await mockResources(page, { authUser: { uid: 'test-user' } });
+    await page.goto('/pages/wiki/wiki.html?tenant=promptroot');
     await page.waitForSelector('#wikiTree .wiki-tree-link', { timeout: 20000 });
     const titles = await page.locator('#wikiTree .wiki-tree-link').allTextContents();
     expect(titles.join(' ')).toContain('Development History Wiki');
   });
 
   test('excludes private docs for unauthenticated users', async ({ page }) => {
-    await page.goto('/pages/wiki/wiki.html');
+    // currentUser is set so the API call works, but onAuthStateChanged fires with
+    // null → canSeePrivate stays false → private docs are filtered from the tree.
+    await mockResources(page, { authUser: null });
+    await page.goto('/pages/wiki/wiki.html?tenant=promptroot');
     await page.waitForSelector('#wikiTree .wiki-tree-link', { timeout: 20000 });
     const titles = await page.locator('#wikiTree .wiki-tree-link').allTextContents();
     expect(titles.join(' ')).not.toContain('Private Secret');
   });
-
 });

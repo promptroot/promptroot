@@ -4,7 +4,7 @@
   "private": true,
   "description": "Prompt sharing and management application",
   "scripts": {
-    "start": "python3 -m http.server 3000",
+    "start": "python -m http.server 3000",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",

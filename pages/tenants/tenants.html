@@ -57,7 +57,39 @@
         </p>
       </section>
 
-      <section class="tenants-section">
+      <section id="tenantsEditSection" class="tenants-section" hidden>
+        <div class="tenants-section-header">
+          <h3>Edit tenant: <code id="tenantsEditSlug"></code></h3>
+        </div>
+        <form id="tenantsEditForm" class="tenants-form" autocomplete="off" novalidate>
+          <div class="form-row">
+            <label class="form-label" for="editTenantNameInput">Name</label>
+            <input id="editTenantNameInput" name="name" class="form-control" type="text" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="editTenantDescInput">Description</label>
+            <input id="editTenantDescInput" name="description" class="form-control" type="text" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="editTenantVisibilitySelect">Visibility</label>
+            <select id="editTenantVisibilitySelect" name="visibility" class="form-control">
+              <option value="private">Private (members only)</option>
+              <option value="public">Public (anyone can read)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="editTenantRepoInput">GitHub repo (optional)</label>
+            <input id="editTenantRepoInput" name="githubRepo" class="form-control" type="text" placeholder="owner/repo" />
+          </div>
+          <div class="tenants-form-actions">
+            <button id="tenantsEditSaveBtn" class="btn primary" type="submit">Save changes</button>
+            <button id="tenantsEditCancelBtn" class="btn" type="button">Cancel</button>
+          </div>
+          <div id="tenantsEditStatus" class="tenants-status" role="status" aria-live="polite" hidden></div>
+        </form>
+      </section>
+
+      <section id="tenantsCreateSection" class="tenants-section">
         <div class="tenants-section-header">
           <h3>Create new tenant</h3>
         </div>
@@ -95,9 +127,11 @@
             <input id="tenantRepoInput" name="githubRepo" class="form-control" type="text" placeholder="owner/repo" />
             <small class="form-help">Used to auto-resolve the tenant from a clone of this repo.</small>
           </div>
-          <button id="tenantsCreateBtn" class="btn primary" type="submit">
-            <span class="icon icon-inline" aria-hidden="true">add</span> Create tenant
-          </button>
+          <div class="tenants-form-actions">
+            <button id="tenantsCreateBtn" class="btn primary" type="submit">
+              <span class="icon icon-inline" aria-hidden="true">add</span> Create tenant
+            </button>
+          </div>
           <div id="tenantsCreateStatus" class="tenants-status" role="status" aria-live="polite" hidden></div>
         </form>
       </section>

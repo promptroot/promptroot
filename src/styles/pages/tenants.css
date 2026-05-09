@@ -146,29 +146,38 @@
   background: color-mix(in srgb, var(--danger, #c0392b) 12%, transparent);
 }
 
-.tenants-list-item {
-  flex-wrap: wrap;
-}
-
-.tenants-edit-panel {
-  width: 100%;
-  display: grid;
-  gap: 10px;
-  padding: 14px 0 4px;
-  border-top: 1px solid var(--border);
-  margin-top: 10px;
-}
-
-.tenants-edit-actions {
+.tenants-form-actions {
   display: flex;
   gap: 8px;
 }
 
-.btn.danger {
-  color: var(--danger, #c0392b);
-  border-color: var(--danger, #c0392b);
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.btn.danger:hover {
-  background: color-mix(in srgb, var(--danger, #c0392b) 12%, transparent);
+.btn-icon:hover {
+  background: var(--bg-hover, rgba(255,255,255,0.07));
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.btn-icon--danger:hover {
+  color: var(--danger, #c0392b);
+  border-color: var(--danger, #c0392b);
+  background: color-mix(in srgb, var(--danger, #c0392b) 10%, transparent);
+}
+
+.btn-icon .icon {
+  font-size: 18px;
 }

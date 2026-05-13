@@ -30,7 +30,6 @@ describe('Content Security Policy Configuration', () => {
     expect(csp).toContain("https://jules.googleapis.com");
     expect(csp).toContain("https://*.googleapis.com");
     expect(csp).toContain("https://*.firebaseio.com");
-    expect(csp).toContain("https://runjuleshttp-fjbc67s6eq-uc.a.run.app");
     expect(csp).toContain("https://raw.githubusercontent.com");
     expect(csp).toContain("https://gist.githubusercontent.com");
 

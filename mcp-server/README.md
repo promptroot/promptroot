@@ -60,7 +60,7 @@ visibility: private
 Body in regular markdown...
 ```
 
-Required frontmatter keys: `title`, `slug`, `date`, `status`, `owner`, `visibility`. Optional: `tags`, `related`.
+Required frontmatter keys: `title`, `slug`, `date`, `status`, `owner`, `tags`, `related`, `visibility`. `tags` and `related` must be present but may be empty arrays (`[]`).
 
 Push it:
 

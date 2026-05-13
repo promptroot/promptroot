@@ -38,7 +38,7 @@ export function renderTree({ container, docs, activeSlug, onSelect }) {
         btn.classList.add('is-active');
         btn.setAttribute('aria-current', 'true');
       }
-      if (doc.private) {
+      if (doc.private || doc.visibility === 'private') {
         const lock = createElement('span', 'wiki-tree-lock', 'lock');
         lock.classList.add('icon');
         lock.setAttribute('aria-hidden', 'true');

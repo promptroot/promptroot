@@ -1,4 +1,4 @@
-const DEFAULT_ENDPOINT = 'https://promptroot.ai/api/rag';
+const DEFAULT_ENDPOINT = 'https://us-central1-promptroot-b02a2.cloudfunctions.net/ragQuery';
 
 export async function ragQuery({
   query,

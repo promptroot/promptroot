@@ -152,7 +152,7 @@ const createSdd = onRequest({ cors: false }, async (req, res) => {
       tenantId,
       slug,
       versionId,
-      url: `/wiki/${tenantId}/${slug}`
+      url: `/wiki?tenant=${encodeURIComponent(tenantId)}#${encodeURIComponent(slug)}`
     });
   });
 });

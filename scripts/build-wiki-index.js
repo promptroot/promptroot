@@ -57,12 +57,10 @@ function buildIndex() {
   return {
     index: {
       version: 1,
-      generatedAt: new Date().toISOString(),
       docs
     },
     chunks: {
       version: 1,
-      generatedAt: new Date().toISOString(),
       chunks
     }
   };

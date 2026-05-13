@@ -11,7 +11,14 @@ const { rank: ragRank } = require('./rag');
 
 admin.initializeApp();
 
-const ALLOWED_ORIGINS = ['https://promptroot.io', 'http://localhost:3000', 'http://localhost:5000'];
+const ALLOWED_ORIGINS = [
+  'https://promptroot.ai',
+  'https://www.promptroot.ai',
+  'https://promptroot.io',
+  'https://www.promptroot.io',
+  'http://localhost:3000',
+  'http://localhost:5000'
+];
 function setCors(req, res) {
   const origin = req.headers.origin;
   if (ALLOWED_ORIGINS.includes(origin)) {

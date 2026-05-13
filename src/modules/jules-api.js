@@ -238,7 +238,9 @@ export async function callRunJulesFunction(promptText, sourceId, branch = 'maste
 
 async function runJulesAPI(promptText, sourceId, branch, title, user) {
   const token = await user.getIdToken(true);
-  const functionUrl = 'https://runjuleshttp-fjbc67s6eq-uc.a.run.app';
+  const functionUrl = (typeof window !== 'undefined' && window.location && window.location.port === '5000')
+    ? `http://${window.location.hostname}:5001/promptroot-b02a2/us-central1/runJulesHttp`
+    : 'https://us-central1-promptroot-b02a2.cloudfunctions.net/runJulesHttp';
 
   // Normalize sourceId format - handle both "owner/repo" and "sources/github/owner/repo" formats
   let normalizedSourceId = sourceId;

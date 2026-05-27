@@ -17,7 +17,7 @@ export function renderTree({ container, docs, activeSlug, onSelect }) {
   if (!container) return;
   clearElement(container);
   if (!docs || docs.length === 0) {
-    container.appendChild(createElement('p', 'wiki-tree-empty', 'No SDDs available.'));
+    container.appendChild(createElement('p', 'wiki-tree-empty', 'No Specs available.'));
     return;
   }
 

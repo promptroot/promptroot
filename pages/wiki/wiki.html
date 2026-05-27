@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <title>Wiki - PromptRoot</title>
+  <title>Specs - PromptRoot</title>
   <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -25,12 +25,18 @@
   <div class="wrap">
     <main class="card pad-lg">
       <h2 class="section-title-lg font-28 mb-lg">
-        <span class="icon icon-inline" aria-hidden="true">menu_book</span> Wiki
+        <span class="icon icon-inline" aria-hidden="true">menu_book</span> Specs
       </h2>
+
+      <div id="wikiBackRow" class="row mb-md" hidden>
+        <a id="wikiBackBtn" href="/pages/wiki/wiki.html" class="btn primary sm">
+          <span class="icon icon-inline" aria-hidden="true">arrow_back</span> All Specs
+        </a>
+      </div>
 
       <div class="wiki-toolbar">
         <div class="wiki-search">
-          <input id="wikiSearchInput" type="search" placeholder="Search SDDs by keyword..." aria-label="Search wiki" autocomplete="off" />
+          <input id="wikiSearchInput" type="search" placeholder="Search Specs by keyword..." aria-label="Search wiki" autocomplete="off" />
         </div>
         <div class="wiki-view-tabs" role="tablist" aria-label="View mode">
           <button class="wiki-view-tab is-active" data-view="doc" role="tab" aria-selected="true">
@@ -44,17 +50,17 @@
           </button>
         </div>
         <div class="toolbar-actions">
-          <a href="/pages/wiki-edit/wiki-edit.html" class="btn sm" title="Create or edit an SDD">
-            <span class="icon icon-inline" aria-hidden="true">edit_note</span> New SDD
+          <a href="/pages/wiki-edit/wiki-edit.html" class="btn sm" title="Create or edit a Spec">
+            <span class="icon icon-inline" aria-hidden="true">edit_note</span> New Spec
           </a>
-          <a href="/pages/tenants/tenants.html" class="btn sm" title="Manage tenants (apps that store SDDs here)">
+          <a href="/pages/tenants/tenants.html" class="btn sm" title="Manage tenants (apps that store Specs here)">
             <span class="icon icon-inline" aria-hidden="true">groups</span> Tenants
           </a>
         </div>
       </div>
 
       <div class="wiki-layout">
-        <aside class="wiki-sidebar" aria-label="SDD list">
+        <aside class="wiki-sidebar" aria-label="Spec list">
           <div id="wikiTree" class="wiki-tree" role="tree"></div>
         </aside>
 
@@ -64,7 +70,7 @@
           <article id="wikiDocView" class="wiki-doc-view" aria-live="polite">
             <div id="wikiDocPlaceholder" class="wiki-placeholder">
               <span class="icon icon-lg" aria-hidden="true">article</span>
-              <p>Select an SDD from the list to view it.</p>
+              <p>Select a Spec from the list to view it.</p>
             </div>
             <div id="wikiDocHeader" class="wiki-doc-header" hidden>
               <h1 id="wikiDocTitle"></h1>
@@ -109,6 +115,18 @@
       </div>
     </main>
   </div>
+
+  <footer>
+    <div class="footer-nav">
+      <a href="https://github.com/promptroot/promptroot/blob/main/README.md" target="_blank" rel="noopener" class="footer-nav__item">Help</a>
+      <span class="footer-nav__sep">•</span>
+      <button id="footerFeedbackBtn" class="footer-nav__item">Feedback</button>
+      <span class="footer-nav__sep">•</span>
+      <a href="../../pages/privacy/privacy.html" class="footer-nav__item">Privacy Policy</a>
+      <span class="footer-nav__sep">•</span>
+      <a href="https://github.com/promptroot/promptroot" target="_blank" rel="noopener" class="footer-nav__item">GitHub</a>
+    </div>
+  </footer>
 
   <script type="module" src="../../src/shared-init.js"></script>
   <script type="module" src="../../src/pages/wiki-page.js"></script>

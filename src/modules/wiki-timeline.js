@@ -25,7 +25,7 @@ export function renderTimeline({ container, docs, onSelect }) {
   if (!container) return;
   clearElement(container);
   if (!docs || docs.length === 0) {
-    container.appendChild(createElement('p', 'wiki-tree-empty', 'No SDDs to show on the timeline.'));
+    container.appendChild(createElement('p', 'wiki-tree-empty', 'No Specs to show on the timeline.'));
     return;
   }
   const grouped = groupDocsByMonth(docs);

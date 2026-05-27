@@ -183,23 +183,23 @@ describe('wiki-renderer', () => {
       expect(md).toContain('Body');
     });
 
-    it('appends Related SDDs section when related docs exist', () => {
+    it('appends Related Specs section when related docs exist', () => {
       const md = buildAgentContextMarkdown(
         { slug: 'a', title: 'A', status: 'shipped', date: '2026-04-13', owner: 'j' },
         'body',
         [{ slug: 'b', title: 'B', status: 'proposal' }]
       );
-      expect(md).toContain('## Related SDDs');
+      expect(md).toContain('## Related Specs');
       expect(md).toContain('[B](https://promptroot.ai/wiki#b)');
     });
 
-    it('omits Related SDDs section when no related docs', () => {
+    it('omits Related Specs section when no related docs', () => {
       const md = buildAgentContextMarkdown(
         { slug: 'a', title: 'A', status: 'shipped', date: '2026-04-13', owner: 'j' },
         'body',
         []
       );
-      expect(md).not.toContain('Related SDDs');
+      expect(md).not.toContain('Related Specs');
     });
   });
 });

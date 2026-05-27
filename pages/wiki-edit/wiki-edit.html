@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <title>Edit SDD - PromptRoot</title>
+  <title>Edit Spec - PromptRoot</title>
   <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,12 +22,12 @@
 </head>
 <body data-page="wiki-edit">
 
-  <div class="wrap wiki-edit-wrap">
+  <div class="wrap">
     <main class="card pad-lg wiki-edit-card">
       <div class="wiki-edit-header">
         <h2 class="section-title-lg font-22 mb-0">
           <span class="icon icon-inline" aria-hidden="true">edit_note</span>
-          <span id="wikiEditTitle">New SDD</span>
+          <span id="wikiEditTitle">New Spec</span>
         </h2>
         <div class="wiki-edit-actions">
           <span id="wikiEditDraftStatus" class="wiki-edit-draft-status" aria-live="polite"></span>
@@ -39,7 +39,7 @@
       </div>
 
       <div id="wikiEditNotSignedIn" class="alert alert-warning" hidden>
-        Sign in to create or edit SDDs.
+        Sign in to create or edit Specs.
       </div>
 
       <div id="wikiEditError" class="wiki-edit-error" role="alert" aria-live="polite" hidden></div>
@@ -101,7 +101,7 @@
             <button class="wiki-edit-tab" data-pane="preview" role="tab" aria-selected="false">Preview</button>
           </div>
           <div class="wiki-edit-pane wiki-edit-pane--edit" data-pane="edit">
-            <textarea id="wikiEditTextarea" spellcheck="false" placeholder="# SDD: ..."></textarea>
+            <textarea id="wikiEditTextarea" spellcheck="false" placeholder="# Spec: ..."></textarea>
           </div>
           <div class="wiki-edit-pane wiki-edit-pane--preview markdown-body" data-pane="preview" hidden></div>
         </section>

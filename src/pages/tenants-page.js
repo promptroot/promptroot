@@ -110,7 +110,7 @@ function renderTenants(tenants) {
     const viewBtn = document.createElement('a');
     viewBtn.className = 'btn sm';
     viewBtn.href = `/pages/wiki/wiki.html?tenant=${encodeURIComponent(tenant.slug)}`;
-    viewBtn.textContent = 'View SDDs';
+    viewBtn.textContent = 'View Specs';
     actions.appendChild(viewBtn);
 
     if (tenant.ownerUid === currentUid) {

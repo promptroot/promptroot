@@ -215,7 +215,7 @@ async function loadExisting() {
     $('wikiEditTextarea').value = state.initialBody;
     $('wikiEditTitle').textContent = `Edit ${sdd.slug}`;
   } catch (err) {
-    setError(`Failed to load SDD: ${err.message}`);
+    setError(`Failed to load Spec: ${err.message}`);
   }
 }
 
@@ -224,7 +224,7 @@ function applyDraftIfNewer() {
   if (!draft) return;
   const current = $('wikiEditTextarea').value;
   if (draft.body && draft.body !== current) {
-    if (confirm('A local draft exists for this SDD. Restore it?')) {
+    if (confirm('A local draft exists for this Spec. Restore it?')) {
       applyFrontmatter(draft.frontmatter || {});
       $('wikiEditTextarea').value = draft.body;
       $('changeNote').value = draft.changeNote || '';
@@ -258,7 +258,7 @@ async function init() {
     }
     $('wikiEditNotSignedIn').hidden = true;
     if (state.isNew) {
-      $('wikiEditTitle').textContent = `New SDD in ${tenantId}`;
+      $('wikiEditTitle').textContent = `New Spec in ${tenantId}`;
       $('fmDate').value = new Date().toISOString().slice(0, 10);
       $('fmOwner').value = user.displayName || user.email || '';
     } else {

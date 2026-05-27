@@ -1,7 +1,7 @@
 # PromptRoot
 
 Share and amplify your team's AI knowledge.
-Hosted for free with GitHub Pages, backed by simple `.md` files.
+Write specs first. Ship faster with AI. Hosted for free with GitHub Pages.
 
 ## Live site
 
@@ -9,16 +9,48 @@ Hosted for free with GitHub Pages, backed by simple `.md` files.
 
 ## What is PromptRoot?
 
-PromptRoot is a zero-build web application for managing and sharing AI prompts as markdown files. It provides a browsable library interface with deep linking, GitHub integration, and direct integration with Google's Jules AI assistant. Teams can organize prompts in folders, switch between branches, and send prompts directly to Jules with full context awareness.
+PromptRoot is a platform for teams that use AI to build software. It's built around two ideas that work together:
+
+**A shared prompt library** — store your team's best prompts as plain markdown files in a GitHub repo. Browse them, search them, send them to AI tools with one click, and build on each other's work instead of starting from scratch every time.
+
+**Spec Driven Development** — write a design spec before you code. PromptRoot's **Specs** page stores those specs across all your apps in one searchable, versioned library. AI agents can pull spec context before starting work, so output stays aligned with your actual design intent instead of hallucinating architecture.
 
 ### Key Features
 
-*   **Prompt Library**: Browse and share prompts organized in a GitHub repository.
+*   **Prompt Library**: Your team's reusable AI prompts, stored as markdown files in a GitHub repo. Browse with a folder tree, search by name, deep-link to any prompt, and send directly to Jules or other AI tools. Variable substitution (`{PLACEHOLDER}`) turns prompts into templates your whole team can fill in and reuse.
+*   **Spec Driven Development**: Write design specs (SDDs) before coding. The [Specs page](/pages/wiki/wiki.html) stores, versions, and cross-links specs across all your projects. Agents can query specs via MCP or the RAG API for grounded, design-aware output.
 *   **Variable Substitution**: Create reusable prompt templates with `{PLACEHOLDER}` variables that are filled via modal UI before sending to Jules.
 *   **Jules Integration**: Send prompts directly to Google's Jules AI coding agent.
 *   **Task Queue**: Queue up multiple subtasks for Jules to execute sequentially.
 *   **Session Management**: View and manage your active and past Jules sessions.
 *   **Web Capture**: A browser extension that lets you capture any webpage as Markdown and sync it directly to your GitHub repository. See [browser-extension/README.md](browser-extension/README.md) for details.
+
+## Spec Driven Development
+
+Spec Driven Development (SDD) is a workflow where you write a design document *before* writing code or prompting an AI. The spec becomes the source of truth — for humans reviewing a PR and for AI agents executing tasks.
+
+### How it works
+
+1. **Write a spec** — Use the [Specs page](/pages/wiki/wiki.html) to create a Software Design Document for a feature, bug fix, or architectural decision. Specs have structured frontmatter (status, owner, tags) and free-form markdown body.
+2. **Reference it** — Link specs to each other. The graph view shows how designs relate across projects.
+3. **Ground your agents** — Before starting a Jules task or a Claude Code session, pull in spec context. The MCP server and RAG API let any agent query specs by keyword so AI output stays aligned with your design.
+4. **Track history** — Every spec is versioned. The history view shows what changed and when, so design decisions are never lost.
+
+### The Specs page
+
+The [Specs page](/pages/wiki/wiki.html) is a multi-tenant SDD library — one PromptRoot instance hosts specs for *any number of apps*. Each app registers as a **tenant** and gets its own spec collection. Browse with the tree view, search by keyword, or explore relationships with the graph view.
+
+**Tenant support** means your team can manage specs for your whole portfolio in one place, with per-tenant visibility controls (public or members-only).
+
+### Agent integrations
+
+| Integration | How to use |
+|---|---|
+| **MCP server** | `@promptroot/mcp-server` — read + write specs from any MCP-speaking agent (Claude Code, Cursor, etc.) |
+| **RAG API** | `ragQuery` Cloud Function — BM25 keyword search, tenant-scoped, for any HTTP client |
+| **Claude Code skill** | `.claude/skills/search-dev-history/` — read-only search built into this repo's Claude Code sessions |
+
+See `AGENTS.md` for the full agent contract and tenant resolution order.
 
 ## Local development
 
@@ -389,12 +421,12 @@ These are purely cosmetic and based on keywords in the filename.
 
 ## Use Cases
 
-- **Team Onboarding**: Repository explorer prompts help new contributors understand codebases
-- **Prompt Library**: Centralized collection of reusable AI prompts
-- **Knowledge Sharing**: Share effective prompts across your organization  
-- **Jules Workflow**: Streamline sending prompts to Jules with proper context
-- **Documentation**: Living documentation that AI assistants can consume
-- **Best Practices**: Capture and share successful prompt patterns
+- **Spec Driven Development**: Write design specs before coding so AI agents have grounded context and humans have a reviewable audit trail
+- **Multi-App Spec Library**: Store and cross-link design docs for your entire portfolio in one searchable, versioned library
+- **Team Onboarding**: Repository explorer prompts and specs help new contributors understand codebases and past decisions
+- **Prompt Library**: Centralized collection of reusable AI prompts shared across your team
+- **Jules Workflow**: Streamline sending prompts to Jules with proper repository and spec context
+- **Knowledge Sharing**: Capture effective prompts and design decisions before they're forgotten
 
 ## Contributing
 

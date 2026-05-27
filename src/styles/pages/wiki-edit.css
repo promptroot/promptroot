@@ -1,9 +1,6 @@
-.wiki-edit-wrap {
-  max-width: 1280px;
-}
-
 .wiki-edit-card {
-  margin: 16px auto;
+  max-width: 880px;
+  margin: 32px auto;
 }
 
 .wiki-edit-header {
@@ -36,21 +33,15 @@
 }
 
 .wiki-edit-layout {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 24px;
-  align-items: start;
-}
-
-@media (max-width: 900px) {
-  .wiki-edit-layout {
-    grid-template-columns: 1fr;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .wiki-edit-frontmatter {
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px 16px;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -58,6 +49,7 @@
 }
 
 .wiki-edit-section-title {
+  grid-column: 1 / -1;
   margin: 0 0 4px;
   font-size: 14px;
   text-transform: uppercase;

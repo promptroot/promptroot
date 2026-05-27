@@ -134,7 +134,7 @@ async function selectDoc(slug) {
     updateMemberActions(slug);
   } catch (err) {
     console.error('Failed to render doc', err);
-    showToast('Failed to load SDD', 'error');
+    showToast('Failed to load Spec', 'error');
   }
 }
 
@@ -211,7 +211,7 @@ function bindMemberActions() {
     const slug = currentSlug;
     if (!slug || !tenantId) return;
     const confirmed = await showConfirm(`Permanently delete "${slug}"? This cannot be undone.`, {
-      title: 'Delete SDD',
+      title: 'Delete Spec',
       confirmText: 'Delete',
       confirmStyle: 'danger'
     });
@@ -296,18 +296,18 @@ function setTreeMessage(text) {
 }
 
 function showEmptyTenantState() {
-  setTreeMessage(`No SDDs in tenant "${tenantId}" yet.`);
+  setTreeMessage(`No Specs in tenant "${tenantId}" yet.`);
   if (elements.placeholder) {
     elements.placeholder.hidden = false;
     const heading = elements.placeholder.querySelector('p');
     if (heading) {
-      heading.textContent = `No SDDs in "${tenantId}" yet — create the first one.`;
+      heading.textContent = `No Specs in "${tenantId}" yet — create the first one.`;
     }
   }
 }
 
 function showSignedOutState() {
-  setTreeMessage(`Sign in to view SDDs in "${tenantId}".`);
+  setTreeMessage(`Sign in to view Specs in "${tenantId}".`);
   if (elements.placeholder) {
     elements.placeholder.hidden = false;
     const heading = elements.placeholder.querySelector('p');
@@ -321,6 +321,8 @@ function applyTenantToToolbar() {
   if (newSddBtn) {
     newSddBtn.href = `/pages/wiki-edit/wiki-edit.html?tenant=${encodeURIComponent(tenantId)}`;
   }
+  const backRow = document.getElementById('wikiBackRow');
+  if (backRow) backRow.hidden = false;
 }
 
 async function showTenantPicker() {
@@ -340,7 +342,7 @@ async function showTenantPicker() {
 
   const intro = document.createElement('p');
   intro.className = 'wiki-picker-intro';
-  intro.textContent = 'Pick a wiki to browse, or create a new one for another app.';
+  intro.textContent = 'Pick a wiki to browse specs, or create a new one for another app.';
   head.appendChild(intro);
 
   const newBtn = document.createElement('a');
@@ -454,7 +456,7 @@ function applyTenantTitle() {
     icon.setAttribute('aria-hidden', 'true');
     icon.textContent = 'menu_book';
     titleEl.appendChild(icon);
-    titleEl.append(` Wiki — ${tenantId}`);
+    titleEl.append(` Specs — ${tenantId}`);
   }
 }
 
@@ -479,7 +481,7 @@ async function initApp() {
       showSignedOutState();
     } else {
       setTreeMessage(tenantId
-        ? `Failed to load SDDs for tenant "${tenantId}": ${err?.message || 'unknown error'}`
+        ? `Failed to load Specs for tenant "${tenantId}": ${err?.message || 'unknown error'}`
         : 'Failed to load wiki index.');
     }
     return;

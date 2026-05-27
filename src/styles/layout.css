@@ -18,8 +18,8 @@
 
 /* ===== RESPONSIVE BREAKPOINTS ===== */
 
-/* Mobile/Tablet (1000px and below) */
-@media (max-width: 1000px) {
+/* Mobile/Tablet (1200px and below) */
+@media (max-width: 1200px) {
   /* Layout */
   .wrap { grid-template-columns: 1fr !important; }
   .wrap:has(#sidebar.collapsed) { grid-template-columns: 1fr !important; }

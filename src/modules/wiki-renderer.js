@@ -103,7 +103,7 @@ export function buildAgentContextMarkdown(doc, body, relatedDocs) {
   lines.push(body);
   if (Array.isArray(relatedDocs) && relatedDocs.length > 0) {
     lines.push('');
-    lines.push('## Related SDDs');
+    lines.push('## Related Specs');
     lines.push('');
     relatedDocs.forEach(rel => {
       lines.push(`- [${rel.title}](https://promptroot.ai/wiki#${rel.slug}) (${rel.status})`);

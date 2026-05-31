@@ -61,6 +61,7 @@ function cacheElements() {
   elements.copyBtn = document.getElementById('wikiCopyContextBtn');
   elements.editBtn = document.getElementById('wikiEditBtn');
   elements.deleteBtn = document.getElementById('wikiDeleteBtn');
+  elements.historyBtn = document.getElementById('wikiHistoryBtn');
 }
 
 function setView(view) {
@@ -132,10 +133,20 @@ async function selectDoc(slug) {
       relatedDocs: getRelatedDocs(visibleDocs, slug)
     });
     updateMemberActions(slug);
+    updateHistoryAction(slug);
   } catch (err) {
     console.error('Failed to render doc', err);
     showToast('Failed to load Spec', 'error');
   }
+}
+
+function updateHistoryAction(slug) {
+  if (!elements.historyBtn) return;
+  const show = !!tenantId && !!slug;
+  if (show) {
+    elements.historyBtn.href = `/pages/wiki-history/wiki-history.html?tenant=${encodeURIComponent(tenantId)}&slug=${encodeURIComponent(slug)}`;
+  }
+  elements.historyBtn.hidden = !show;
 }
 
 function rebuildTree() {
@@ -316,13 +327,13 @@ function showSignedOutState() {
 }
 
 function applyTenantToToolbar() {
+  const backRow = document.getElementById('wikiBackRow');
+  if (backRow) backRow.hidden = !tenantId;
   if (!tenantId) return;
   const newSddBtn = document.querySelector('.toolbar-actions a[href*="wiki-edit"]');
   if (newSddBtn) {
     newSddBtn.href = `/pages/wiki-edit/wiki-edit.html?tenant=${encodeURIComponent(tenantId)}`;
   }
-  const backRow = document.getElementById('wikiBackRow');
-  if (backRow) backRow.hidden = false;
 }
 
 async function showTenantPicker() {
@@ -337,12 +348,17 @@ async function showTenantPicker() {
   const picker = document.createElement('section');
   picker.className = 'wiki-picker';
 
+  const about = document.createElement('p');
+  about.className = 'wiki-picker-about';
+  about.textContent = 'A versioned home for your Software Design Documents (specs). Browse, search, and cross-link them, then let agents pull spec context through the MCP server, RAG API, or Claude Code skill.';
+  picker.appendChild(about);
+
   const head = document.createElement('div');
   head.className = 'wiki-picker-head';
 
   const intro = document.createElement('p');
   intro.className = 'wiki-picker-intro';
-  intro.textContent = 'Pick a wiki to browse specs, or create a new one for another app.';
+  intro.textContent = 'Pick a wiki to browse specs, or create a new one.';
   head.appendChild(intro);
 
   const newBtn = document.createElement('a');

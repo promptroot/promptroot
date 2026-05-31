@@ -13,12 +13,12 @@ PromptRoot is a platform for teams that use AI to build software. It's built aro
 
 **A shared prompt library** — store your team's best prompts as plain markdown files in a GitHub repo. Browse them, search them, send them to AI tools with one click, and build on each other's work instead of starting from scratch every time.
 
-**Spec Driven Development** — write a design spec before you code. PromptRoot's **Specs** page stores those specs across all your apps in one searchable, versioned library. AI agents can pull spec context before starting work, so output stays aligned with your actual design intent instead of hallucinating architecture.
+**Spec Driven Development** — write a design spec before you code. PromptRoot's **wikis** page stores those specs across all your apps in one searchable, versioned library. AI agents can pull spec context before starting work, so output stays aligned with your actual design intent instead of hallucinating architecture.
 
 ### Key Features
 
 *   **Prompt Library**: Your team's reusable AI prompts, stored as markdown files in a GitHub repo. Browse with a folder tree, search by name, deep-link to any prompt, and send directly to Jules or other AI tools. Variable substitution (`{PLACEHOLDER}`) turns prompts into templates your whole team can fill in and reuse.
-*   **Spec Driven Development**: Write design specs (SDDs) before coding. The [Specs page](/pages/wiki/wiki.html) stores, versions, and cross-links specs across all your projects. Agents can query specs via MCP or the RAG API for grounded, design-aware output.
+*   **Spec Driven Development**: Write design specs (SDDs) before coding. The [Wikis page](/pages/wiki/wiki.html) stores, versions, and cross-links specs across all your projects. Agents can query specs via MCP or the RAG API for grounded, design-aware output.
 *   **Variable Substitution**: Create reusable prompt templates with `{PLACEHOLDER}` variables that are filled via modal UI before sending to Jules.
 *   **Jules Integration**: Send prompts directly to Google's Jules AI coding agent.
 *   **Task Queue**: Queue up multiple subtasks for Jules to execute sequentially.
@@ -31,14 +31,14 @@ Spec Driven Development (SDD) is a workflow where you write a design document *b
 
 ### How it works
 
-1. **Write a spec** — Use the [Specs page](/pages/wiki/wiki.html) to create a Software Design Document for a feature, bug fix, or architectural decision. Specs have structured frontmatter (status, owner, tags) and free-form markdown body.
+1. **Write a spec** — Use the [Wikis page](/pages/wiki/wiki.html) to create a Software Design Document for a feature, bug fix, or architectural decision. Specs have structured frontmatter (status, owner, tags) and free-form markdown body.
 2. **Reference it** — Link specs to each other. The graph view shows how designs relate across projects.
 3. **Ground your agents** — Before starting a Jules task or a Claude Code session, pull in spec context. The MCP server and RAG API let any agent query specs by keyword so AI output stays aligned with your design.
 4. **Track history** — Every spec is versioned. The history view shows what changed and when, so design decisions are never lost.
 
-### The Specs page
+### The Wikis page
 
-The [Specs page](/pages/wiki/wiki.html) is a multi-tenant SDD library — one PromptRoot instance hosts specs for *any number of apps*. Each app registers as a **tenant** and gets its own spec collection. Browse with the tree view, search by keyword, or explore relationships with the graph view.
+The [wikis page](/pages/wiki/wiki.html) is a multi-tenant SDD library — one PromptRoot instance hosts specs for *any number of apps*. Each app registers as a **tenant** and gets its own spec collection. Browse with the tree view, search by keyword, or explore relationships with the graph view.
 
 **Tenant support** means your team can manage specs for your whole portfolio in one place, with per-tenant visibility controls (public or members-only).
 

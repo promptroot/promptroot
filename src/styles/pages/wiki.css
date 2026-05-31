@@ -10,7 +10,8 @@
 }
 
 .wiki-toolbar[hidden],
-.wiki-layout[hidden] { display: none; }
+.wiki-layout[hidden],
+#wikiBackRow[hidden] { display: none; }
 
 .wiki-search {
   flex: 1 1 240px;
@@ -446,6 +447,11 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.wiki-picker-about {
+  margin: 0;
+  line-height: 1.5;
 }
 
 .wiki-picker-intro {

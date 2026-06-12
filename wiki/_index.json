@@ -1,7 +1,183 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-15T03:36:38.537Z",
   "docs": [
+    {
+      "slug": "multi-tenant-sdd-platform",
+      "title": "Multi-Tenant SDD Platform — PromptRoot as the Wiki Host",
+      "date": "2026-04-26",
+      "status": "shipped",
+      "owner": "jesse",
+      "tags": [
+        "platform",
+        "wiki",
+        "rag",
+        "multi-tenant",
+        "firestore",
+        "sdd"
+      ],
+      "visibility": "public",
+      "related": [
+        "dev-history-wiki",
+        "vscode-wiki-integration"
+      ],
+      "docPath": "wiki/multi-tenant-sdd-platform.md",
+      "private": false,
+      "headings": [
+        {
+          "level": 2,
+          "text": "1. Objective"
+        },
+        {
+          "level": 2,
+          "text": "2. Current State"
+        },
+        {
+          "level": 2,
+          "text": "3. Architecture"
+        },
+        {
+          "level": 3,
+          "text": "3.1 What flips"
+        },
+        {
+          "level": 3,
+          "text": "3.2 Firestore data model"
+        },
+        {
+          "level": 3,
+          "text": "3.3 Index pipeline"
+        },
+        {
+          "level": 3,
+          "text": "3.4 `ragQuery` v2"
+        },
+        {
+          "level": 3,
+          "text": "3.5 In-app SDD editor"
+        },
+        {
+          "level": 3,
+          "text": "3.6 Version history UI"
+        },
+        {
+          "level": 3,
+          "text": "3.7 Tenant registration"
+        },
+        {
+          "level": 3,
+          "text": "3.8 Optional git mirror"
+        },
+        {
+          "level": 3,
+          "text": "3.9 Agent discovery"
+        },
+        {
+          "level": 3,
+          "text": "3.10 Auth and visibility"
+        },
+        {
+          "level": 3,
+          "text": "3.11 Write path — Cloud Function API + MCP server + GitHub OAuth device flow"
+        },
+        {
+          "level": 4,
+          "text": "3.11.1 Cloud Function HTTP API"
+        },
+        {
+          "level": 4,
+          "text": "3.11.2 GitHub OAuth device flow (CLI auth path)"
+        },
+        {
+          "level": 4,
+          "text": "3.11.3 The PromptRoot MCP server"
+        },
+        {
+          "level": 4,
+          "text": "3.11.4 The agent flow, end to end"
+        },
+        {
+          "level": 4,
+          "text": "3.11.5 Token revocation"
+        },
+        {
+          "level": 3,
+          "text": "3.12 What stays the same"
+        },
+        {
+          "level": 2,
+          "text": "4. Workstreams"
+        },
+        {
+          "level": 3,
+          "text": "W1 — Firestore schema and rules ✅ Complete (PR #814)"
+        },
+        {
+          "level": 3,
+          "text": "W2 — Tenant CRUD UI ⚠ Partial (PR #814) — create + list only"
+        },
+        {
+          "level": 3,
+          "text": "W3 — In-app SDD editor ✅ Complete (PR #814)"
+        },
+        {
+          "level": 3,
+          "text": "W4 — Version history UI ✅ Complete (PR #814)"
+        },
+        {
+          "level": 3,
+          "text": "W5 — Index pipeline (Firestore-driven) ❌ Deferred to follow-up"
+        },
+        {
+          "level": 3,
+          "text": "W6 — `ragQuery` v2 ✅ Complete (PR #814)"
+        },
+        {
+          "level": 3,
+          "text": "W7 — Optional git mirror ❌ Deferred to follow-up"
+        },
+        {
+          "level": 3,
+          "text": "W8 — Agent discovery updates ✅ Complete (PR #814)"
+        },
+        {
+          "level": 3,
+          "text": "W12 — Cloud Function write API + MCP server + device flow auth ✅ Complete (PR #814)"
+        },
+        {
+          "level": 3,
+          "text": "W9 — Migration of seed tenant ✅ Complete (PR #814)"
+        },
+        {
+          "level": 3,
+          "text": "W10 — Testing ✅ Complete (PR #814)"
+        },
+        {
+          "level": 3,
+          "text": "W11 — Docs and rollout ✅ Complete (PR #814)"
+        },
+        {
+          "level": 3,
+          "text": "W13 — Post-review hardening ✅ Complete (PR #814)"
+        },
+        {
+          "level": 2,
+          "text": "5. Resolved Decisions"
+        },
+        {
+          "level": 2,
+          "text": "6. Open Questions"
+        },
+        {
+          "level": 2,
+          "text": "7. Out of Scope (v1)"
+        },
+        {
+          "level": 2,
+          "text": "8. Milestones"
+        }
+      ],
+      "lastModified": "2026-06-12T12:13:51.950Z"
+    },
     {
       "slug": "vscode-wiki-integration",
       "title": "VS Code Extension — Wiki Integration & Agent Discovery",
@@ -108,7 +284,7 @@
           "text": "8. Milestones"
         }
       ],
-      "lastModified": "2026-04-15T03:35:24.215Z"
+      "lastModified": "2026-06-12T12:13:51.950Z"
     },
     {
       "slug": "dev-history-wiki",
@@ -256,7 +432,7 @@
           "text": "[<heading>](<url>)"
         }
       ],
-      "lastModified": "2026-04-15T03:35:24.182Z"
+      "lastModified": "2026-06-12T12:13:51.950Z"
     },
     {
       "slug": "modular-sdd-prompt-planner",
@@ -426,7 +602,7 @@
           "text": "14. Version History"
         }
       ],
-      "lastModified": "2026-04-14T00:17:19.555Z"
+      "lastModified": "2026-06-12T12:13:51.950Z"
     },
     {
       "slug": "vscode-extension-store",
@@ -588,7 +764,7 @@
           "text": "10. Future Enhancements (Post-Launch)"
         }
       ],
-      "lastModified": "2026-04-14T00:17:13.467Z"
+      "lastModified": "2026-06-12T12:13:51.950Z"
     }
   ]
 }

@@ -1,3 +1,15 @@
+---
+title: Modular Versioned SDD Prompt Planner
+slug: modular-sdd-prompt-planner
+date: 2026-03-15
+status: proposal
+owner: promptroot-core
+tags: [prompts, templating, sdd, workflow]
+visibility: public
+related:
+  - vscode-extension-store
+---
+
 # SDD: Modular Versioned SDD Prompt Planner
 
 **Project:** PromptRoot Prompt Templating

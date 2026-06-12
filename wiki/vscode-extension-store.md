@@ -1,3 +1,15 @@
+---
+title: VS Code Extension Marketplace Publishing
+slug: vscode-extension-store
+date: 2026-03-07
+status: shipped
+owner: promptroot-core
+tags: [vscode, extension, marketplace, publishing]
+visibility: public
+related:
+  - modular-sdd-prompt-planner
+---
+
 # SDD: VS Code Extension — Marketplace Publishing
 
 **Project:** PromptRoot VS Code Extension  

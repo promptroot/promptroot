@@ -10,7 +10,7 @@
 // 5. SW broadcasts { type: 'SW_UPDATED' } to all clients (e.g. other tabs).
 // 6. Clients reload or show notification.
 
-const CACHE_VERSION = 'promptroot-v9';
+const CACHE_VERSION = 'promptroot-v11';
 const CACHE_NAME = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -54,7 +54,20 @@ const STATIC_ASSETS = [
   
   // Pages
   '/pages/ide-extension/ide-extension.html',
-  
+  '/pages/wiki/wiki.html',
+
+  // Wiki modules and page init
+  '/src/pages/wiki-page.js',
+  '/src/modules/wiki-index.js',
+  '/src/modules/wiki-renderer.js',
+  '/src/modules/wiki-tree.js',
+  '/src/modules/wiki-timeline.js',
+  '/src/modules/wiki-graph.js',
+  '/src/modules/wiki-search.js',
+  '/src/modules/wiki-enrichment.js',
+  '/src/utils/rag-client.js',
+  '/src/utils/tokenizer.js',
+
   // External dependencies (high priority - largest performance win)
   'https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js',
@@ -70,6 +83,8 @@ const STATIC_ASSETS = [
 const CACHE_EXCLUDE_PATTERNS = [
   /\/api\//,
   /github\.com\/api/,
+  /apis\.google\.com\/js\/api\.js/,
+  /avatars\.githubusercontent\.com/,
   /firestore\.googleapis\.com/,
   /identitytoolkit\.googleapis\.com/,
   /securetoken\.googleapis\.com/,
@@ -84,7 +99,16 @@ const CACHE_EXCLUDE_PATTERNS = [
 const NETWORK_FIRST_PATTERNS = [
   /raw\.githubusercontent\.com.*\.md$/,
   /gist\.githubusercontent\.com/,
-  /github\.com\/.*\/contents\//
+  /github\.com\/.*\/contents\//,
+  /\/src\/pages\/auth-device-page\.js$/
+];
+
+// Heavy CDN deps that change rarely — keep cache-first for perf
+const CACHE_FIRST_PATTERNS = [
+  /gstatic\.com\/firebasejs\//,
+  /cdn\.jsdelivr\.net\//,
+  /fonts\.googleapis\.com\//,
+  /fonts\.gstatic\.com\//
 ];
 
 // Install event - cache critical static assets
@@ -157,9 +181,12 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(networkFirstStrategy(request));
     return;
   }
-  event.respondWith(
-    cacheFirstStrategy(request)
-  );
+  if (CACHE_FIRST_PATTERNS.some(pattern => pattern.test(request.url))) {
+    event.respondWith(cacheFirstStrategy(request));
+    return;
+  }
+
+  event.respondWith(networkFirstStrategy(request));
 });
 
 async function networkFirstStrategy(request) {

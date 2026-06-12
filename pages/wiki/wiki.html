@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>Wikis - PromptRoot</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="../../src/styles.css" />
+  <script src="../../src/font-init.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.0/marked.min.js"></script>
+  <script type="module" src="../../src/firebase-init.js"></script>
+  <script type="module" src="../../src/sw-register.js"></script>
+</head>
+<body data-page="wiki">
+
+  <div class="wrap">
+    <main class="card pad-lg">
+      <h2 class="section-title-lg font-28 mb-lg">
+        <span class="icon icon-inline" aria-hidden="true">menu_book</span> Wikis
+      </h2>
+
+      <div id="wikiBackRow" class="row mb-md" hidden>
+        <a id="wikiBackBtn" href="/pages/wiki/wiki.html" class="btn primary sm">
+          <span class="icon icon-inline" aria-hidden="true">arrow_back</span> All Wikis
+        </a>
+      </div>
+
+      <div class="wiki-toolbar">
+        <div class="wiki-search">
+          <input id="wikiSearchInput" type="search" placeholder="Search Specs by keyword..." aria-label="Search wiki" autocomplete="off" />
+        </div>
+        <div class="wiki-view-tabs" role="tablist" aria-label="View mode">
+          <button class="wiki-view-tab is-active" data-view="doc" role="tab" aria-selected="true">
+            <span class="icon icon-inline" aria-hidden="true">article</span> Doc
+          </button>
+          <button class="wiki-view-tab" data-view="timeline" role="tab" aria-selected="false">
+            <span class="icon icon-inline" aria-hidden="true">timeline</span> Timeline
+          </button>
+          <button class="wiki-view-tab" data-view="graph" role="tab" aria-selected="false">
+            <span class="icon icon-inline" aria-hidden="true">hub</span> Graph
+          </button>
+        </div>
+        <div class="toolbar-actions">
+          <a href="/pages/wiki-edit/wiki-edit.html" class="btn sm" title="Create or edit a Spec">
+            <span class="icon icon-inline" aria-hidden="true">edit_note</span> New Spec
+          </a>
+          <a href="/pages/tenants/tenants.html" class="btn sm" title="Manage tenants (apps that store Specs here)">
+            <span class="icon icon-inline" aria-hidden="true">groups</span> Tenants
+          </a>
+        </div>
+      </div>
+
+      <div class="wiki-layout">
+        <aside class="wiki-sidebar" aria-label="Spec list">
+          <div id="wikiTree" class="wiki-tree" role="tree"></div>
+        </aside>
+
+        <section class="wiki-main">
+          <div id="wikiSearchResults" class="wiki-search-results" hidden></div>
+
+          <article id="wikiDocView" class="wiki-doc-view" aria-live="polite">
+            <div id="wikiDocPlaceholder" class="wiki-placeholder">
+              <span class="icon icon-lg" aria-hidden="true">article</span>
+              <p>Select a Spec from the list to view it.</p>
+            </div>
+            <div id="wikiDocHeader" class="wiki-doc-header" hidden>
+              <h1 id="wikiDocTitle"></h1>
+              <div class="wiki-doc-meta">
+                <span id="wikiDocDate"></span>
+                <span id="wikiDocStatus" class="wiki-pill"></span>
+                <span id="wikiDocOwner"></span>
+                <span id="wikiDocTags"></span>
+              </div>
+              <div class="wiki-doc-actions">
+                <button id="wikiCopyContextBtn" class="btn sm" type="button" title="Copy this doc plus related context as markdown">
+                  <span class="icon icon-inline" aria-hidden="true">content_copy</span> Copy as agent context
+                </button>
+                <a id="wikiHistoryBtn" class="btn sm" hidden title="View version history of this Spec">
+                  <span class="icon icon-inline" aria-hidden="true">history</span> History
+                </a>
+                <a id="wikiEditBtn" class="btn sm" hidden>
+                  <span class="icon icon-inline" aria-hidden="true">edit</span> Edit
+                </a>
+                <button id="wikiDeleteBtn" class="btn sm danger" type="button" hidden>
+                  <span class="icon icon-inline" aria-hidden="true">delete</span> Delete
+                </button>
+              </div>
+            </div>
+            <div id="wikiDocBody" class="wiki-doc-body markdown-body" hidden></div>
+            <aside id="wikiRelatedDocs" class="wiki-related" hidden>
+              <h3>Related</h3>
+              <ul id="wikiRelatedList"></ul>
+            </aside>
+          </article>
+
+          <div id="wikiTimelineView" class="wiki-timeline-view" hidden></div>
+
+          <div id="wikiGraphView" class="wiki-graph-view" hidden>
+            <div id="wikiGraphContainer" class="wiki-graph-container"></div>
+            <ul class="wiki-graph-legend" aria-label="Node status legend">
+              <li><span class="wiki-graph-legend__dot wiki-graph-legend__dot--shipped"></span>Shipped</li>
+              <li><span class="wiki-graph-legend__dot wiki-graph-legend__dot--in-progress"></span>In progress</li>
+              <li><span class="wiki-graph-legend__dot wiki-graph-legend__dot--proposal"></span>Proposal</li>
+              <li><span class="wiki-graph-legend__dot wiki-graph-legend__dot--archived"></span>Archived</li>
+              <li><span class="wiki-graph-legend__dot wiki-graph-legend__dot--unknown"></span>Unknown</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-nav">
+      <a href="https://github.com/promptroot/promptroot/blob/main/README.md" target="_blank" rel="noopener" class="footer-nav__item">Help</a>
+      <span class="footer-nav__sep">•</span>
+      <button id="footerFeedbackBtn" class="footer-nav__item">Feedback</button>
+      <span class="footer-nav__sep">•</span>
+      <a href="../../pages/privacy/privacy.html" class="footer-nav__item">Privacy Policy</a>
+      <span class="footer-nav__sep">•</span>
+      <a href="https://github.com/promptroot/promptroot" target="_blank" rel="noopener" class="footer-nav__item">GitHub</a>
+    </div>
+  </footer>
+
+  <script type="module" src="../../src/shared-init.js"></script>
+  <script type="module" src="../../src/pages/wiki-page.js"></script>
+</body>
+</html>

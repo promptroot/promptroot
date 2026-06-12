@@ -7,6 +7,7 @@ const relaySharedSecret = defineSecret('RELAY_SHARED_SECRET');
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
 const { webcrypto: crypto } = require('crypto');
+const { rank: ragRank } = require('./rag');
 
 admin.initializeApp();
 
@@ -1381,3 +1382,122 @@ exports.pollOpenclawJob = onRequest({ secrets: [relaySharedSecret] }, async (req
     res.status(500).json({ error: err.message || 'Internal error' });
   }
 });
+
+const wikiChunks = require('./wiki-chunks');
+
+if (process.env.NODE_ENV === 'test') {
+  exports._setWikiChunksForTest = wikiChunks._setBundledCacheForTest;
+  exports._loadWikiChunks = wikiChunks.loadBundledChunks;
+  exports._setTenantChunksForTest = wikiChunks._setTenantCacheForTest;
+  exports._resetWikiChunksCachesForTest = wikiChunks._resetCachesForTest;
+}
+
+async function tryResolveOptionalUid(authHeader) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+  const token = authHeader.substring('Bearer '.length).trim();
+  if (!token) return null;
+  if (token.startsWith('prs_')) {
+    try {
+      const { resolveSessionToken } = require('./wiki-auth');
+      const { uid } = await resolveSessionToken(token);
+      return uid;
+    } catch { return null; }
+  }
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    return decoded.uid;
+  } catch { return null; }
+}
+
+async function resolveTenantsForQuery({ tenantId, tenantIds, uid }) {
+  if (tenantId) {
+    if (!await wikiChunks.tenantIsAccessible(tenantId, uid)) {
+      const err = new Error(`Tenant ${tenantId} not accessible`);
+      err.statusCode = 403;
+      throw err;
+    }
+    return [tenantId];
+  }
+  if (Array.isArray(tenantIds) && tenantIds.length > 0) {
+    const accessible = [];
+    for (const tid of tenantIds) {
+      if (await wikiChunks.tenantIsAccessible(tid, uid)) accessible.push(tid);
+    }
+    if (accessible.length === 0) {
+      const err = new Error('No accessible tenants in the requested set');
+      err.statusCode = 403;
+      throw err;
+    }
+    return accessible;
+  }
+  const ids = await wikiChunks.listAccessibleTenantIds(uid);
+  if (ids.length === 0) return [wikiChunks.SEED_TENANT_ID];
+  return ids;
+}
+
+exports.ragQuery = onRequest({ cors: true }, async (req, res) => {
+  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+  if (req.method !== 'POST') { res.status(405).json({ error: 'POST required' }); return; }
+  try {
+    const { query, topK, tenantId, tenantIds, includePrivate } = req.body || {};
+    if (typeof query !== 'string' || query.trim().length === 0) {
+      res.status(400).json({ error: 'query is required' });
+      return;
+    }
+    if (includePrivate) {
+      res.status(403).json({ error: 'private docs are not accessible via this endpoint in v1' });
+      return;
+    }
+    const limit = Math.min(Math.max(parseInt(topK, 10) || 5, 1), 20);
+
+    const uid = await tryResolveOptionalUid(req.headers.authorization);
+    let resolvedTenants;
+    try {
+      resolvedTenants = await resolveTenantsForQuery({ tenantId, tenantIds, uid });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({ error: err.message });
+      return;
+    }
+
+    const aggregated = [];
+    for (const tid of resolvedTenants) {
+      const chunks = await wikiChunks.loadTenantChunks(tid);
+      const results = ragRank({
+        query,
+        chunks,
+        topK: limit,
+        includePrivate: false
+      });
+      for (const r of results) aggregated.push({ ...r, tenantId: tid });
+    }
+
+    aggregated.sort((a, b) => (b.score || 0) - (a.score || 0));
+    const results = aggregated.slice(0, limit);
+
+    res.json({ results, tenants: resolvedTenants });
+  } catch (err) {
+    logger.error('ragQuery error:', err.message);
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+const wikiEndpoints = require('./wiki');
+const deviceFlowEndpoints = require('./wiki-device-flow');
+
+exports.createSdd = wikiEndpoints.createSdd;
+exports.updateSdd = wikiEndpoints.updateSdd;
+exports.deleteSdd = wikiEndpoints.deleteSdd;
+exports.listSdds = wikiEndpoints.listSdds;
+exports.getSdd = wikiEndpoints.getSdd;
+exports.listVersions = wikiEndpoints.listVersions;
+exports.restoreVersion = wikiEndpoints.restoreVersion;
+exports.createTenant = wikiEndpoints.createTenant;
+exports.listTenants = wikiEndpoints.listTenants;
+exports.updateTenant = wikiEndpoints.updateTenant;
+exports.deleteTenant = wikiEndpoints.deleteTenant;
+
+exports.startDeviceAuth = deviceFlowEndpoints.startDeviceAuth;
+exports.pollDeviceAuth = deviceFlowEndpoints.pollDeviceAuth;
+exports.authorizeDevice = deviceFlowEndpoints.authorizeDevice;
+exports.listSessions = deviceFlowEndpoints.listSessions;
+exports.revokeSession = deviceFlowEndpoints.revokeSession;

@@ -5,7 +5,8 @@ import {
   signInWithGitHub,
   signOutUser,
   updateAuthUI,
-  initAuthStateListener
+  initAuthStateListener,
+  currentUserCanSeePrivateDocs
 } from '../../modules/auth.js';
 import { getAuth } from '../../modules/firebase-service.js';
 
@@ -652,6 +653,23 @@ describe('auth', () => {
       await promise;
       expect(getCurrentUser()).toBe(mockUser);
       expect(mockUnsubscribe).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('currentUserCanSeePrivateDocs', () => {
+    beforeEach(() => {
+      setCurrentUser(null);
+      getAuth.mockReturnValue({ currentUser: null });
+    });
+
+    it('returns false when no user is signed in', () => {
+      expect(currentUserCanSeePrivateDocs()).toBe(false);
+    });
+
+    it('returns true when a user is signed in', () => {
+      const user = { uid: 'u1' };
+      getAuth.mockReturnValue({ currentUser: user });
+      expect(currentUserCanSeePrivateDocs()).toBe(true);
     });
   });
 });

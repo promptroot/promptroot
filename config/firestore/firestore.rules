@@ -76,6 +76,81 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Wiki docs - public docs readable by anyone; private docs require auth.
+    match /wikiDocs/{slug} {
+      allow read: if resource.data.visibility == 'public'
+                  || (request.auth != null && resource.data.visibility == 'private');
+      allow write: if false;
+    }
+
+    // Wiki chunks - same visibility gate as wikiDocs. Admin SDK only for writes.
+    match /wikiChunks/{chunkId} {
+      allow read: if resource.data.visibility == 'public'
+                  || (request.auth != null && resource.data.visibility == 'private');
+      allow write: if false;
+    }
+
+    // Multi-tenant wiki: tenant docs.
+    // Reads: public tenants visible to anyone; private tenants visible to members only.
+    // Writes: server-only (Cloud Functions via Admin SDK).
+    match /tenants/{tenantId} {
+      function tenantData() {
+        return get(/databases/$(database)/documents/tenants/$(tenantId)).data;
+      }
+      function isMember() {
+        return request.auth != null
+               && tenantData().members.hasAny([request.auth.uid]);
+      }
+      function tenantIsPublic() {
+        return tenantData().visibility == 'public';
+      }
+
+      allow read: if resource.data.visibility == 'public'
+                  || (request.auth != null
+                      && resource.data.members.hasAny([request.auth.uid]));
+      allow write: if false;
+
+      // SDDs in a tenant. Tenant must be visible to caller; per-doc visibility further gates.
+      match /sdds/{slug} {
+        allow read: if (tenantIsPublic() || isMember())
+                    && (resource.data.visibility == 'public' || isMember());
+        allow write: if false;
+
+        // Version history. Same visibility gate as parent SDD.
+        match /versions/{versionId} {
+          allow read: if (tenantIsPublic() || isMember())
+                      && (
+                        get(/databases/$(database)/documents/tenants/$(tenantId)/sdds/$(slug)).data.visibility == 'public'
+                        || isMember()
+                      );
+          allow write: if false;
+        }
+      }
+    }
+
+    // Per-tenant chunk index docs (alternative to Cloud Storage if a tenant prefers Firestore-served chunks).
+    // Same visibility gate as the tenant.
+    match /tenantChunks/{tenantId}/chunks/{chunkId} {
+      function tenantData() {
+        return get(/databases/$(database)/documents/tenants/$(tenantId)).data;
+      }
+      allow read: if tenantData().visibility == 'public'
+                  || (request.auth != null
+                      && tenantData().members.hasAny([request.auth.uid]));
+      allow write: if false;
+    }
+
+    // CLI/MCP device-flow session tokens. Owner can read and list their own; writes are server-only.
+    match /userSessions/{sessionId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow write: if false;
+    }
+
+    // Pending device-auth requests (short-lived). Server-only.
+    match /deviceAuthRequests/{deviceCode} {
+      allow read, write: if false;
+    }
+
     // Deny all other access by default
     match /{document=**} {
       allow read, write: if false;

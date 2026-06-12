@@ -324,6 +324,27 @@ cd functions && npm run deploy      # Deploy functions to Firebase
 - `vitest.config.js` - Unit test configuration with coverage thresholds
 - `playwright.config.js` - E2E test configuration
 
+## Dev history wiki
+
+SDDs for the seed `promptroot` tenant live in `wiki/*.md` and are
+browsable at `/wiki`. PromptRoot also hosts SDDs for *other* apps as
+multi-tenant Firestore content — see `wiki/multi-tenant-sdd-platform.md`
+for the platform design.
+
+Pages: `/wiki` (browse), `/wiki/edit` (create/update SDD),
+`/wiki/history` (version timeline), `/wiki/tenants` (tenant CRUD),
+`/auth/device` (CLI/MCP device-flow confirmation).
+
+Cloud Function endpoints: `ragQuery` (BM25 search, tenant-aware),
+`createSdd`, `updateSdd`, `getSdd`, `listSdds`, `listVersions`,
+`restoreVersion`, `createTenant`, `listTenants`, `startDeviceAuth`,
+`pollDeviceAuth`, `authorizeDevice`, `listSessions`, `revokeSession`.
+
+Agent integrations: project-scoped Claude Code skill at
+`.claude/skills/search-dev-history/SKILL.md` (read-only) and the
+`@promptroot/mcp-server` npm package (read + write, any MCP-speaking
+agent). See `AGENTS.md` for the contract and tenant resolution order.
+
 ## Documentation
 
 - `docs/CODE_STYLE_GUIDE.md` - JavaScript/CSS coding standards

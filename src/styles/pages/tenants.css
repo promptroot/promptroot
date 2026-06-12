@@ -1,0 +1,183 @@
+.tenants-card {
+  max-width: 880px;
+  margin: 32px auto;
+}
+
+.tenants-intro {
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+
+.tenants-section {
+  margin-top: 28px;
+}
+
+.tenants-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.tenants-section-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.tenants-loading {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.tenants-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.tenants-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tenants-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev);
+}
+
+.tenants-list-item:last-child {
+  border-bottom: none;
+}
+
+.tenants-list-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.tenants-list-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.tenants-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.tenants-list-meta code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.tenants-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.tenants-pill--public {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tenants-pill--private {
+  color: var(--text-muted);
+}
+
+.tenants-list-desc,
+.tenants-list-repo {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.tenants-list-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tenants-form {
+  display: grid;
+  gap: 12px;
+  max-width: 540px;
+}
+
+.tenants-form .form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tenants-status {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.tenants-status[data-level='success'] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.tenants-status[data-level='error'] {
+  border-color: var(--danger, #c0392b);
+  background: color-mix(in srgb, var(--danger, #c0392b) 12%, transparent);
+}
+
+.tenants-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn-icon:hover {
+  background: var(--bg-hover, rgba(255,255,255,0.07));
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.btn-icon--danger:hover {
+  color: var(--danger, #c0392b);
+  border-color: var(--danger, #c0392b);
+  background: color-mix(in srgb, var(--danger, #c0392b) 10%, transparent);
+}
+
+.btn-icon .icon {
+  font-size: 18px;
+}

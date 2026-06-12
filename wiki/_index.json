@@ -1,0 +1,594 @@
+{
+  "version": 1,
+  "generatedAt": "2026-04-15T03:36:38.537Z",
+  "docs": [
+    {
+      "slug": "vscode-wiki-integration",
+      "title": "VS Code Extension — Wiki Integration & Agent Discovery",
+      "date": "2026-04-14",
+      "status": "proposal",
+      "owner": "jesse",
+      "tags": [
+        "vscode",
+        "extension",
+        "rag",
+        "wiki",
+        "agents"
+      ],
+      "visibility": "public",
+      "related": [
+        "dev-history-wiki",
+        "vscode-extension-store"
+      ],
+      "docPath": "wiki/vscode-wiki-integration.md",
+      "private": false,
+      "headings": [
+        {
+          "level": 2,
+          "text": "1. Objective"
+        },
+        {
+          "level": 2,
+          "text": "2. Current State"
+        },
+        {
+          "level": 2,
+          "text": "3. Architecture"
+        },
+        {
+          "level": 3,
+          "text": "3.1 Three discovery vectors"
+        },
+        {
+          "level": 3,
+          "text": "3.2 Vector A — Palette command (explicit user action)"
+        },
+        {
+          "level": 3,
+          "text": "3.3 Vector B — Chat participant `@promptroot`"
+        },
+        {
+          "level": 3,
+          "text": "3.4 Vector C — Language Model Tool"
+        },
+        {
+          "level": 3,
+          "text": "3.5 Shared layer"
+        },
+        {
+          "level": 3,
+          "text": "3.6 Settings"
+        },
+        {
+          "level": 2,
+          "text": "4. Workstreams"
+        },
+        {
+          "level": 3,
+          "text": "W1 — Shared client and enrichment"
+        },
+        {
+          "level": 3,
+          "text": "W2 — Palette command"
+        },
+        {
+          "level": 3,
+          "text": "W3 — Chat participant"
+        },
+        {
+          "level": 3,
+          "text": "W4 — Language Model Tool"
+        },
+        {
+          "level": 3,
+          "text": "W5 — Settings and privacy"
+        },
+        {
+          "level": 3,
+          "text": "W6 — Testing"
+        },
+        {
+          "level": 3,
+          "text": "W7 — Packaging and release"
+        },
+        {
+          "level": 2,
+          "text": "5. Resolved Decisions"
+        },
+        {
+          "level": 2,
+          "text": "6. Open Questions"
+        },
+        {
+          "level": 2,
+          "text": "7. Out of Scope (v1)"
+        },
+        {
+          "level": 2,
+          "text": "8. Milestones"
+        }
+      ],
+      "lastModified": "2026-04-15T03:35:24.215Z"
+    },
+    {
+      "slug": "dev-history-wiki",
+      "title": "Development History Wiki (RAG-Accessible)",
+      "date": "2026-04-13",
+      "status": "in-progress",
+      "owner": "jesse",
+      "tags": [
+        "infra",
+        "rag",
+        "wiki",
+        "docs",
+        "agents"
+      ],
+      "visibility": "public",
+      "related": [
+        "vscode-extension-store",
+        "modular-sdd-prompt-planner"
+      ],
+      "docPath": "wiki/dev-history-wiki.md",
+      "private": false,
+      "headings": [
+        {
+          "level": 2,
+          "text": "1. Objective"
+        },
+        {
+          "level": 2,
+          "text": "2. Current State"
+        },
+        {
+          "level": 2,
+          "text": "3. Architecture"
+        },
+        {
+          "level": 3,
+          "text": "3.1 Shape"
+        },
+        {
+          "level": 3,
+          "text": "3.2 Data flow"
+        },
+        {
+          "level": 3,
+          "text": "3.3 Why keyword search (BM25) is sufficient for v1"
+        },
+        {
+          "level": 3,
+          "text": "3.4 Upgrade path if keyword search proves insufficient"
+        },
+        {
+          "level": 2,
+          "text": "4. Content Model"
+        },
+        {
+          "level": 3,
+          "text": "4.1 Frontmatter schema"
+        },
+        {
+          "level": 3,
+          "text": "4.2 Template"
+        },
+        {
+          "level": 3,
+          "text": "4.3 Validation"
+        },
+        {
+          "level": 2,
+          "text": "5. Workstreams"
+        },
+        {
+          "level": 3,
+          "text": "W1 — Content model & repo layout ✅"
+        },
+        {
+          "level": 3,
+          "text": "W2 — Wiki UI (`pages/wiki/`) ✅"
+        },
+        {
+          "level": 3,
+          "text": "W3 — Retrieval pipeline (keyword-based, keyless) ✅"
+        },
+        {
+          "level": 3,
+          "text": "W4 — Agent integration ✅"
+        },
+        {
+          "level": 3,
+          "text": "W5 — Auth & private docs ✅"
+        },
+        {
+          "level": 3,
+          "text": "W6 — Testing ✅"
+        },
+        {
+          "level": 2,
+          "text": "6. Resolved Decisions"
+        },
+        {
+          "level": 2,
+          "text": "7. Open Questions"
+        },
+        {
+          "level": 2,
+          "text": "8. Out of Scope (v1)"
+        },
+        {
+          "level": 2,
+          "text": "9. Milestones"
+        },
+        {
+          "level": 2,
+          "text": "Appendix A: `search-dev-history` skill"
+        },
+        {
+          "level": 2,
+          "text": "When to use"
+        },
+        {
+          "level": 2,
+          "text": "How to call"
+        },
+        {
+          "level": 2,
+          "text": "Response shape"
+        },
+        {
+          "level": 2,
+          "text": "How to use results"
+        },
+        {
+          "level": 2,
+          "text": "Appendix B: Jules enrichment contract"
+        },
+        {
+          "level": 2,
+          "text": "Relevant Prior Design Decisions"
+        },
+        {
+          "level": 3,
+          "text": "[<heading>](<url>)"
+        },
+        {
+          "level": 3,
+          "text": "[<heading>](<url>)"
+        }
+      ],
+      "lastModified": "2026-04-15T03:35:24.182Z"
+    },
+    {
+      "slug": "modular-sdd-prompt-planner",
+      "title": "Modular Versioned SDD Prompt Planner",
+      "date": "2026-03-15",
+      "status": "proposal",
+      "owner": "promptroot-core",
+      "tags": [
+        "prompts",
+        "templating",
+        "sdd",
+        "workflow"
+      ],
+      "visibility": "public",
+      "related": [
+        "vscode-extension-store"
+      ],
+      "docPath": "wiki/modular-sdd-prompt-planner.md",
+      "private": false,
+      "headings": [
+        {
+          "level": 2,
+          "text": "1. Objective"
+        },
+        {
+          "level": 2,
+          "text": "2. Problem Statement"
+        },
+        {
+          "level": 2,
+          "text": "3. Scope"
+        },
+        {
+          "level": 3,
+          "text": "In Scope"
+        },
+        {
+          "level": 3,
+          "text": "Out of Scope"
+        },
+        {
+          "level": 2,
+          "text": "4. User-Facing Design"
+        },
+        {
+          "level": 3,
+          "text": "Primary Flow"
+        },
+        {
+          "level": 3,
+          "text": "Checkbox Option UX"
+        },
+        {
+          "level": 2,
+          "text": "5. Proposed Template Contract"
+        },
+        {
+          "level": 3,
+          "text": "Placeholder Types"
+        },
+        {
+          "level": 3,
+          "text": "Conditional Block Syntax (new)"
+        },
+        {
+          "level": 2,
+          "text": "UI Changes"
+        },
+        {
+          "level": 2,
+          "text": "6. Architecture Changes"
+        },
+        {
+          "level": 3,
+          "text": "A. Variable Detection and Field Typing"
+        },
+        {
+          "level": 3,
+          "text": "B. Modal DOM Generation"
+        },
+        {
+          "level": 3,
+          "text": "C. Value Collection"
+        },
+        {
+          "level": 3,
+          "text": "D. Final Render Pipeline"
+        },
+        {
+          "level": 3,
+          "text": "E. Style Additions"
+        },
+        {
+          "level": 2,
+          "text": "7. Prompt Template Deliverables"
+        },
+        {
+          "level": 2,
+          "text": "8. Testing Strategy"
+        },
+        {
+          "level": 3,
+          "text": "Unit Tests"
+        },
+        {
+          "level": 3,
+          "text": "e2e Tests"
+        },
+        {
+          "level": 3,
+          "text": "Regression Gate"
+        },
+        {
+          "level": 2,
+          "text": "9. Implementation Plan (Versioned)"
+        },
+        {
+          "level": 3,
+          "text": "Phase 1: Template Contract + Parser (v0.1.0)"
+        },
+        {
+          "level": 3,
+          "text": "Phase 2: Modal Checkbox UI (v0.2.0)"
+        },
+        {
+          "level": 3,
+          "text": "Phase 3: End-to-End Actions (v0.3.0)"
+        },
+        {
+          "level": 3,
+          "text": "Phase 4: Prompt Template + Documentation (v1.0.0)"
+        },
+        {
+          "level": 2,
+          "text": "10. Risks and Mitigations"
+        },
+        {
+          "level": 2,
+          "text": "11. Acceptance Criteria"
+        },
+        {
+          "level": 2,
+          "text": "12. Example Template Snippet"
+        },
+        {
+          "level": 2,
+          "text": "UI Changes"
+        },
+        {
+          "level": 2,
+          "text": "Agent API Changes"
+        },
+        {
+          "level": 2,
+          "text": "Unit Test Plan"
+        },
+        {
+          "level": 2,
+          "text": "E2E Test Plan"
+        },
+        {
+          "level": 2,
+          "text": "13. File Impact Summary"
+        },
+        {
+          "level": 2,
+          "text": "14. Version History"
+        }
+      ],
+      "lastModified": "2026-04-14T00:17:19.555Z"
+    },
+    {
+      "slug": "vscode-extension-store",
+      "title": "VS Code Extension Marketplace Publishing",
+      "date": "2026-03-07",
+      "status": "shipped",
+      "owner": "promptroot-core",
+      "tags": [
+        "vscode",
+        "extension",
+        "marketplace",
+        "publishing"
+      ],
+      "visibility": "public",
+      "related": [
+        "modular-sdd-prompt-planner"
+      ],
+      "docPath": "wiki/vscode-extension-store.md",
+      "private": false,
+      "headings": [
+        {
+          "level": 2,
+          "text": "1. Objective"
+        },
+        {
+          "level": 2,
+          "text": "2. Current State"
+        },
+        {
+          "level": 3,
+          "text": "VS Code Extension (`vscode-extension/`)"
+        },
+        {
+          "level": 3,
+          "text": "Web Application"
+        },
+        {
+          "level": 2,
+          "text": "3. Workstreams"
+        },
+        {
+          "level": 3,
+          "text": "Workstream A — Extension Marketplace Readiness"
+        },
+        {
+          "level": 3,
+          "text": "Workstream B — Web App IDE Extension Page"
+        },
+        {
+          "level": 2,
+          "text": "4. Workstream A — Extension Marketplace Readiness"
+        },
+        {
+          "level": 3,
+          "text": "A1. Create Publisher Account ✅"
+        },
+        {
+          "level": 3,
+          "text": "A2. Extension Icon ✅"
+        },
+        {
+          "level": 3,
+          "text": "A3. Update `package.json` Metadata ✅"
+        },
+        {
+          "level": 3,
+          "text": "A4. Prominent Website Link ✅"
+        },
+        {
+          "level": 3,
+          "text": "A5. Create `.vscodeignore` ✅"
+        },
+        {
+          "level": 3,
+          "text": "A6. Create `CHANGELOG.md` ✅"
+        },
+        {
+          "level": 3,
+          "text": "A7. LICENSE File ✅"
+        },
+        {
+          "level": 3,
+          "text": "A8. Restructure README.md ✅"
+        },
+        {
+          "level": 3,
+          "text": "A9. Screenshots ✅"
+        },
+        {
+          "level": 3,
+          "text": "A10. Test Packaging ✅"
+        },
+        {
+          "level": 3,
+          "text": "A11. Security & Privacy Review"
+        },
+        {
+          "level": 3,
+          "text": "A12. Publish to Marketplace ✅"
+        },
+        {
+          "level": 2,
+          "text": "5. Workstream B — Web App IDE Extension Page"
+        },
+        {
+          "level": 3,
+          "text": "B1. Page HTML ✅"
+        },
+        {
+          "level": 3,
+          "text": "B2. Page Initialization Module ✅"
+        },
+        {
+          "level": 3,
+          "text": "B3. Constants ✅"
+        },
+        {
+          "level": 3,
+          "text": "B4. Navigation Link ✅"
+        },
+        {
+          "level": 3,
+          "text": "B5. Page-Specific Styles"
+        },
+        {
+          "level": 3,
+          "text": "B6. Service Worker Cache ✅"
+        },
+        {
+          "level": 3,
+          "text": "B7. Firebase Hosting Rewrite ✅"
+        },
+        {
+          "level": 2,
+          "text": "6. Dependency & Sequencing"
+        },
+        {
+          "level": 2,
+          "text": "7. Acceptance Criteria"
+        },
+        {
+          "level": 3,
+          "text": "Marketplace Listing"
+        },
+        {
+          "level": 3,
+          "text": "Web App IDE Extension Page"
+        },
+        {
+          "level": 2,
+          "text": "8. Estimated Effort"
+        },
+        {
+          "level": 2,
+          "text": "9. Risks & Mitigations"
+        },
+        {
+          "level": 2,
+          "text": "10. Future Enhancements (Post-Launch)"
+        }
+      ],
+      "lastModified": "2026-04-14T00:17:13.467Z"
+    }
+  ]
+}

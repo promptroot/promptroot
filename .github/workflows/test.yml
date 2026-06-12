@@ -21,7 +21,10 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
-      
+
+      - name: Validate SDD frontmatter
+        run: npm run validate:sdd
+
       - name: Run tests
         run: npm run test:run
       

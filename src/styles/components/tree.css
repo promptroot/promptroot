@@ -5,11 +5,15 @@
 .tree-dir button { appearance: none; border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; width: 18px; }
 .tree-dir button:focus { outline: 1px solid var(--accent); border-radius: 4px; }
 .tree-dir .folder-name { font-size: 13px; font-weight: 600; flex: 1; }
-.tree-dir .folder-icons { display: flex; gap: 2px; margin-left: auto; }
-.tree-dir .folder-icons span { cursor: pointer; opacity: 0.6; transition: opacity 0.2s, background 0.2s; padding: 4px; border-radius: 4px; min-width: 24px; min-height: 24px; display: flex; align-items: center; justify-content: center; font-weight: normal; }
-.tree-dir .folder-icons span:hover { opacity: 1; background: var(--overlay-subtle); }
-.tree-dir .add-file-icon { color: var(--success); }
-.tree-dir .add-file-icon:hover { background: rgba(74, 222, 128, 0.1) !important; }
+.folder-icons { display: flex; gap: 2px; margin-left: auto; }
+.folder-icons span {
+  cursor: pointer; opacity: 0.6; transition: opacity 0.2s, background 0.2s; padding: 4px; border-radius: 4px; min-width: 24px; min-height: 24px; display: flex; align-items: center; justify-content: center; font-weight: normal;
+}
+.folder-icons span:hover {
+  opacity: 1; background: var(--overlay-subtle);
+}
+.add-file-icon { color: var(--success); }
+.add-file-icon:hover { background: rgba(74, 222, 128, 0.1) !important; }
 
 /* Submenu for folder actions */
 .folder-submenu {

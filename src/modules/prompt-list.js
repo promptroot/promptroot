@@ -548,7 +548,7 @@ function handleHeaderClick(event) {
   const addIconRoot = target.closest('[data-action="show-submenu-root"]');
   if (addIconRoot) {
     event.stopPropagation();
-    folderSubmenu.toggle(addIconRoot, '');
+    folderSubmenu.toggle(addIconRoot, getPromptFolder(currentBranch));
     return;
   }
 

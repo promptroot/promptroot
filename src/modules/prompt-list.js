@@ -79,6 +79,7 @@ export function initPromptList() {
   const sidebarHeader = document.getElementById('sidebarHeader');
   if (sidebarHeader) {
     sidebarHeader.addEventListener('click', handleHeaderClick);
+    sidebarHeader.addEventListener('keydown', handleListKeydown);
   }
 }
 

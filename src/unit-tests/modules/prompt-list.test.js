@@ -196,9 +196,23 @@ describe('prompt-list', () => {
 
   describe('initPromptList', () => {
     it('should initialize DOM elements and event listeners', () => {
+      const mockSidebarHeader = createMockElement('sidebarHeader');
+      global.document.getElementById.mockImplementation((id) => {
+        const elements = {
+          'list': createMockElement('list'),
+          'search': createMockElement('search'),
+          'searchClear': createMockElement('searchClear'),
+          'sidebarHeader': mockSidebarHeader
+        };
+        return elements[id] || createMockElement(id);
+      });
+
       initPromptList();
       expect(global.document.getElementById).toHaveBeenCalledWith('list');
       expect(global.document.getElementById).toHaveBeenCalledWith('search');
+      expect(global.document.getElementById).toHaveBeenCalledWith('sidebarHeader');
+      expect(mockSidebarHeader.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
+      expect(mockSidebarHeader.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
     });
 
     it('should handle missing DOM elements gracefully', () => {

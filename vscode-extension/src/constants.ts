@@ -13,6 +13,7 @@ export const COMMANDS = {
   deleteAsset: 'promptroot.deleteAsset',
   addAssetToQueue: 'promptroot.addAssetToQueue',
   sendAssetToJules: 'promptroot.sendAssetToJules',
+  sendAssetToOpencode: 'promptroot.sendAssetToOpencode',
   configureJulesApi: 'promptroot.configureJulesApi',
   viewJulesSources: 'promptroot.viewJulesSources',
   viewJulesSessions: 'promptroot.viewJulesSessions',

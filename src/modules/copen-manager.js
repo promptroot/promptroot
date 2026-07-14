@@ -11,7 +11,8 @@ const DEFAULT_COPENS = [
   { id: 'codex', label: 'Codex', icon: 'forum', url: 'https://chatgpt.com/codex/cloud', isDefault: true },
   { id: 'copilot', label: 'Copilot', icon: 'code', url: 'https://github.com/copilot/agents', isDefault: true },
   { id: 'gemini', label: 'Gemini', icon: 'auto_awesome', url: 'https://gemini.google.com/app', isDefault: true },
-  { id: 'chatgpt', label: 'ChatGPT', icon: 'chat', url: 'https://chatgpt.com/', isDefault: true }
+  { id: 'chatgpt', label: 'ChatGPT', icon: 'chat', url: 'https://chatgpt.com/', isDefault: true },
+  { id: 'opencode', label: 'OpenCode', icon: 'terminal', url: 'opencode://run?prompt={prompt}', isDefault: true }
 ];
 
 const CUSTOM_COPEN_ICON = 'extension'; // Material icon to indicate custom copen

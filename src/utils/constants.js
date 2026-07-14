@@ -253,6 +253,29 @@ export const OPENCLAW_UI_TEXT = {
   GENERATE_TOKEN_LINK: 'Generate a token first →'
 };
 
+// OpenCode integration constants
+export const OPENCODE = {
+  KEY_COLLECTION: 'opencodeKeys',
+  DEFAULT_ENDPOINT: 'http://localhost:4096'
+};
+
+// OpenCode UI text
+export const OPENCODE_UI_TEXT = {
+  PAGE_TITLE: 'OpenCode Settings',
+  GATEWAY_URL_PLACEHOLDER: 'http://localhost:4096',
+  GATEWAY_TOKEN_PLACEHOLDER: 'Your OpenCode bearer token (optional)',
+  SAVE_BUTTON: 'Save',
+  CANCEL_BUTTON: 'Cancel',
+  SAVING: 'Saving...',
+  SAVED: 'OpenCode settings saved.',
+  SAVE_ERROR: 'Failed to save OpenCode settings.',
+  DELETE_CONFIRM: 'Remove your OpenCode configuration?',
+  DELETED: 'OpenCode settings removed.',
+  NOT_CONFIGURED: 'No OpenCode connection configured.',
+  NOT_SIGNED_IN: 'Please sign in to configure OpenCode.',
+  URL_REQUIRED: 'Please enter a gateway URL.'
+};
+
 // Agent API key management UI text
 export const AGENT_KEY_UI_TEXT = {
   PAGE_TITLE: 'Agent API',
@@ -505,5 +528,8 @@ export const AGENT_UI_TEXT = {
   BRACE_NOT_CONFIGURED: 'Brace (not configured)',
   SENT_TO_BRACE: 'Sent to Brace!',
   BRACE_SEND_FAILED: 'Failed to send to Brace: ',
+  OPENCODE_NOT_CONFIGURED: 'OpenCode (not configured)',
+  SENT_TO_OPENCODE: 'Sent to OpenCode!',
+  OPENCODE_SEND_FAILED: 'Failed to send to OpenCode: ',
   AGENTIC_QUEUE_EMPTY: 'No items in the Agentic Queue.'
 };

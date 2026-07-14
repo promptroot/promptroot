@@ -128,6 +128,11 @@
         "icon": "$(play)"
       },
       {
+        "command": "promptroot.sendAssetToOpencode",
+        "title": "Send to OpenCode",
+        "icon": "$(terminal)"
+      },
+      {
         "command": "promptroot.deleteQueueItem",
         "title": "Promptroot: Delete Queue Item",
         "icon": "$(trash)"
@@ -418,9 +423,14 @@
           "group": "jules@1"
         },
         {
-          "command": "promptroot.addAssetToQueue",
+          "command": "promptroot.sendAssetToOpencode",
           "when": "view == promptroot.assetsView && viewItem == prompt",
           "group": "jules@2"
+        },
+        {
+          "command": "promptroot.addAssetToQueue",
+          "when": "view == promptroot.assetsView && viewItem == prompt",
+          "group": "jules@3"
         },
         {
           "command": "promptroot.addFavoriteRepo",
@@ -486,6 +496,16 @@
           "type": "number",
           "default": 8080,
           "description": "Firebase Firestore emulator port"
+        },
+        "promptroot.opencode.executablePath": {
+          "type": "string",
+          "default": "opencode",
+          "description": "Path to the OpenCode executable CLI binary"
+        },
+        "promptroot.opencode.defaultFlags": {
+          "type": "string",
+          "default": "",
+          "description": "Default CLI flags to append to the opencode run command"
         }
       }
     }

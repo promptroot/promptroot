@@ -317,6 +317,14 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  const sendAssetToOpencodeCommand = vscode.commands.registerCommand(
+    COMMANDS.sendAssetToOpencode,
+    async (item?: PromptrootTreeItem) => {
+      outputChannel.appendLine('Send asset to OpenCode command executed');
+      await sendAssetToOpencode(item);
+    }
+  );
+
   const cloneAssetCommand = vscode.commands.registerCommand(
     COMMANDS.cloneAsset,
     async (item?: PromptrootTreeItem) => {
@@ -634,6 +642,7 @@ export async function activate(context: vscode.ExtensionContext) {
     addToQueueCommand,
     addAssetToQueueCommand,
     sendAssetToJulesCommand,
+    sendAssetToOpencodeCommand,
     cloneAssetCommand,
     deleteAssetCommand,
     deleteQueueItemCommand,
@@ -1286,6 +1295,51 @@ async function sendAssetToJules(item?: PromptrootTreeItem): Promise<void> {
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to send to Jules: ${error instanceof Error ? error.message : String(error)}`);
     outputChannel.appendLine(`Error sending to Jules: ${error}`);
+  }
+}
+
+/**
+ * Send prompt asset directly to OpenCode local TUI/Terminal session
+ */
+async function sendAssetToOpencode(item?: PromptrootTreeItem): Promise<void> {
+  if (!item || !item.resourceUri || item.itemType !== 'prompt') {
+    vscode.window.showErrorMessage('Please select a prompt file to run in OpenCode');
+    return;
+  }
+
+  try {
+    const filePath = item.resourceUri.fsPath;
+    
+    if (!filePath.endsWith('.md')) {
+      vscode.window.showWarningMessage('Only markdown (.md) files can be sent to OpenCode');
+      return;
+    }
+
+    const config = vscode.workspace.getConfiguration('promptroot.opencode');
+    const executablePath = config.get<string>('executablePath') || 'opencode';
+    const defaultFlags = config.get<string>('defaultFlags') || '';
+
+    outputChannel.appendLine(`Preparing to run "${item.label}" in OpenCode terminal`);
+
+    let terminal = vscode.window.terminals.find(t => t.name === 'OpenCode');
+    if (!terminal) {
+      terminal = vscode.window.createTerminal({
+        name: 'OpenCode',
+        iconPath: new vscode.ThemeIcon('terminal')
+      });
+    }
+
+    terminal.show(true);
+
+    const cmdFlags = defaultFlags ? ` ${defaultFlags}` : '';
+    
+    // Send command to run the prompt file with local opencode
+    terminal.sendText(`${executablePath} run --file "${filePath}"${cmdFlags}`);
+
+    vscode.window.showInformationMessage(`Prompt sent to OpenCode Terminal: ${item.label}`);
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to run in OpenCode: ${error instanceof Error ? error.message : String(error)}`);
+    outputChannel.appendLine(`Error running OpenCode: ${error}`);
   }
 }
 

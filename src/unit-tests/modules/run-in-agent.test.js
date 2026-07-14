@@ -44,11 +44,12 @@ describe('run-in-agent', () => {
   });
 
   describe('getAgentOptions', () => {
-    it('should return Jules and Brace options', () => {
+    it('should return Jules, Brace, and OpenCode options', () => {
       const options = getAgentOptions();
-      expect(options).toHaveLength(2);
+      expect(options).toHaveLength(3);
       expect(options[0].value).toBe('jules');
       expect(options[1].value).toBe('brace');
+      expect(options[2].value).toBe('opencode');
     });
 
     it('should always have Brace enabled (not disabled)', () => {
@@ -65,6 +66,11 @@ describe('run-in-agent', () => {
     it('should include hub icon for Brace', () => {
       const options = getAgentOptions();
       expect(options[1].icon).toBe('hub');
+    });
+
+    it('should include terminal icon for OpenCode', () => {
+      const options = getAgentOptions();
+      expect(options[2].icon).toBe('terminal');
     });
   });
 

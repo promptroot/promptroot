@@ -46,12 +46,15 @@ export async function copyAndOpen(target, promptText) {
   try {
     await copyText(promptText);
 
-    const url = await getCopenUrl(target);
+    let url = await getCopenUrl(target);
+    if (url.includes('{prompt}')) {
+      url = url.replace('{prompt}', encodeURIComponent(promptText));
+    }
 
     // Validate URL protocol to prevent XSS / Open Redirect
     try {
       const parsedUrl = new URL(url);
-      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'opencode:') {
         console.error('Invalid Copen URL protocol:', parsedUrl.protocol);
         showToast('Invalid Copen URL.', 'error');
         return false;

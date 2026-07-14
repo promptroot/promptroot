@@ -15,7 +15,8 @@ const BRACE_RELAY_TIMEOUT_MS = 5000;
 export function getAgentOptions() {
   return [
     { value: 'jules', label: 'Jules', icon: 'smart_toy' },
-    { value: 'brace', label: 'Brace', icon: 'hub' }
+    { value: 'brace', label: 'Brace', icon: 'hub' },
+    { value: 'opencode', label: 'OpenCode', icon: 'terminal' }
   ];
 }
 
@@ -39,6 +40,9 @@ export async function dispatchToAgent(agent, payload) {
     return callRunJulesFunction(payload.promptText, payload.sourceId, payload.branch, payload.title);
   } else if (agent === 'brace') {
     await _dispatchToBrace(payload.promptText);
+    return;
+  } else if (agent === 'opencode') {
+    await _dispatchToOpencode(payload.promptText);
     return;
   }
   throw new Error(`Unknown agent: ${agent}`);
@@ -102,4 +106,57 @@ async function _dispatchToBrace(promptText) {
   // Fallback when not configured: open brace-ui so the user can connect
   window.open(OPENCLAW.BRACE_UI_URL, '_blank', 'noopener,noreferrer');
   showToast(AGENT_UI_TEXT.SENT_TO_BRACE, 'success');
+}
+
+async function _dispatchToOpencode(promptText) {
+  const { getAuth } = await import('./firebase-service.js');
+  const auth = getAuth();
+  const user = auth?.currentUser;
+
+  if (user) {
+    const { getOpencodeConfig, decryptOpencodeKey } = await import('./opencode-keys.js');
+    const config = await getOpencodeConfig(user.uid);
+
+    if (config) {
+      const baseUrl = config.gatewayUrl || 'http://localhost:4096';
+      const token = config.hasToken ? await decryptOpencodeKey(user.uid) : null;
+
+      try {
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model: 'opencode',
+            messages: [{ role: 'user', content: promptText }],
+            stream: false
+          })
+        });
+
+        if (res.ok) {
+          showToast(AGENT_UI_TEXT.SENT_TO_OPENCODE, 'success');
+          return;
+        }
+
+        const body = await res.json().catch(() => ({}));
+        showToast(AGENT_UI_TEXT.OPENCODE_SEND_FAILED + (body.error || res.status), 'error');
+        return;
+      } catch (err) {
+        showToast(AGENT_UI_TEXT.OPENCODE_SEND_FAILED + err.message, 'error');
+        return;
+      }
+    }
+  }
+
+  // Fallback if not configured: show modal
+  const { showOpencodeModal } = await import('./opencode-modal.js');
+  showOpencodeModal(() => {
+    _dispatchToOpencode(promptText);
+  });
 }

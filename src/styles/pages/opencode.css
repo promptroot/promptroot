@@ -1,0 +1,29 @@
+/* OpenCode settings page styles */
+
+.opencode-detect-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.opencode-detect-status__icon {
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.opencode-detect-status__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.opencode-detect-status__title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--success);
+}
+
+.opencode-detect-status__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}

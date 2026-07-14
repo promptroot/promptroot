@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>OpenCode — PromptRoot</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+  <link rel="stylesheet" href="../../src/styles.css" />
+  <script src="../../src/font-init.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" integrity="sha384-BkEIW/B4JV9w6pRfBRgZtAcYDk5goH1nUI49rLo8s5PSHgTfgxWBczRVJx+fv5kP" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js" integrity="sha384-96KlrabK9X4T/tq4duY+/4JE60jZAiSs4QVJFwmY30ETT24x2+89B7qmq7O4IETX" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js" integrity="sha384-LF74FIj8PQKxRVken52qSHntBSVEC6b05H04maSVJibifVGmWz9Ajc23WjrRVSCX" crossorigin="anonymous"></script>
+  <script type="module" src="../../src/firebase-init.js"></script>
+  <script type="module" src="../../src/sw-register.js"></script>
+</head>
+<body data-page="opencode">
+
+  <div class="wrap">
+    <main class="card pad-lg">
+      <h2 class="section-title-lg font-28 mb-lg"><span class="icon icon-inline" aria-hidden="true">terminal</span> OpenCode</h2>
+
+      <!-- Hero -->
+      <div class="hero-panel">
+        <h3 class="hero-title">Integrate OpenCode Agent</h3>
+        <p class="hero-desc">
+          Connect OpenCode — the terminal-native, provider-agnostic AI coding agent — to PromptRoot. Click "Run in Agent" with OpenCode selected to send prompts directly to your local headless OpenCode server, or use "Copen" to trigger it locally.
+        </p>
+        <p class="hero-note">
+          Requires a running local instance of <code>opencode serve</code>. Be sure to configure CORS to allow connections from PromptRoot.
+        </p>
+      </div>
+
+      <!-- Connection status (auth-gated) -->
+      <div id="opencodeLoading" class="panel pad-xl text-center mb-lg">
+        <div class="muted-text font-16">Loading...</div>
+      </div>
+
+      <div id="opencodeNotSignedIn" class="panel pad-xl text-center mb-lg hidden">
+        <div class="muted-text font-16">Sign in to connect OpenCode.</div>
+      </div>
+
+      <div id="opencodeContent" class="hidden">
+        <div class="panel pad-md mb-lg">
+          <div class="opencode-detect-status">
+            <span id="opencodeStatusIcon" class="icon icon-lg color-muted" aria-hidden="true">radio_button_unchecked</span>
+            <div class="opencode-detect-status__info">
+              <div id="opencodeStatusTitle" class="opencode-detect-status__title color-muted">Not configured</div>
+              <div id="opencodeStatusDetail" class="small-text muted-text"></div>
+            </div>
+            <div class="opencode-detect-status__actions">
+              <button id="configureOpencodeBtn" class="btn sm">Configure</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Features (always visible) -->
+      <div class="section-mb">
+        <h3 class="section-heading"><span class="icon icon-inline" aria-hidden="true">auto_awesome</span> Features</h3>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">terminal</span></div>
+            <div class="feature-content">
+              <div class="feature-title">Local Dispatch</div>
+              <div class="feature-desc">Send prompts directly to your local OpenCode headless serve session to run coding jobs locally</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">open_in_new</span></div>
+            <div class="feature-content">
+              <div class="feature-title">Copen Protocol</div>
+              <div class="feature-desc">Use standard Copen launcher to invoke OpenCode directly with prompt context preloaded</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">lock</span></div>
+            <div class="feature-content">
+              <div class="feature-title">Local-First Security</div>
+              <div class="feature-desc">Keep your configurations entirely local and encrypted. OpenCode runs on your local machine</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><span class="icon icon-lg" aria-hidden="true">extension</span></div>
+            <div class="feature-content">
+              <div class="feature-title">IDE Extensions</div>
+              <div class="feature-desc">Native VS Code integration allows you to select any prompt and run it in your active editor terminal</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Setup Guide -->
+      <div class="section-mb">
+        <h3 class="section-heading"><span class="icon icon-inline" aria-hidden="true">inventory_2</span> Setup Guide</h3>
+
+        <div class="instruction-panel">
+          <h4 class="section-subheading">Step 1 — Start the OpenCode Server</h4>
+          <ol class="instruction-list">
+            <li class="instruction-item">
+              Start the headless server in your terminal. You must specify the CORS origins so the PromptRoot browser app can communicate with it:
+              <pre class="code-block">opencode serve --cors http://localhost:3000 --cors https://promptroot.ai</pre>
+            </li>
+            <li class="instruction-item">
+              By default, the server runs on port <code>4096</code>. You can customize the port by adding the <code>--port</code> flag.
+            </li>
+          </ol>
+        </div>
+
+        <div class="instruction-panel">
+          <h4 class="section-subheading">Step 2 — Configure PromptRoot</h4>
+          <ol class="instruction-list">
+            <li class="instruction-item">
+              Click the <strong>Configure</strong> button above.
+            </li>
+            <li class="instruction-item">
+              Enter your Server URL (e.g. <code>http://localhost:4096</code>) and password/token if Basic Auth/Tokens are set up via environment variables.
+            </li>
+            <li class="instruction-item">
+              Click <strong>Save</strong>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-nav">
+      <a href="https://github.com/promptroot/promptroot/blob/main/README.md" target="_blank" rel="noopener" class="footer-nav__item">Help</a>
+      <span class="footer-nav__sep">•</span>
+      <button id="footerFeedbackBtn" class="footer-nav__item">Feedback</button>
+      <span class="footer-nav__sep">•</span>
+      <a href="../../pages/privacy/privacy.html" class="footer-nav__item">Privacy Policy</a>
+      <span class="footer-nav__sep">•</span>
+      <a href="https://github.com/promptroot/promptroot" target="_blank" rel="noopener" class="footer-nav__item">GitHub</a>
+    </div>
+  </footer>
+
+  <script type="module" src="../../src/shared-init.js"></script>
+  <script type="module" src="../../src/pages/opencode-page.js"></script>
+</body>
+</html>

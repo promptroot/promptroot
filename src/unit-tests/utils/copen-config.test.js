@@ -71,7 +71,7 @@ describe('copen-config', () => {
       mockGetAuth.mockReturnValue({ currentUser: null });
       mockGetUserCopens.mockResolvedValue([
         { id: 'blank', label: 'Blank', icon: 'public', isDefault: true },
-        { id: 'claude', label: 'Claude', icon: 'smart_toy', isDefault: true }
+        { id: 'claude', label: 'Claude', icon: 'front_hand', isDefault: true }
       ]);
 
       const options = await getCopenOptions();
@@ -79,7 +79,7 @@ describe('copen-config', () => {
       expect(mockGetUserCopens).toHaveBeenCalledWith(undefined);
       expect(options).toEqual([
         { value: 'blank', label: 'Blank', icon: 'public' },
-        { value: 'claude', label: 'Claude', icon: 'smart_toy' }
+        { value: 'claude', label: 'Claude', icon: 'front_hand' }
       ]);
     });
 
@@ -87,7 +87,7 @@ describe('copen-config', () => {
       mockGetAuth.mockReturnValue({ currentUser: { uid: 'user123' } });
       mockGetUserCopens.mockResolvedValue([
         { id: 'blank', label: 'Blank', icon: 'public', isDefault: true },
-        { id: 'claude', label: 'Claude', icon: 'smart_toy', isDefault: true },
+        { id: 'claude', label: 'Claude', icon: 'front_hand', isDefault: true },
         { id: 'custom_1', label: 'My AI', icon: 'extension', isDefault: false }
       ]);
 
@@ -96,7 +96,7 @@ describe('copen-config', () => {
       expect(mockGetUserCopens).toHaveBeenCalledWith('user123');
       expect(options).toEqual([
         { value: 'blank', label: 'Blank', icon: 'public' },
-        { value: 'claude', label: 'Claude', icon: 'smart_toy' },
+        { value: 'claude', label: 'Claude', icon: 'front_hand' },
         { value: 'custom_1', label: 'My AI', icon: 'extension' }
       ]);
     });
@@ -105,7 +105,7 @@ describe('copen-config', () => {
       mockGetAuth.mockReturnValue({ currentUser: { uid: 'user123' } });
       mockGetUserCopens.mockResolvedValue([
         { id: 'blank', label: 'Blank', icon: 'public', isDefault: true },
-        { id: 'claude', label: 'Claude', icon: 'smart_toy', isDefault: true, disabled: true },
+        { id: 'claude', label: 'Claude', icon: 'front_hand', isDefault: true, disabled: true },
         { id: 'custom_1', label: 'My AI', icon: 'extension', isDefault: false }
       ]);
 

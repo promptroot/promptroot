@@ -542,7 +542,6 @@ export async function loadList(owner, repo, branch, cacheKey) {
   }
 }
 
-
 function handleHeaderClick(event) {
   const target = event.target;
 

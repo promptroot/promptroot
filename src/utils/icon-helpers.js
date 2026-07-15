@@ -105,7 +105,6 @@ export const ICONS = {
   
   // App Specific
   JULES: 'smart_toy',
-  HANDS: 'front_hand',
   QUEUE: 'list_alt',
   SESSIONS: 'menu_book',
   PROFILE: 'person',

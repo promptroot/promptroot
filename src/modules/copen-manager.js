@@ -7,7 +7,7 @@ import { getDb } from './firebase-service.js';
 
 const DEFAULT_COPENS = [
   { id: 'blank', label: 'Blank', icon: 'public', url: 'about:blank', isDefault: true },
-  { id: 'allhands', label: 'All Hands', icon: 'front_hand', url: 'https://app.all-hands.dev', isDefault: true },
+  { id: 'allhands', label: 'All Hands', icon: 'smart_toy', url: 'https://app.all-hands.dev', isDefault: true },
   { id: 'claude', label: 'Claude', icon: 'smart_toy', url: 'https://claude.ai/code', isDefault: true },
   { id: 'codex', label: 'Codex', icon: 'forum', url: 'https://chatgpt.com/codex/cloud', isDefault: true },
   { id: 'copilot', label: 'Copilot', icon: 'code', url: 'https://github.com/copilot/agents', isDefault: true },

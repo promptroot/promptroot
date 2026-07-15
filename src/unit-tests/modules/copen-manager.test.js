@@ -82,6 +82,7 @@ describe('copen-manager', () => {
     it('should include common copens', () => {
       const ids = DEFAULT_COPENS.map(c => c.id);
       expect(ids).toContain('blank');
+      expect(ids).toContain('allhands');
       expect(ids).toContain('claude');
       expect(ids).toContain('codex');
       expect(ids).toContain('copilot');

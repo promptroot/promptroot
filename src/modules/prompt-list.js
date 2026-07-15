@@ -75,6 +75,12 @@ export function initPromptList() {
     listEl.addEventListener('click', handleListClick);
     listEl.addEventListener('keydown', handleListKeydown);
   }
+
+  const sidebarHeader = document.getElementById('sidebarHeader');
+  if (sidebarHeader) {
+    sidebarHeader.addEventListener('click', handleHeaderClick);
+    sidebarHeader.addEventListener('keydown', handleListKeydown);
+  }
 }
 
 export function destroyPromptList() {
@@ -533,5 +539,25 @@ export async function loadList(owner, repo, branch, cacheKey) {
 
     listEl.appendChild(createStatusMessage(msgContainer));
     return [];
+  }
+}
+
+function handleHeaderClick(event) {
+  const target = event.target;
+
+  const addIconRoot = target.closest('[data-action="show-submenu-root"]');
+  if (addIconRoot) {
+    event.stopPropagation();
+    folderSubmenu.toggle(addIconRoot, getPromptFolder(currentBranch));
+    return;
+  }
+
+  const ghIconRoot = target.closest('[data-action="open-github-root"]');
+  if (ghIconRoot) {
+    event.stopPropagation();
+    const folder = getPromptFolder(currentBranch);
+    const ghUrl = `https://github.com/${currentOwner}/${currentRepo}/tree/${currentBranch}/${folder}`;
+    window.open(ghUrl, '_blank', 'noopener,noreferrer');
+    return;
   }
 }

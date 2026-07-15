@@ -15,6 +15,7 @@
 #sidebar.collapsed > *:not(.sidebar-header) { opacity: 0; pointer-events: none; }
 
 .sidebar-header { display: flex; justify-content: flex-start; align-items: center; gap: 8px; margin-bottom: 0; }
+#sidebar.collapsed .folder-icons { display: none; }
 .sidebar-title { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; transition: opacity 0.3s ease; }
 #sidebar.collapsed .sidebar-title { opacity: 0; pointer-events: none; }
 

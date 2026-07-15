@@ -37,11 +37,15 @@
 
   <div class="wrap">
     <aside id="sidebar" class="card">
-      <div class="sidebar-header">
+      <div id="sidebarHeader" class="sidebar-header">
         <button id="sidebarToggle" class="sidebar-toggle" title="Toggle sidebar" aria-label="Toggle sidebar">
           <span class="toggle-icon">◧</span>
         </button>
         <span class="sidebar-title">Library</span>
+        <div class="folder-icons">
+          <span class="github-folder-icon icon icon-inline" role="button" tabindex="0" aria-label="Open prompt directory on GitHub" title="Open prompt directory on GitHub" data-action="open-github-root">folder</span>
+          <span class="add-file-icon icon icon-inline icon-success" role="button" tabindex="0" aria-label="Create new file in prompt directory" aria-haspopup="true" aria-expanded="false" title="Create new file in prompt directory" data-action="show-submenu-root">add</span>
+        </div>
       </div>
       <div class="search-wrapper">
         <input id="search" placeholder="Search prompts..." />

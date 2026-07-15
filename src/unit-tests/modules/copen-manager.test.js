@@ -85,6 +85,7 @@ describe('copen-manager', () => {
       expect(ids).toContain('claude');
       expect(ids).toContain('codex');
       expect(ids).toContain('copilot');
+      expect(ids).toContain('qwen');
       expect(ids).toContain('gemini');
       expect(ids).toContain('chatgpt');
     });

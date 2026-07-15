@@ -12,6 +12,7 @@ export const COPEN_OPTIONS_STATIC = [
   { value: 'claude', label: 'Claude', icon: 'smart_toy' },
   { value: 'codex', label: 'Codex', icon: 'forum' },
   { value: 'copilot', label: 'Copilot', icon: 'code' },
+  { value: 'qwen', label: 'Qwen', icon: 'terminal' },
   { value: 'gemini', label: 'Gemini', icon: 'auto_awesome' },
   { value: 'chatgpt', label: 'ChatGPT', icon: 'chat' }
 ];

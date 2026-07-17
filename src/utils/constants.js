@@ -77,6 +77,7 @@ export const ERRORS = {
   GIST_FETCH_FAILED: "Failed to fetch gist content.",
   AUTH_REQUIRED: "Authentication required.",
   JULES_KEY_REQUIRED: "No Jules API key stored. Please save your API key first.",
+  OPENHANDS_CONFIG_REQUIRED: "No OpenHands settings configured. Please configure your Base URL first.",
   CLIPBOARD_BLOCKED: "Clipboard blocked. Select and copy manually."
 };
 
@@ -251,6 +252,32 @@ export const OPENCLAW_UI_TEXT = {
   TOKEN_REQUIRED: 'Please enter a token.',
   URL_REQUIRED: 'Please enter a gateway URL.',
   GENERATE_TOKEN_LINK: 'Generate a token first →'
+};
+
+// OpenHands integration constants
+export const OPENHANDS = {
+  KEY_COLLECTION: 'openhandsKeys',
+  DEFAULT_BASE_URL: 'http://localhost:3000'
+};
+
+// OpenHands UI text
+export const OPENHANDS_UI_TEXT = {
+  PAGE_TITLE: 'OpenHands Settings',
+  URL_LABEL: 'OpenHands Base URL',
+  URL_PLACEHOLDER: 'e.g. http://localhost:3000',
+  KEY_LABEL: 'OpenHands API Key (Optional)',
+  KEY_PLACEHOLDER: 'Paste your OpenHands API key...',
+  SAVE_BUTTON: 'Save OpenHands Settings',
+  DELETE_BUTTON: 'Delete OpenHands Settings',
+  SAVING: 'Saving...',
+  DELETING: 'Deleting...',
+  SAVED: 'OpenHands settings saved successfully.',
+  DELETED: 'OpenHands settings deleted.',
+  SAVE_ERROR: 'Failed to save OpenHands settings: ',
+  DELETE_CONFIRM: 'This will delete your stored OpenHands settings. Continue?',
+  NOT_CONFIGURED: 'No OpenHands settings configured.',
+  NOT_SIGNED_IN: 'Please sign in to configure OpenHands.',
+  URL_REQUIRED: 'Please enter a base URL.'
 };
 
 // Agent API key management UI text

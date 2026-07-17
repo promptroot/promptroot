@@ -44,7 +44,11 @@ export function showToast(message, type = 'info', duration = TIMEOUTS.toast) {
   
   const messageEl = document.createElement('span');
   messageEl.className = 'toast__message';
-  messageEl.textContent = message;
+  if (message.includes('<a ') || message.includes('</')) {
+    messageEl.innerHTML = message;
+  } else {
+    messageEl.textContent = message;
+  }
   
   const closeBtn = document.createElement('button');
   closeBtn.className = 'toast__close';

@@ -6,6 +6,10 @@ vi.mock('../../modules/jules-api.js', () => ({
   callRunJulesFunction: vi.fn()
 }));
 
+vi.mock('../../modules/openhands-api.js', () => ({
+  callRunOpenHandsFunction: vi.fn()
+}));
+
 vi.mock('../../modules/toast.js', () => ({
   showToast: vi.fn()
 }));
@@ -44,17 +48,18 @@ describe('run-in-agent', () => {
   });
 
   describe('getAgentOptions', () => {
-    it('should return Jules and Brace options', () => {
+    it('should return Jules, OpenHands, and Brace options', () => {
       const options = getAgentOptions();
-      expect(options).toHaveLength(2);
+      expect(options).toHaveLength(3);
       expect(options[0].value).toBe('jules');
-      expect(options[1].value).toBe('brace');
+      expect(options[1].value).toBe('openhands');
+      expect(options[2].value).toBe('brace');
     });
 
     it('should always have Brace enabled (not disabled)', () => {
       const options = getAgentOptions();
-      expect(options[1].disabled).toBeFalsy();
-      expect(options[1].label).toBe('Brace');
+      expect(options[2].disabled).toBeFalsy();
+      expect(options[2].label).toBe('Brace');
     });
 
     it('should include smart_toy icon for Jules', () => {
@@ -62,9 +67,14 @@ describe('run-in-agent', () => {
       expect(options[0].icon).toBe('smart_toy');
     });
 
+    it('should include terminal icon for OpenHands', () => {
+      const options = getAgentOptions();
+      expect(options[1].icon).toBe('terminal');
+    });
+
     it('should include hub icon for Brace', () => {
       const options = getAgentOptions();
-      expect(options[1].icon).toBe('hub');
+      expect(options[2].icon).toBe('hub');
     });
   });
 
@@ -94,6 +104,17 @@ describe('run-in-agent', () => {
 
       expect(callRunJulesFunction).toHaveBeenCalledWith('test', 'src', 'main', 'Test');
       expect(result).toBe('https://jules.example.com/session/123');
+    });
+
+    it('should dispatch to OpenHands via callRunOpenHandsFunction', async () => {
+      const { callRunOpenHandsFunction } = await import('../../modules/openhands-api.js');
+      callRunOpenHandsFunction.mockResolvedValue('http://localhost:3000/conversations/123');
+
+      const payload = { promptText: 'test', sourceId: 'src', branch: 'main', title: 'Test' };
+      const result = await dispatchToAgent('openhands', payload);
+
+      expect(callRunOpenHandsFunction).toHaveBeenCalledWith('test', 'src', 'main', 'Test');
+      expect(result).toBe('http://localhost:3000/conversations/123');
     });
 
     describe('brace dispatch — configured with relay', () => {

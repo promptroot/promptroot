@@ -225,6 +225,47 @@
     </div>
   </div>
 
+  <!-- OpenHands Environment Modal -->
+  <div id="openhandsEnvModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="openhandsEnvModalTitle">
+    <div class="modal-content">
+      <h2 id="openhandsEnvModalTitle">Choose Repository</h2>
+      <p>Select a connected repository to open in OpenHands.</p>
+      
+      <div id="openhandsAllReposContainer" class="mb-md">
+        <div class="form-row">
+          <!-- Repository Selection -->
+          <div class="form-col">
+            <label class="modal__form-label">Repository:</label>
+            <div id="openhandsRepoDropdown" class="custom-dropdown">
+              <button id="openhandsRepoDropdownBtn" class="custom-dropdown-btn w-full" type="button">
+                <span id="openhandsRepoDropdownText">Select a repository...</span>
+                <span class="custom-dropdown-caret" aria-hidden="true">▼</span>
+              </button>
+              <div id="openhandsRepoDropdownMenu" class="custom-dropdown-menu" role="menu"></div>
+            </div>
+          </div>
+          
+          <!-- Branch Selection -->
+          <div class="form-col">
+            <label class="modal__form-label">Branch:</label>
+            <div id="openhandsBranchDropdown" class="custom-dropdown">
+              <button id="openhandsBranchDropdownBtn" class="custom-dropdown-btn w-full" type="button" disabled>
+                <span id="openhandsBranchDropdownText">Select branch...</span>
+                <span class="custom-dropdown-caret" aria-hidden="true">▼</span>
+              </button>
+              <div id="openhandsBranchDropdownMenu" class="custom-dropdown-menu" role="menu"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-buttons">
+        <button id="openhandsEnvCancelBtn" class="btn">Cancel</button>
+        <button id="openhandsEnvSubmitBtn" class="btn primary" disabled>Submit</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Subtask Split Modal -->
   <div id="subtaskSplitModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="subtaskSplitModalTitle">
     <div class="modal-content modal-lg">

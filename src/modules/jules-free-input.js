@@ -491,13 +491,85 @@ export async function showFreeInputForm() {
       options: getAgentOptions(),
       executeOnSelect: false,
       onAction: async (selectedAgent) => {
+        console.log('[FreeInput] Run in Agent action triggered:', selectedAgent);
         saveLastAgent(selectedAgent);
         if (selectedAgent === 'jules') {
+          console.log('[FreeInput] Running Jules flow');
           // Jules uses handleSubmit() which manages its own modal/retry/key-check flow.
           // We don't route through dispatchToAgent here because that would call
           // callRunJulesFunction directly, bypassing the callback machinery in handleSubmit.
           await handleSubmit();
+        } else if (selectedAgent === 'openhands') {
+          console.log('[FreeInput] Running OpenHands flow');
+          const promptText = validatePromptText();
+          console.log('[FreeInput] Prompt text validated:', promptText ? 'length ' + promptText.length : 'empty');
+          if (!promptText) return;
+
+          console.log('[FreeInput] Selected repo context:', _lastSelectedSourceId, 'branch:', _lastSelectedBranch);
+          if (!_lastSelectedSourceId) {
+            showToast('Please select a repository.', 'warn');
+            return;
+          }
+          if (!_lastSelectedBranch) {
+            showToast('Please select a branch.', 'warn');
+            return;
+          }
+
+          try {
+            const { getAuth } = await import('./firebase-service.js');
+            const user = getAuth()?.currentUser;
+            console.log('[FreeInput] Auth user:', user ? user.uid : 'none');
+            if (!user) {
+              showToast('Please sign in to use OpenHands.', 'warn');
+              return;
+            }
+
+            const { checkOpenHandsConfig } = await import('./openhands-keys.js');
+            const hasConfig = await checkOpenHandsConfig(user.uid);
+            console.log('[FreeInput] Has OpenHands config:', hasConfig);
+            if (!hasConfig) {
+              showToast('OpenHands is not configured. Redirecting to Profile Settings...', 'warn');
+              setTimeout(() => {
+                window.location.href = '/pages/profile/profile.html';
+              }, 2000);
+              return;
+            }
+
+            const { callRunOpenHandsFunction } = await import('./openhands-api.js');
+
+            const submitBtn = runInAgentContainer.querySelector('.split-btn__action');
+            const submitText = submitBtn ? submitBtn.textContent : 'OpenHands';
+            console.log('[FreeInput] Action button element:', submitBtn);
+            if (submitBtn) {
+              submitBtn.disabled = true;
+              submitBtn.textContent = 'Submitting...';
+            }
+
+            try {
+              console.log('[FreeInput] Calling callRunOpenHandsFunction...');
+              const sessionUrl = await callRunOpenHandsFunction(promptText, _lastSelectedSourceId, _lastSelectedBranch);
+              console.log('[FreeInput] callRunOpenHandsFunction returned sessionUrl:', sessionUrl);
+              if (sessionUrl) {
+                window.open(sessionUrl, '_blank', 'noopener,noreferrer');
+                showToast('OpenHands session started successfully. <a href="' + sessionUrl + '" target="_blank" style="text-decoration: underline; color: #5cb85c; font-weight: bold;">Open Workspace</a>', 'success');
+                textarea.value = '';
+                updateButtonStates();
+              }
+            } catch (err) {
+              console.error('[FreeInput] OpenHands flow inner error:', err);
+              showToast('Failed to start OpenHands session: ' + err.message, 'error');
+            } finally {
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = submitText;
+              }
+            }
+          } catch (error) {
+            console.error('[FreeInput] Failed to load OpenHands flow dependencies:', error);
+            showToast('Failed to start OpenHands flow', 'error');
+          }
         } else if (selectedAgent === 'brace') {
+          console.log('[FreeInput] Running Brace flow');
           const promptText = validatePromptText();
           if (!promptText) return;
           dispatchToAgent('brace', { promptText });

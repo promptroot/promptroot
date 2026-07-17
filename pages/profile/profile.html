@@ -133,6 +133,36 @@
           <button id="resetJulesKeyBtn" class="btn danger w-full fw-600"><span class="icon icon-inline" aria-hidden="true">delete</span> Delete Jules API Key</button>
         </div>
       </div>
+
+      <!-- OpenHands Config Section -->
+      <div id="openhandsConfigSection" class="mt-lg">
+        <h3 class="section-title-md mb-md"><span class="icon icon-inline" aria-hidden="true">terminal</span> OpenHands Settings</h3>
+        <p class="muted-text mb-md">Configure your OpenHands instance to run tasks and retrieve your conversations.</p>
+        
+        <div class="panel mb-md pad-md">
+          <div class="modal__form-group mb-md">
+            <label class="modal__form-label fw-600" for="openhandsBaseUrlInput">OpenHands Base URL</label>
+            <input type="url" id="openhandsBaseUrlInput" class="form-control" placeholder="http://localhost:3000" value="http://localhost:3000" />
+          </div>
+          
+          <div class="modal__form-group mb-md">
+            <label class="modal__form-label fw-600" for="openhandsApiKeyInput">OpenHands API Key (Optional)</label>
+            <input type="password" id="openhandsApiKeyInput" class="form-control" placeholder="Paste your API key if auth is enabled..." />
+          </div>
+
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button id="saveOpenhandsBtn" class="btn primary">
+              <span class="icon icon-inline" aria-hidden="true">save</span> Save Settings
+            </button>
+          </div>
+        </div>
+
+        <div id="openhandsKeyDangerZone" class="danger-panel mt-md hidden">
+          <div class="small-text fw-600 danger-text mb-sm"><span class="icon icon-inline" aria-hidden="true">warning</span> Danger Zone</div>
+          <div class="small-text muted-text mb-sm">This action will delete your stored OpenHands configuration.</div>
+          <button id="deleteOpenhandsBtn" class="btn danger w-full fw-600"><span class="icon icon-inline" aria-hidden="true">delete</span> Delete OpenHands Settings</button>
+        </div>
+      </div>
     </main>
   </div>
 

@@ -168,6 +168,12 @@ function _initRunInAgentButton() {
         if (handleTryInJulesCallback) {
           handleTryInJulesCallback(currentPromptText);
         }
+      } else if (selectedAgent === 'openhands') {
+        import('./openhands-modal.js').then(({ showOpenHandsEnvModal }) => {
+          showOpenHandsEnvModal(currentPromptText, currentOwner, currentRepo, currentBranch);
+        }).catch(err => {
+          showToast('Failed to load OpenHands: ' + err.message, 'error');
+        });
       } else if (selectedAgent === 'brace') {
         dispatchToAgent('brace', { promptText: currentPromptText });
       }

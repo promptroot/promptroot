@@ -5,14 +5,17 @@ export async function ragQuery({
   topK = 5,
   endpoint = DEFAULT_ENDPOINT,
   fetchImpl = fetch,
+  token,
   signal
 } = {}) {
   if (typeof query !== 'string' || query.trim().length === 0) {
     throw new Error('ragQuery: query is required');
   }
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
   const resp = await fetchImpl(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ query, topK }),
     signal
   });

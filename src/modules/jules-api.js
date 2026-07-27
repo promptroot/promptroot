@@ -196,7 +196,7 @@ export async function callRunJulesFunction(promptText, sourceId, branch = 'maste
   if (shouldEnrichWithWiki(options.enrichWithWiki)) {
     try {
       const { enrichPrompt } = await import('./wiki-enrichment.js');
-      effectivePrompt = await enrichPrompt(promptText || '', { topK: 5 });
+      effectivePrompt = await enrichPrompt(promptText || '', { topK: 5, token: await user.getIdToken() });
     } catch (err) {
       console.warn('Wiki enrichment failed, submitting unenriched prompt:', err);
     }

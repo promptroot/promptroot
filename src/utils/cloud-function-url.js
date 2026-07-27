@@ -1,5 +1,4 @@
-const PROJECT_ID = 'promptroot-b02a2';
-const REGION = 'us-central1';
+import { PROJECT_ID, REGION } from '../app-config.js';
 
 export function cloudFunctionUrl(name) {
   if (typeof window === 'undefined') {

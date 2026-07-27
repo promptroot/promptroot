@@ -3,15 +3,7 @@ const logger = require('firebase-functions/logger');
 const admin = require('firebase-admin');
 const { webcrypto: crypto } = require('crypto');
 const { sha256Hex, resolveFirebaseIdToken, authError, SESSION_TOKEN_PREFIX } = require('./wiki-auth');
-
-const ALLOWED_ORIGINS = [
-  'https://promptroot.io',
-  'https://promptroot.ai',
-  'https://promptroot-b02a2.web.app',
-  'https://promptroot-b02a2.firebaseapp.com',
-  'http://localhost:3000',
-  'http://localhost:5000'
-];
+const { WIKI_ALLOWED_ORIGINS: ALLOWED_ORIGINS, DEVICE_FLOW_VERIFICATION_URL } = require('./config');
 
 function setCors(req, res) {
   const origin = req.headers.origin;
@@ -50,8 +42,7 @@ function randomUserCode() {
 }
 
 function deviceFlowVerificationUrl() {
-  return process.env.DEVICE_FLOW_VERIFICATION_URL
-    || 'https://promptroot.ai/auth/device';
+  return DEVICE_FLOW_VERIFICATION_URL;
 }
 
 const startDeviceAuth = onRequest({ cors: false }, async (req, res) => {

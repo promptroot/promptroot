@@ -3,16 +3,7 @@
 
 import { TIMEOUTS, LIMITS } from './utils/constants.js';
 import { initServices } from './modules/firebase-service.js';
-
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyD_NzQlgmcUfgrqpgTl3Q3pCkfBrO8PcoA",
-  authDomain: "promptroot-b02a2.firebaseapp.com",
-  projectId: "promptroot-b02a2",
-  storageBucket: "promptroot-b02a2.firebasestorage.app",
-  messagingSenderId: "494845853842",
-  appId: "1:494845853842:web:6c97aec4822be003fc264b"
-};
+import { firebaseConfig } from './app-config.js';
 
 // Initialize Firebase when modular SDK is available
 function initFirebaseWhenReady() {

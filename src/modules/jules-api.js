@@ -7,6 +7,7 @@ import { showToast } from './toast.js';
 import { handleError, ErrorCategory } from '../utils/error-handler.js';
 import { clearCache, CACHE_KEYS } from '../utils/session-cache.js';
 import { getDecryptedJulesKey, clearJulesKeyCache } from './jules-keys.js';
+import { cloudFunctionUrl } from '../utils/cloud-function-url.js';
 
 export { getDecryptedJulesKey, clearJulesKeyCache };
 
@@ -238,9 +239,7 @@ export async function callRunJulesFunction(promptText, sourceId, branch = 'maste
 
 async function runJulesAPI(promptText, sourceId, branch, title, user) {
   const token = await user.getIdToken(true);
-  const functionUrl = (typeof window !== 'undefined' && window.location && window.location.port === '5000')
-    ? `http://${window.location.hostname}:5001/promptroot-b02a2/us-central1/runJulesHttp`
-    : 'https://us-central1-promptroot-b02a2.cloudfunctions.net/runJulesHttp';
+  const functionUrl = cloudFunctionUrl('runJulesHttp');
 
   // Normalize sourceId format - handle both "owner/repo" and "sources/github/owner/repo" formats
   let normalizedSourceId = sourceId;

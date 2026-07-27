@@ -1386,8 +1386,6 @@ exports.pollOpenclawJob = onRequest({ secrets: [relaySharedSecret] }, async (req
 const wikiChunks = require('./wiki-chunks');
 
 if (process.env.NODE_ENV === 'test') {
-  exports._setWikiChunksForTest = wikiChunks._setBundledCacheForTest;
-  exports._loadWikiChunks = wikiChunks.loadBundledChunks;
   exports._setTenantChunksForTest = wikiChunks._setTenantCacheForTest;
   exports._resetWikiChunksCachesForTest = wikiChunks._resetCachesForTest;
 }
@@ -1431,7 +1429,6 @@ async function resolveTenantsForQuery({ tenantId, tenantIds, uid }) {
     return accessible;
   }
   const ids = await wikiChunks.listAccessibleTenantIds(uid);
-  if (ids.length === 0) return [wikiChunks.SEED_TENANT_ID];
   return ids;
 }
 
@@ -1451,6 +1448,10 @@ exports.ragQuery = onRequest({ cors: true }, async (req, res) => {
     const limit = Math.min(Math.max(parseInt(topK, 10) || 5, 1), 20);
 
     const uid = await tryResolveOptionalUid(req.headers.authorization);
+    if (!uid) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
     let resolvedTenants;
     try {
       resolvedTenants = await resolveTenantsForQuery({ tenantId, tenantIds, uid });

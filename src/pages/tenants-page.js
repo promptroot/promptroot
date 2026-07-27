@@ -168,7 +168,6 @@ function openEditForm(tenant) {
   $('tenantsEditSlug').textContent = tenant.slug;
   $('editTenantNameInput').value = tenant.name || '';
   $('editTenantDescInput').value = tenant.description || '';
-  $('editTenantVisibilitySelect').value = tenant.visibility || 'private';
   $('editTenantRepoInput').value = tenant.githubRepo || '';
   const statusEl = $('tenantsEditStatus');
   statusEl.hidden = true;
@@ -203,7 +202,6 @@ async function handleEditSave(event) {
       slug: editingSlug,
       name,
       description: $('editTenantDescInput').value.trim(),
-      visibility: $('editTenantVisibilitySelect').value,
       githubRepo: $('editTenantRepoInput').value.trim() || null
     });
     closeEditForm();
@@ -234,7 +232,6 @@ async function handleCreate(event) {
   const slug = $('tenantSlugInput').value.trim().toLowerCase();
   const name = $('tenantNameInput').value.trim();
   const description = $('tenantDescInput').value.trim();
-  const visibility = $('tenantVisibilitySelect').value;
   const githubRepo = $('tenantRepoInput').value.trim() || null;
 
   if (!slug) {
@@ -256,11 +253,10 @@ async function handleCreate(event) {
   const submitBtn = $('tenantsCreateBtn');
   submitBtn.disabled = true;
   try {
-    await createTenant({ slug, name, description, visibility, githubRepo });
+    await createTenant({ slug, name, description, githubRepo });
     showToast(`Tenant "${name}" created.`, 'success');
     clearStatus();
     $('tenantsCreateForm').reset();
-    $('tenantVisibilitySelect').value = 'private';
     await refreshTenants();
   } catch (err) {
     setStatus(err.message || 'Failed to create tenant', 'error');

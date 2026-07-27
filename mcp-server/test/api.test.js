@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { ApiError, callFunction } from '../src/api.js';
 
 // Simple mock for fetch
@@ -22,6 +24,9 @@ test('callFunction', async (t) => {
   t.beforeEach(() => {
     delete process.env.PROMPTROOT_SESSION_TOKEN;
     delete process.env.PROMPTROOT_API_BASE;
+    // Isolate from any real credentials file on the machine running the tests,
+    // so "unauthenticated" cases don't pick up a developer's stored token.
+    process.env.PROMPTROOT_CREDENTIALS_PATH = join(tmpdir(), 'promptroot-mcp-test-nonexistent.json');
   });
 
   await t.test('calls authenticated endpoint with bearer token from env', async () => {

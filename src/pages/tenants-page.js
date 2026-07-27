@@ -71,12 +71,6 @@ function renderTenants(tenants) {
     const slugEl = document.createElement('code');
     slugEl.textContent = tenant.slug;
     meta.appendChild(slugEl);
-    meta.appendChild(document.createTextNode(' '));
-
-    const vis = document.createElement('span');
-    vis.className = `tenants-pill tenants-pill--${tenant.visibility}`;
-    vis.textContent = tenant.visibility;
-    meta.appendChild(vis);
 
     if (typeof tenant.memberCount === 'number') {
       const members = document.createElement('span');

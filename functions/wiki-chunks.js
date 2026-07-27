@@ -2,7 +2,6 @@ const admin = require('firebase-admin');
 const { chunkDoc } = require('./lib/chunker.cjs');
 
 const TTL_MS = 5 * 60 * 1000;
-const SEED_TENANT_ID = 'promptroot';
 
 const tenantCache = new Map();
 
@@ -66,7 +65,6 @@ async function tenantIsAccessible(tenantId, uid) {
 
 module.exports = {
   TTL_MS,
-  SEED_TENANT_ID,
   loadTenantChunks,
   buildTenantChunks,
   invalidateTenantCache,

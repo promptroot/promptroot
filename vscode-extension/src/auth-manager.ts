@@ -135,7 +135,7 @@ export class AuthManager {
 			const result = await exchangeToken({ githubToken: accessToken });
 			this.outputChannel.appendLine(`Cloud Function response received`);
 			
-			const data = result.data as { customToken: string; user: any };
+			const data = result.data as { customToken: string; user: unknown };
 
 			this.outputChannel.appendLine('Custom token received, signing in to Firebase...');
 

@@ -121,7 +121,7 @@ export class RetryManager {
         location: vscode.ProgressLocation.Notification,
         title: `${errorMessagePrefix}...`,
         cancellable: false
-      }, async (progress) => {
+      }, async (_progress) => {
         await progressPromise;
         return;
       });
@@ -132,9 +132,7 @@ export class RetryManager {
       
       try {
         if (showProgress && progressResolve) {
-          // Update progress
-          const percentage = (attempt / maxAttempts) * 100;
-          // Progress API doesn't support direct updates in this pattern
+          // Progress API doesn't support direct per-attempt updates in this pattern
         }
         
         const result = await operation();

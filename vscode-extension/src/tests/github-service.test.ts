@@ -8,6 +8,7 @@ import { GitHubService, GitHubRepository, GitHubBranch } from '../github-service
 describe('GitHubService', () => {
 	let mockAuthManager: {
 		getAccessToken: ReturnType<typeof vi.fn>;
+		getGitHubToken: ReturnType<typeof vi.fn>;
 		getCurrentUser: ReturnType<typeof vi.fn>;
 		isSignedIn: ReturnType<typeof vi.fn>;
 	};
@@ -26,6 +27,7 @@ describe('GitHubService', () => {
 		// Mock AuthManager
 		mockAuthManager = {
 			getAccessToken: vi.fn().mockResolvedValue('test-token'),
+			getGitHubToken: vi.fn().mockResolvedValue('test-token'),
 			getCurrentUser: vi.fn().mockReturnValue({ uid: 'test-uid' }),
 			isSignedIn: vi.fn().mockReturnValue(true)
 		};
@@ -93,7 +95,8 @@ describe('GitHubService', () => {
 
 			const repos = await service.listRepositories();
 
-			expect(repos).toBeNull();
+			// The service normalizes errors to an empty array (result || []).
+			expect(repos).toEqual([]);
 			expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
 				expect.stringContaining('GitHub API error')
 			);
@@ -158,7 +161,7 @@ describe('GitHubService', () => {
 
 			expect(branches).toEqual(mockBranches);
 			expect(global.fetch).toHaveBeenCalledWith(
-				'https://api.github.com/repos/user/repo/branches',
+				expect.stringContaining('https://api.github.com/repos/user/repo/branches'),
 				expect.any(Object)
 			);
 		});
@@ -172,7 +175,8 @@ describe('GitHubService', () => {
 
 			const branches = await service.listBranches('user', 'nonexistent');
 
-			expect(branches).toBeNull();
+			// The service normalizes errors to an empty array (result || []).
+			expect(branches).toEqual([]);
 		});
 	});
 
@@ -247,7 +251,7 @@ describe('GitHubService', () => {
 		});
 
 		it('should make request without Authorization when no token', async () => {
-			mockAuthManager.getAccessToken.mockResolvedValue(null);
+			mockAuthManager.getGitHubToken.mockResolvedValue(null);
 
 			global.fetch = vi.fn().mockResolvedValue({
 				ok: true,

@@ -29,6 +29,17 @@ disabled instead of repointed:
   `JULES_API_BASE`, and the OpenClaw relay URLs.
 - Branding/SEO: `index.html`, `sitemap.xml`, `robots.txt`.
 
+## Downstream clients (separate deployables)
+
+Each talks to the same backend and has its own single config source. Repoint
+these only if you want that client to hit your instance too.
+
+| Client | Config source (edit this) | Static files to edit in lockstep |
+|--------|---------------------------|----------------------------------|
+| MCP server / CLI | `mcp-server/src/config.js` (`DEFAULT_PROJECT_ID`, `DEFAULT_REGION`, `DEFAULT_WEB_URL`; or the `PROMPTROOT_API_BASE` / `PROMPTROOT_WEB_URL` / `PROMPTROOT_DEVICE_FLOW_URL` env vars) | none |
+| Browser extension | `browser-extension/config.js` (`PROJECT_ID`, `REGION`) | `browser-extension/manifest.json` (host_permissions, CSP `connect-src`, content_scripts `matches`) and the web-app hostnames in `browser-extension/content.js` |
+| VS Code extension | `vscode-extension/src/firebase-config.ts` (`DEFAULT_PROJECT_ID`; authDomain/storageBucket derive from it) or the `promptroot.firebase.projectId` user setting | `vscode-extension/package.json` (the setting's `default`) |
+
 ## GitHub OAuth (required, per-project)
 
 Firebase Auth's GitHub provider is per-project. Create a new GitHub OAuth App

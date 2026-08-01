@@ -15,6 +15,7 @@
 User-agent: *
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # --- Explicit Welcomes for AI Friends ---
 

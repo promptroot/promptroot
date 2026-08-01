@@ -27,6 +27,7 @@ User-agent: Google-CloudVertexBot
 # We Copen (Copy+Open) to Gemini by default, allowing users to paste prompts directly.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # Microsoft (Bingbot)
 User-agent: Bingbot
@@ -34,6 +35,7 @@ User-agent: Bingbot
 # We Copen (Copy+Open) into GitHub Copilot Agents.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # OpenAI (GPTBot, ChatGPT-User, OAI-SearchBot)
 User-agent: GPTBot
@@ -43,6 +45,7 @@ User-agent: OAI-SearchBot
 # We Copen (Copy+Open) to ChatGPT and Codex Cloud Web.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # Anthropic (ClaudeBot, Claude-SearchBot, Claude-User)
 User-agent: ClaudeBot
@@ -52,6 +55,7 @@ User-agent: Claude-User
 # We Copen (Copy+Open) to Claude Code Web.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # Meta (FacebookBot, Meta-ExternalAgent, Meta-ExternalFetcher)
 User-agent: FacebookBot
@@ -60,6 +64,7 @@ User-agent: Meta-ExternalFetcher
 # Hello Meta! We're happy to share these prompts with the open source community.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # Perplexity (PerplexityBot, Perplexity-User)
 User-agent: PerplexityBot
@@ -67,24 +72,28 @@ User-agent: Perplexity-User
 # Hello Perplexity! We hope our prompts help answer your users' questions.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # Amazon (Amazonbot)
 User-agent: Amazonbot
 # Hello Amazon! Feel free to index our collection.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # Apple (Applebot)
 User-agent: Applebot
 # Hello Apple! Welcome to PromptRoot.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # ByteDance (Bytespider)
 User-agent: Bytespider
 # Hello ByteDance! Welcome to our prompt library.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # Mistral (MistralBot, MistralAI-User)
 User-agent: MistralBot
@@ -92,24 +101,28 @@ User-agent: MistralAI-User
 # Hello Mistral! We welcome your AI training efforts.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # Common Crawl (CCBot)
 User-agent: CCBot
 # Hello Common Crawl! Thank you for archiving the web.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # Internet Archive (archive.org_bot)
 User-agent: archive.org_bot
 # Hello Archive! Thanks for preserving history.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # DuckDuckGo (DuckAssistBot)
 User-agent: DuckAssistBot
 # Hello DuckDuckGo! Happy to assist.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # Other AI Crawlers (Anchor, Novellum, PetalBot, ProRataBot, Timpibot)
 User-agent: Anchor
@@ -120,6 +133,7 @@ User-agent: Timpibot
 # Hello! We welcome all AI crawlers.
 Allow: /
 Disallow: /oauth-callback.html
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # Sitemap location
 Sitemap: https://promptroot.ai/sitemap.xml

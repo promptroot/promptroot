@@ -124,12 +124,20 @@ Allow: /
 Disallow: /oauth-callback.html
 Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
-# Other AI Crawlers (Anchor, Novellum, PetalBot, ProRataBot, Timpibot)
-User-agent: Anchor
+# Other AI Crawlers (Anchor Browser, Novellum, PetalBot, ProRataInc, Timpibot,
+# Manus-User, Terracotta, CloudflareBrowserRenderingCrawler, TikTokSpider,
+# Arquivo-web-crawler, Baiduspider)
+User-agent: Anchor Browser
 User-agent: Novellum
 User-agent: PetalBot
-User-agent: ProRataBot
+User-agent: ProRataInc
 User-agent: Timpibot
+User-agent: Manus-User
+User-agent: Terracotta
+User-agent: CloudflareBrowserRenderingCrawler
+User-agent: TikTokSpider
+User-agent: Arquivo-web-crawler
+User-agent: Baiduspider
 # Hello! We welcome all AI crawlers.
 Allow: /
 Disallow: /oauth-callback.html

@@ -40,6 +40,25 @@ these only if you want that client to hit your instance too.
 | Browser extension | `browser-extension/config.js` (`PROJECT_ID`, `REGION`) | `browser-extension/manifest.json` (host_permissions, CSP `connect-src`, content_scripts `matches`) and the web-app hostnames in `browser-extension/content.js` |
 | VS Code extension | `vscode-extension/src/firebase-config.ts` (`DEFAULT_PROJECT_ID`; authDomain/storageBucket derive from it) or the `promptroot.firebase.projectId` user setting | `vscode-extension/package.json` (the setting's `default`) |
 
+## DNS for AI Discovery (DNS-AID)
+
+If you are deploying a public-facing instance on a custom domain (e.g., `promptroot.ai`), you should publish DNS-AID records to allow AI agents to discover your agent endpoints natively via DNS.
+
+Publish the following `SVCB` records in your DNS provider, and ensure **DNSSEC** is enabled for the zone so validating resolvers return authenticated data.
+
+```dns
+_a2a._agents.promptroot.ai. 3600 IN SVCB 1 promptroot.ai. alpn="a2a" port=443 mandatory=alpn,port
+_index._agents.promptroot.ai. 3600 IN SVCB 1 promptroot.ai. alpn="h2,h3" port=443 mandatory=alpn,port
+```
+
+If you use Cloudflare, we have provided an automated script to apply these records and enable DNSSEC programmatically:
+
+```bash
+export CLOUDFLARE_API_TOKEN="your_cloudflare_api_token"
+export CLOUDFLARE_ZONE_ID="your_cloudflare_zone_id"
+./scripts/publish-dns-aid.sh
+```
+
 ## GitHub OAuth (required, per-project)
 
 Firebase Auth's GitHub provider is per-project. Create a new GitHub OAuth App

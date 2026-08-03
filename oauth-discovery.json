@@ -1,0 +1,13 @@
+{
+  "issuer": "https://promptroot.ai",
+  "authorization_endpoint": "https://promptroot.ai/auth/device",
+  "token_endpoint": "https://us-central1-promptroot-b02a2.cloudfunctions.net/pollDeviceAuth",
+  "device_authorization_endpoint": "https://us-central1-promptroot-b02a2.cloudfunctions.net/startDeviceAuth",
+  "jwks_uri": "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com",
+  "grant_types_supported": [
+    "urn:ietf:params:oauth:grant-type:device_code"
+  ],
+  "response_types_supported": [
+    "token"
+  ]
+}

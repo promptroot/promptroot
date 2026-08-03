@@ -100,6 +100,8 @@
       { "source": "/favicon.ico", "destination": "/assets/favicon.ico", "type": 301 }
     ],
     "rewrites": [
+      { "source": "/.well-known/oauth-authorization-server", "destination": "/oauth-discovery.json" },
+      { "source": "/.well-known/openid-configuration", "destination": "/oauth-discovery.json" },
       { "source": "/privacy", "destination": "/pages/privacy/privacy.html" },
       { "source": "/ide-extension", "destination": "/pages/ide-extension/ide-extension.html" },
       { "source": "/agent-api", "destination": "/pages/agent-api/agent-api.html" },

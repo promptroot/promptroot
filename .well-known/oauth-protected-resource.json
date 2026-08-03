@@ -1,0 +1,6 @@
+{
+  "resource": "https://promptroot.ai",
+  "authorization_servers": [
+    "https://github.com/login/oauth/authorize"
+  ]
+}

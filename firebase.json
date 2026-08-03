@@ -97,18 +97,53 @@
       }
     ],
     "redirects": [
-      { "source": "/favicon.ico", "destination": "/assets/favicon.ico", "type": 301 }
+      {
+        "source": "/favicon.ico",
+        "destination": "/assets/favicon.ico",
+        "type": 301
+      }
     ],
     "rewrites": [
-      { "source": "/privacy", "destination": "/pages/privacy/privacy.html" },
-      { "source": "/ide-extension", "destination": "/pages/ide-extension/ide-extension.html" },
-      { "source": "/agent-api", "destination": "/pages/agent-api/agent-api.html" },
-      { "source": "/openclaw", "destination": "/pages/openclaw/openclaw.html" },
-      { "source": "/wiki", "destination": "/pages/wiki/wiki.html" },
-      { "source": "/auth/device", "destination": "/pages/auth-device/auth-device.html" },
-      { "source": "/wiki/tenants", "destination": "/pages/tenants/tenants.html" },
-      { "source": "/wiki/edit", "destination": "/pages/wiki-edit/wiki-edit.html" },
-      { "source": "/wiki/history", "destination": "/pages/wiki-history/wiki-history.html" }
+      {
+        "source": "/privacy",
+        "destination": "/pages/privacy/privacy.html"
+      },
+      {
+        "source": "/ide-extension",
+        "destination": "/pages/ide-extension/ide-extension.html"
+      },
+      {
+        "source": "/agent-api",
+        "destination": "/pages/agent-api/agent-api.html"
+      },
+      {
+        "source": "/openclaw",
+        "destination": "/pages/openclaw/openclaw.html"
+      },
+      {
+        "source": "/wiki",
+        "destination": "/pages/wiki/wiki.html"
+      },
+      {
+        "source": "/auth/device",
+        "destination": "/pages/auth-device/auth-device.html"
+      },
+      {
+        "source": "/wiki/tenants",
+        "destination": "/pages/tenants/tenants.html"
+      },
+      {
+        "source": "/wiki/edit",
+        "destination": "/pages/wiki-edit/wiki-edit.html"
+      },
+      {
+        "source": "/wiki/history",
+        "destination": "/pages/wiki-history/wiki-history.html"
+      },
+      {
+        "source": "/.well-known/oauth-protected-resource",
+        "destination": "/.well-known/oauth-protected-resource.json"
+      }
     ]
   }
 }

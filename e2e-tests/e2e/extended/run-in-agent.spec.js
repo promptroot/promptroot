@@ -39,7 +39,7 @@ test.describe('Run in Agent Split Button', () => {
     await expect(toggleBtn).toBeVisible();
   });
 
-  test('split button dropdown shows Jules and Brace options', async ({ page }) => {
+  test('split button dropdown shows Jules, OpenHands, and Brace options', async ({ page }) => {
     const container = page.locator('#runInAgentContainer');
     await expect(container).toBeVisible({ timeout: 5000 });
 
@@ -54,6 +54,10 @@ test.describe('Run in Agent Split Button', () => {
     // Check for Jules option
     const julesOption = menu.locator('[data-value="jules"]');
     await expect(julesOption).toBeVisible();
+
+    // Check for OpenHands option
+    const openhandsOption = menu.locator('[data-value="openhands"]');
+    await expect(openhandsOption).toBeVisible();
 
     // Check for Brace option
     const braceOption = menu.locator('[data-value="brace"]');

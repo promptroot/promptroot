@@ -62,15 +62,18 @@ async function openhandsFetch(path, options = {}, defaultErrorMsg = 'Failed to e
   const config = await getActiveConfig();
   const url = `${config.baseUrl}${path}`;
   
+  // Merge headers: options.headers takes precedence, but Authorization from
+  // createOpenHandsHeaders should ALWAYS be included to avoid auth failures
   const headers = {
-    ...createOpenHandsHeaders(config.apiKey),
-    ...(options.headers || {})
+    ...(options.headers || {}),           // Options headers first (can include additional headers)
+    ...createOpenHandsHeaders(config.apiKey)  // Auth headers override to ensure they're always present
   };
   
   try {
     const response = await fetch(url, {
       ...options,
-      headers
+      headers,
+      mode: 'cors'  // Explicitly set CORS mode for cross-origin requests
     });
     
     if (!response.ok) {

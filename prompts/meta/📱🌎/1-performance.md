@@ -21,7 +21,7 @@ anything that removes obvious inefficiencies without big rewrites
 
 consider though
 di
-data layers  (also use our RealmRepository)
+data layers
 diffutil / listadapter (also use our DiffUtils.itemCallback)
 viewmodels
 threading / dispatchers usage

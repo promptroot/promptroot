@@ -21,7 +21,7 @@ look also to find data functions to move one by one from UI/data/service into re
 
 consider though
 di
-data layers  (also use our RealmRepository)
+data layers
 diffutil / listadapter (also use our DiffUtils.itemCallback)
 viewmodels
 threading / dispatchers usage

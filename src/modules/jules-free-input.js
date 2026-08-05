@@ -538,11 +538,11 @@ export async function showFreeInputForm() {
             const { callRunOpenHandsFunction } = await import('./openhands-api.js');
 
             const submitBtn = runInAgentContainer.querySelector('.split-btn__action');
-            const submitText = submitBtn ? submitBtn.textContent : 'OpenHands';
+            const submitHtml = submitBtn ? submitBtn.innerHTML : 'OpenHands';
             console.log('[FreeInput] Action button element:', submitBtn);
             if (submitBtn) {
               submitBtn.disabled = true;
-              submitBtn.textContent = 'Submitting...';
+              submitBtn.innerHTML = 'Submitting...';
             }
 
             try {
@@ -561,7 +561,7 @@ export async function showFreeInputForm() {
             } finally {
               if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.textContent = submitText;
+                submitBtn.innerHTML = submitHtml;
               }
             }
           } catch (error) {

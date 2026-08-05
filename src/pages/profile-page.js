@@ -60,14 +60,14 @@ async function loadOpenHandsConfigStatus(user) {
     if (hasConfig) {
       const config = await getDecryptedOpenHandsConfig(user.uid);
       if (config) {
-        openhandsBaseUrlInput.value = config.baseUrl || 'http://localhost:3000';
+        openhandsBaseUrlInput.value = config.baseUrl || 'https://app.all-hands.dev';
         openhandsApiKeyInput.value = config.apiKey || '';
       }
       if (openhandsKeyDangerZone) {
         openhandsKeyDangerZone.classList.remove('hidden');
       }
     } else {
-      openhandsBaseUrlInput.value = 'http://localhost:3000';
+      openhandsBaseUrlInput.value = 'https://app.all-hands.dev';
       openhandsApiKeyInput.value = '';
       if (openhandsKeyDangerZone) {
         openhandsKeyDangerZone.classList.add('hidden');

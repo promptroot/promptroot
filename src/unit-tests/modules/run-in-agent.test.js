@@ -67,9 +67,10 @@ describe('run-in-agent', () => {
       expect(options[0].icon).toBe('smart_toy');
     });
 
-    it('should include terminal icon for OpenHands', () => {
+    it('should include front_hand icon for OpenHands', () => {
       const options = getAgentOptions();
-      expect(options[1].icon).toBe('terminal');
+      const oh = options.find(o => o.value === 'openhands');
+      expect(oh.icon).toBe('front_hand');
     });
 
     it('should include hub icon for Brace', () => {

@@ -15,7 +15,7 @@ const BRACE_RELAY_TIMEOUT_MS = 5000;
 export function getAgentOptions() {
   return [
     { value: 'jules', label: 'Jules', icon: 'smart_toy' },
-    { value: 'openhands', label: 'OpenHands', icon: 'terminal' },
+    { value: 'openhands', label: 'OpenHands', icon: 'front_hand' },
     { value: 'brace', label: 'Brace', icon: 'hub' }
   ];
 }

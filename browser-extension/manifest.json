@@ -40,7 +40,7 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://avatars.githubusercontent.com https://*.githubusercontent.com; connect-src 'self' https://api.github.com https://us-central1-promptroot-b02a2.cloudfunctions.net https://promptroot.ai"
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://avatars.githubusercontent.com https://*.githubusercontent.com; connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.all-hands.dev https://api.github.com https://us-central1-promptroot-b02a2.cloudfunctions.net https://promptroot.ai"
   },
   "externally_connectable": {
     "matches": ["https://promptroot-b02a2.firebaseapp.com/*"]

@@ -6,7 +6,8 @@ import { getDecryptedOpenHandsConfig } from './openhands-keys.js';
 
 function createOpenHandsHeaders(apiKey) {
   const headers = {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
   };
   if (apiKey) {
     headers['Authorization'] = `Bearer ${apiKey}`;
@@ -22,6 +23,12 @@ async function getActiveConfig() {
   const config = await getDecryptedOpenHandsConfig(user.uid);
   if (!config || !config.baseUrl) {
     throw new Error('OpenHands is not configured. Please enter your OpenHands Base URL in Profile Settings.');
+  }
+  
+  // Require API key for the managed SaaS to prevent cryptic CORS errors from unauthenticated requests
+  const isLocalhost = config.baseUrl.includes('localhost') || config.baseUrl.includes('127.0.0.1');
+  if (!isLocalhost && !config.apiKey) {
+    throw new Error('An OpenHands API Key is required when connecting to a remote OpenHands instance (like app.all-hands.dev).');
   }
   return config;
 }
@@ -83,7 +90,7 @@ async function openhandsFetch(path, options = {}, defaultErrorMsg = 'Failed to e
     return await response.json();
   } catch (error) {
     if (error.name === 'TypeError' || error.message === 'Failed to fetch') {
-      throw new Error(`Could not connect to OpenHands at ${config.baseUrl}. Please check that OpenHands is running and CORS is allowed.`);
+      throw new Error(`Failed to fetch from OpenHands at ${config.baseUrl}. If you are using app.all-hands.dev, this 'CORS' error often means your API Key is invalid or the OpenHands server rejected the payload. Please verify your API Key in Profile Settings.`);
     }
     throw error;
   }
@@ -111,6 +118,18 @@ export async function createAppConversation(prompt, repository = null, branch = 
 
   if (branch) {
     body.selected_branch = branch;
+  }
+
+  try {
+    const tokenDataStr = sessionStorage.getItem('github_access_token');
+    if (tokenDataStr) {
+      const tokenData = JSON.parse(tokenDataStr);
+      if (tokenData && tokenData.token) {
+        body.github_token = tokenData.token;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read GitHub access token for OpenHands', err);
   }
 
   return await openhandsFetch('/api/v1/app-conversations', {

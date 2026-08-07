@@ -545,10 +545,18 @@ export async function showFreeInputForm() {
               submitBtn.innerHTML = 'Submitting...';
             }
 
+            let title = '';
+            const lines = promptText.split(/\r?\n/);
+            if (lines.length > 0 && /^#\s+/.test(lines[0])) {
+              title = lines[0].replace(/^#\s+/, '').trim();
+            } else if (lines.length > 0) {
+              title = lines[0].substring(0, 50).trim();
+            }
+
             const newWin = window.open('about:blank', '_blank');
             try {
               console.log('[FreeInput] Calling callRunOpenHandsFunction...');
-              const sessionUrl = await callRunOpenHandsFunction(promptText, _lastSelectedSourceId, _lastSelectedBranch);
+              const sessionUrl = await callRunOpenHandsFunction(promptText, _lastSelectedSourceId, _lastSelectedBranch, title);
               console.log('[FreeInput] callRunOpenHandsFunction returned sessionUrl:', sessionUrl);
               if (sessionUrl) {
                 if (newWin) {

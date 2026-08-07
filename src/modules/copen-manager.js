@@ -6,7 +6,6 @@
 import { getDb } from './firebase-service.js';
 
 const DEFAULT_COPENS = [
-  { id: 'blank', label: 'Blank', icon: 'public', url: 'about:blank', isDefault: true },
   { id: 'allhands', label: 'All Hands', icon: 'front_hand', url: 'https://app.all-hands.dev', isDefault: true },
   { id: 'claude', label: 'Claude', icon: 'smart_toy', url: 'https://claude.ai/code', isDefault: true },
   { id: 'codex', label: 'Codex', icon: 'forum', url: 'https://chatgpt.com/codex/cloud', isDefault: true },
@@ -14,7 +13,8 @@ const DEFAULT_COPENS = [
   { id: 'devin', label: 'Devin', icon: 'engineering', url: 'https://app.devin.ai', isDefault: true },
   { id: 'qwen', label: 'Qwen', icon: 'terminal', url: 'https://chat.qwen.ai/', isDefault: true },
   { id: 'gemini', label: 'Gemini', icon: 'auto_awesome', url: 'https://gemini.google.com/app', isDefault: true },
-  { id: 'chatgpt', label: 'ChatGPT', icon: 'chat', url: 'https://chatgpt.com/', isDefault: true }
+  { id: 'chatgpt', label: 'ChatGPT', icon: 'chat', url: 'https://chatgpt.com', isDefault: true },
+  { id: 'blank', label: 'Blank', icon: 'public', url: 'about:blank', isDefault: true }
 ];
 
 const CUSTOM_COPEN_ICON = 'extension'; // Material icon to indicate custom copen

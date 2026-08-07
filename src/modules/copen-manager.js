@@ -10,8 +10,8 @@ const DEFAULT_COPENS = [
   { id: 'claude', label: 'Claude', icon: 'smart_toy', url: 'https://claude.ai/code', isDefault: true },
   { id: 'codex', label: 'Codex', icon: 'forum', url: 'https://chatgpt.com/codex/cloud', isDefault: true },
   { id: 'copilot', label: 'Copilot', icon: 'code', url: 'https://github.com/copilot/agents', isDefault: true },
-  { id: 'qwen', label: 'Qwen', icon: 'terminal', url: 'https://coder.qwen.ai', isDefault: true },
-  { id: 'blank', label: 'Blank', icon: 'public', url: 'about:blank', isDefault: true },
+  { id: 'devin', label: 'Devin', icon: 'engineering', url: 'https://app.devin.ai', isDefault: true },
+  { id: 'qwen', label: 'Qwen', icon: 'terminal', url: 'https://chat.qwen.ai/', isDefault: true },
   { id: 'gemini', label: 'Gemini', icon: 'auto_awesome', url: 'https://gemini.google.com/app', isDefault: true },
   { id: 'chatgpt', label: 'ChatGPT', icon: 'chat', url: 'https://chatgpt.com', isDefault: true }
 ];

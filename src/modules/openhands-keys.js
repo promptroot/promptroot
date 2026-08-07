@@ -1,5 +1,6 @@
 import { getDb } from './firebase-service.js';
 import { getDoc, setDoc, getServerTimestamp } from '../utils/firestore-helpers.js';
+import { OPENHANDS } from '../utils/constants.js';
 
 // ===== OpenHands Key and Configuration Management Module =====
 // Handles encryption, storage, and retrieval of OpenHands configurations.
@@ -38,9 +39,8 @@ export async function deleteStoredOpenHandsConfig(uid) {
     if (!db) return false;
     
     clearOpenHandsKeyCache(uid);
-    // Remove settings by setting field to null inside the users doc
     await setDoc('users', uid, {
-      openhandsConfig: null
+      openhandsConfig: firebase.firestore.FieldValue.delete()
     }, { merge: true }, CACHE_KEY);
     return true;
   } catch (error) {
@@ -49,75 +49,71 @@ export async function deleteStoredOpenHandsConfig(uid) {
 }
 
 export async function encryptAndStoreOpenHandsConfig(baseUrl, apiKey, uid) {
-  try {
-    clearOpenHandsKeyCache(uid);
-    
-    let encrypted = null;
-    let ivStr = null;
-    let saltStr = null;
+  clearOpenHandsKeyCache(uid);
+  
+  let encrypted = null;
+  let ivStr = null;
+  let saltStr = null;
 
-    if (apiKey) {
-      // Generate random salt and IV
-      const salt = window.crypto.getRandomValues(new Uint8Array(16));
-      const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  if (apiKey) {
+    // Generate random salt and IV
+    const salt = window.crypto.getRandomValues(new Uint8Array(16));
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
 
-      // Import password (uid) as key material
-      const enc = new TextEncoder();
-      const keyMaterial = await window.crypto.subtle.importKey(
-        "raw",
-        enc.encode(uid),
-        { name: "PBKDF2" },
-        false,
-        ["deriveKey"]
-      );
+    // Import password (uid) as key material
+    const enc = new TextEncoder();
+    const keyMaterial = await window.crypto.subtle.importKey(
+      "raw",
+      enc.encode(uid),
+      { name: "PBKDF2" },
+      false,
+      ["deriveKey"]
+    );
 
-      // Derive key using PBKDF2
-      const key = await window.crypto.subtle.deriveKey(
-        {
-          name: "PBKDF2",
-          salt: salt,
-          iterations: 100000,
-          hash: "SHA-256"
-        },
-        keyMaterial,
-        { name: "AES-GCM", length: 256 },
-        false,
-        ["encrypt", "decrypt"]
-      );
+    // Derive key using PBKDF2
+    const key = await window.crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256"
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
 
-      // Encrypt
-      const plaintextData = enc.encode(apiKey);
-      const ciphertext = await window.crypto.subtle.encrypt(
-        { name: "AES-GCM", iv: iv },
-        key,
-        plaintextData
-      );
+    // Encrypt
+    const plaintextData = enc.encode(apiKey);
+    const ciphertext = await window.crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: iv },
+      key,
+      plaintextData
+    );
 
-      // Convert binary to base64 strings for storage
-      encrypted = btoa(String.fromCharCode(...new Uint8Array(ciphertext)));
-      ivStr = btoa(String.fromCharCode(...iv));
-      saltStr = btoa(String.fromCharCode(...salt));
-    }
-
-    const db = getDb();
-    if (!db) throw new Error('Firestore not initialized');
-
-    const cleanBaseUrl = (baseUrl || 'http://localhost:3000').trim().replace(/\/$/, '');
-
-    await setDoc('users', uid, {
-      openhandsConfig: {
-        baseUrl: cleanBaseUrl,
-        key: encrypted,
-        iv: ivStr,
-        salt: saltStr,
-        storedAt: getServerTimestamp()
-      }
-    }, { merge: true }, CACHE_KEY);
-
-    return true;
-  } catch (error) {
-    throw error;
+    // Convert binary to base64 strings for storage
+    encrypted = btoa(String.fromCharCode(...new Uint8Array(ciphertext)));
+    ivStr = btoa(String.fromCharCode(...iv));
+    saltStr = btoa(String.fromCharCode(...salt));
   }
+
+  const db = getDb();
+  if (!db) throw new Error('Firestore not initialized');
+
+  const cleanBaseUrl = (baseUrl || OPENHANDS.DEFAULT_BASE_URL).trim().replace(/\/$/, '');
+
+  await setDoc('users', uid, {
+    openhandsConfig: {
+      baseUrl: cleanBaseUrl,
+      key: encrypted,
+      iv: ivStr,
+      salt: saltStr,
+      storedAt: getServerTimestamp()
+    }
+  }, { merge: true }, CACHE_KEY);
+
+  return true;
 }
 
 export async function getDecryptedOpenHandsConfig(uid) {

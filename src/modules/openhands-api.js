@@ -25,8 +25,15 @@ async function getActiveConfig() {
     throw new Error('OpenHands is not configured. Please enter your OpenHands Base URL in Profile Settings.');
   }
   
-  // Require API key for the managed SaaS to prevent cryptic CORS errors from unauthenticated requests
-  const isLocalhost = config.baseUrl.includes('localhost') || config.baseUrl.includes('127.0.0.1');
+  // Require API key for remote hosts to prevent cryptic CORS errors from unauthenticated requests
+  let isLocalhost = false;
+  try {
+    const hostname = new URL(config.baseUrl).hostname;
+    isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  } catch (_) {
+    isLocalhost = false;
+  }
+
   if (!isLocalhost && !config.apiKey) {
     throw new Error('An OpenHands API Key is required when connecting to a remote OpenHands instance (like app.all-hands.dev).');
   }
@@ -69,18 +76,17 @@ async function openhandsFetch(path, options = {}, defaultErrorMsg = 'Failed to e
   const config = await getActiveConfig();
   const url = `${config.baseUrl}${path}`;
   
-  // Merge headers: options.headers takes precedence, but Authorization from
-  // createOpenHandsHeaders should ALWAYS be included to avoid auth failures
+  // Base headers first, options.headers takes precedence
   const headers = {
-    ...(options.headers || {}),           // Options headers first (can include additional headers)
-    ...createOpenHandsHeaders(config.apiKey)  // Auth headers override to ensure they're always present
+    ...createOpenHandsHeaders(config.apiKey),
+    ...(options.headers || {})
   };
   
   try {
     const response = await fetch(url, {
       ...options,
       headers,
-      mode: 'cors'  // Explicitly set CORS mode for cross-origin requests
+      mode: 'cors'
     });
     
     if (!response.ok) {
@@ -90,7 +96,7 @@ async function openhandsFetch(path, options = {}, defaultErrorMsg = 'Failed to e
     return await response.json();
   } catch (error) {
     if (error.name === 'TypeError' || error.message === 'Failed to fetch') {
-      throw new Error(`Failed to fetch from OpenHands at ${config.baseUrl}. If you are using app.all-hands.dev, this 'CORS' error often means your API Key is invalid or the OpenHands server rejected the payload. Please verify your API Key in Profile Settings.`);
+      throw new Error(`Failed to fetch from OpenHands at ${config.baseUrl}. If you are connecting to a remote server, verify your API Key and network origin permissions.`);
     }
     throw error;
   }
@@ -232,8 +238,6 @@ export async function callRunOpenHandsFunction(promptText, sourceId, branch = 'm
   }
 
   const result = await createAppConversation(promptText, cleanRepo, branch, title);
-  console.log('[OpenHands] createAppConversation start task:', result);
-
   const config = await getDecryptedOpenHandsConfig(user.uid);
 
   // Prefer direct Web UI URL if the server provides one

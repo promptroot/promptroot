@@ -69,7 +69,7 @@
         "headers": [
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://www.gstatic.com https://apis.google.com; frame-src 'self' https://*.firebaseapp.com; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://*.all-hands.dev https://api.github.com https://apis.google.com https://jules.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://us-central1-promptroot-b02a2.cloudfunctions.net https://*.a.run.app https://raw.githubusercontent.com https://gist.githubusercontent.com https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://www.gstatic.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'none'"
+            "value": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://www.gstatic.com https://apis.google.com; frame-src 'self' https://*.firebaseapp.com; connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.all-hands.dev https://api.github.com https://apis.google.com https://jules.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://us-central1-promptroot-b02a2.cloudfunctions.net https://*.a.run.app https://raw.githubusercontent.com https://gist.githubusercontent.com https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://www.gstatic.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'none'"
           }
         ]
       },
@@ -104,6 +104,7 @@
       { "source": "/ide-extension", "destination": "/pages/ide-extension/ide-extension.html" },
       { "source": "/agent-api", "destination": "/pages/agent-api/agent-api.html" },
       { "source": "/openclaw", "destination": "/pages/openclaw/openclaw.html" },
+      { "source": "/openhands", "destination": "/pages/openhands/openhands.html" },
       { "source": "/wiki", "destination": "/pages/wiki/wiki.html" },
       { "source": "/auth/device", "destination": "/pages/auth-device/auth-device.html" },
       { "source": "/wiki/tenants", "destination": "/pages/tenants/tenants.html" },

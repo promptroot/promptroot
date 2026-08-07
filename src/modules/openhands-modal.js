@@ -25,20 +25,7 @@ export async function showOpenHandsEnvModal(promptText, owner = null, repo = nul
     return;
   }
 
-  // Pre-populate default repo and branch in localStorage if provided
-  if (owner && repo) {
-    const sourceId = `sources/github/${owner}/${repo}`;
-    try {
-      localStorage.setItem('selectedRepoId', sourceId);
-      localStorage.setItem('selectedBranchRepo', JSON.stringify({
-        sourceId,
-        branch: branch || 'main'
-      }));
-    } catch (e) {
-      console.error('Failed to save default repo/branch to localStorage:', e);
-    }
-  }
-
+  // Pre-populate default repo and branch in selectors if provided
   const modal = document.getElementById('openhandsEnvModal');
   if (!modal) return;
   modal.classList.add('show');
@@ -98,7 +85,7 @@ export async function showOpenHandsEnvModal(promptText, owner = null, repo = nul
 
   try {
     await repoSelector.initialize();
-    branchSelector.initialize(null, null);
+    branchSelector.initialize(selectedSourceId, selectedBranch);
   } catch (err) {
     console.warn('Could not initialize repo/branch selectors (possibly due to missing Jules configuration):', err);
   }
@@ -107,8 +94,6 @@ export async function showOpenHandsEnvModal(promptText, owner = null, repo = nul
 
   const handleSubmit = async () => {
     if (selectedSourceId) {
-      hideOpenHandsEnvModal();
-      
       const submitText = submitBtn.textContent;
       submitBtn.disabled = true;
       submitBtn.textContent = 'Submitting...';
@@ -122,14 +107,18 @@ export async function showOpenHandsEnvModal(promptText, owner = null, repo = nul
           } else {
             window.open(sessionUrl, '_blank', 'noopener,noreferrer');
           }
-          showToast('OpenHands session started. <a href="' + sessionUrl + '" target="_blank" style="text-decoration: underline; color: #5cb85c; font-weight: bold;">Open Conversation</a><br><small style="opacity:0.85;">If a workspace error occurs, ensure your browser is switched to the workspace belonging to your API key.</small>', 'success');
-        } else if (newWin) {
-          newWin.close();
+          showToast('OpenHands session started.', 'success', undefined, {
+            link: { href: sessionUrl, label: 'Open Conversation' }
+          });
+          hideOpenHandsEnvModal();
+        } else {
+          if (newWin) newWin.close();
+          submitBtn.disabled = false;
+          submitBtn.textContent = submitText;
         }
       } catch (error) {
         if (newWin) newWin.close();
         showToast('Failed to start OpenHands session: ' + error.message, 'error');
-      } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = submitText;
       }
@@ -156,4 +145,4 @@ export function hideOpenHandsEnvModal() {
     modal.classList.remove('show');
   }
   if (envModalCleanup) envModalCleanup();
-}
+}

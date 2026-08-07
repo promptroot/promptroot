@@ -40,8 +40,9 @@ export async function getUserCopens(userId) {
 
     const data = doc.data();
     const customCopens = data.customCopens || [];
-    const disabledDefaults = data.disabledDefaults || [];
-    const savedOrder = data.order || [];
+    // Normalize legacy 'allhands' ID to 'openhands' for backward compatibility
+    const disabledDefaults = (data.disabledDefaults || []).map(id => id === 'allhands' ? 'openhands' : id);
+    const savedOrder = (data.order || []).map(id => id === 'allhands' ? 'openhands' : id);
 
     // Mark disabled defaults
     const allDefaults = DEFAULT_COPENS.map(c => ({

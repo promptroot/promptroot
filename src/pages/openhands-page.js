@@ -108,7 +108,7 @@ function renderConversations(conversations, baseUrl) {
     const repo = conv.selected_repository || 'No repository selected';
     const status = conv.status || 'Active';
     const createdAt = conv.created_at ? new Date(conv.created_at).toLocaleString() : 'Unknown date';
-    const webUrl = `${baseUrl}/conversation/${id}`;
+    const webUrl = `${baseUrl}/conversations/${id}`;
 
     card.innerHTML = `
       <div class="all-sessions__card-row">

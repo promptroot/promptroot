@@ -213,26 +213,26 @@ describe('openhands-api', () => {
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ conversations: [{ id: 'new-conv-456' }] })
+          json: async () => ({ conversations: [{ id: 'new-conv-456', status: 'RUNNING' }] })
         });
 
       const url = await callRunOpenHandsFunction('help me fix this', 'sources/github/owner/repo');
-      expect(url).toBe('http://localhost:3000/conversation/new-conv-456');
+      expect(url).toBe('http://localhost:3000/conversations/new-conv-456');
     });
 
     it('should return direct URL if provided in API response', async () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ id: 'conv-789', url: 'https://app.all-hands.dev/conversation/direct-link-123' })
+          json: async () => ({ id: 'conv-789', url: 'https://app.all-hands.dev/conversations/direct-link-123' })
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ conversations: [{ id: 'conv-789' }] })
+          json: async () => ({ conversations: [{ id: 'conv-789', status: 'RUNNING' }] })
         });
 
       const url = await callRunOpenHandsFunction('help me fix this', 'sources/github/owner/repo');
-      expect(url).toBe('https://app.all-hands.dev/conversation/direct-link-123');
+      expect(url).toBe('https://app.all-hands.dev/conversations/direct-link-123');
     });
 
     it('should construct workspace-scoped URL if workspace_id is provided', async () => {
@@ -243,11 +243,11 @@ describe('openhands-api', () => {
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ conversations: [{ id: 'conv-999' }] })
+          json: async () => ({ conversations: [{ id: 'conv-999', status: 'RUNNING' }] })
         });
 
       const url = await callRunOpenHandsFunction('help me fix this', 'sources/github/owner/repo');
-      expect(url).toBe('http://localhost:3000/workspaces/ws-abc/conversation/conv-999');
+      expect(url).toBe('http://localhost:3000/workspaces/ws-abc/conversations/conv-999');
     });
   });
 });

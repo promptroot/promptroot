@@ -100,7 +100,7 @@ export async function listAppConversations() {
   return await openhandsFetch('/api/v1/app-conversations/search?limit=100', {}, 'Failed to list conversations');
 }
 
-export async function createAppConversation(prompt, repository = null, branch = null) {
+export async function createAppConversation(prompt, repository = null, branch = null, title = '') {
   const body = {
     initial_message: {
       content: [
@@ -114,22 +114,15 @@ export async function createAppConversation(prompt, repository = null, branch = 
 
   if (repository) {
     body.selected_repository = repository;
+    body.git_provider = 'github';
   }
 
   if (branch) {
     body.selected_branch = branch;
   }
 
-  try {
-    const tokenDataStr = sessionStorage.getItem('github_access_token');
-    if (tokenDataStr) {
-      const tokenData = JSON.parse(tokenDataStr);
-      if (tokenData && tokenData.token) {
-        body.github_token = tokenData.token;
-      }
-    }
-  } catch (err) {
-    console.warn('Could not read GitHub access token for OpenHands', err);
+  if (title) {
+    body.title = title;
   }
 
   return await openhandsFetch('/api/v1/app-conversations', {
@@ -193,28 +186,40 @@ export async function loadOpenHandsProfileInfo() {
   };
 }
 
-export async function waitForConversationReady(appConvId, maxAttempts = 8, delayMs = 1200) {
+export async function getAppConversationStartTasks(taskIds) {
+  const ids = (Array.isArray(taskIds) ? taskIds : [taskIds]).map(encodeURIComponent).join(',');
+  return await openhandsFetch(`/api/v1/app-conversations/start-tasks?ids=${ids}`, {}, 'Failed to check OpenHands conversation status');
+}
+
+// POST /api/v1/app-conversations returns an AppConversationStartTask, not the
+// conversation itself. The task's own id is NOT a conversation id — the real
+// app_conversation_id only appears once the task status reaches READY (sandbox
+// provisioning and repository cloning can take well over 10 seconds).
+export async function waitForConversationReady(startTaskId, maxAttempts = 30, delayMs = 2000) {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    let task = null;
     try {
-      const data = await listAppConversations();
-      const conversations = data.conversations || data.items || (Array.isArray(data) ? data : []);
-      const match = conversations.find(c => 
-        (c.id === appConvId || c.app_conversation_id === appConvId || c.conversation_id === appConvId) &&
-        (c.conversation_id || c.app_conversation_id || (c.status && c.status !== 'WORKING'))
-      );
-      if (match) {
-        console.log(`[OpenHands] Conversation ${appConvId} resolved to ready conversation (attempt ${attempt + 1}):`, match);
-        return match;
-      }
+      const data = await getAppConversationStartTasks(startTaskId);
+      const tasks = data.items || data.tasks || (Array.isArray(data) ? data : []);
+      task = tasks.find(t => t && t.id === startTaskId) || tasks[0] || null;
     } catch (err) {
-      console.warn('[OpenHands] Polling conversation index warning:', err);
+      console.warn('[OpenHands] Polling start task warning:', err);
+    }
+    if (task) {
+      if (task.status === 'ERROR') {
+        throw new Error(task.detail || 'OpenHands failed to start the conversation.');
+      }
+      if (task.app_conversation_id) {
+        console.log(`[OpenHands] Start task ${startTaskId} ready (attempt ${attempt + 1}):`, task);
+        return task;
+      }
     }
     await new Promise(resolve => setTimeout(resolve, delayMs));
   }
   return null;
 }
 
-export async function callRunOpenHandsFunction(promptText, sourceId, branch = 'master', title = '') {
+export async function callRunOpenHandsFunction(promptText, sourceId, branch = 'main', title = '') {
   const user = getAuth()?.currentUser || null;
   if (!user) {
     throw new Error('Please sign in to run OpenHands.');
@@ -226,38 +231,34 @@ export async function callRunOpenHandsFunction(promptText, sourceId, branch = 'm
     cleanRepo = sourceId.replace(/^sources\/github\//, '');
   }
 
-  // Create OpenHands conversation
-  const result = await createAppConversation(promptText, cleanRepo, branch);
-  console.log('[OpenHands] createAppConversation initial response:', result);
-  
-  const initialId = result.id || result.app_conversation_id || result.conversation_id;
-  if (!initialId) {
-    throw new Error('OpenHands server did not return a valid conversation ID.');
-  }
+  const result = await createAppConversation(promptText, cleanRepo, branch, title);
+  console.log('[OpenHands] createAppConversation start task:', result);
 
-  // Wait briefly for OpenHands to index the newly created conversation and retrieve updated conversation metadata
-  const readyItem = await waitForConversationReady(initialId);
-  console.log('[OpenHands] readyItem from index:', readyItem);
+  const config = await getDecryptedOpenHandsConfig(user.uid);
 
-  const targetObj = readyItem || result;
-
-  // Prefer direct Web UI URL provided by server if available
-  const directUrl = result.url || result.web_url || result.conversation_url || result.session_url || result.share_url ||
-                    (readyItem && (readyItem.url || readyItem.web_url || readyItem.conversation_url || readyItem.session_url || readyItem.share_url));
+  // Prefer direct Web UI URL if the server provides one
+  const directUrl = result.url || result.web_url || result.conversation_url || result.session_url;
   if (directUrl) {
     return directUrl;
   }
 
-  // Extract the actual conversation ID (prefer conversation_id over app_conversation job ID)
-  const conversationId = targetObj.conversation_id || targetObj.app_conversation_id || targetObj.id || initialId;
+  // Self-hosted instances may resolve immediately; otherwise poll the start task
+  let conversationId = result.app_conversation_id || result.conversation_id;
 
-  // Get base URL to build Web UI URL
-  const config = await getDecryptedOpenHandsConfig(user.uid);
+  if (!conversationId) {
+    const taskId = result.id;
+    if (!taskId) {
+      throw new Error('OpenHands server did not return a start task ID.');
+    }
+    const readyTask = await waitForConversationReady(taskId);
+    conversationId = readyTask && readyTask.app_conversation_id;
+  }
 
-  // If workspace ID is present in response, construct workspace-scoped URL
-  const wsId = targetObj.workspace_id || targetObj.org_id || result.workspace_id || result.org_id;
-  if (wsId) {
-    return `${config.baseUrl}/workspaces/${wsId}/conversations/${conversationId}`;
+  if (!conversationId) {
+    // The conversation was created but is still provisioning; open the
+    // OpenHands home page so the user can see it appear in their list.
+    console.warn('[OpenHands] Conversation still provisioning after polling window; opening home page.');
+    return config.baseUrl;
   }
 
   return `${config.baseUrl}/conversations/${conversationId}`;

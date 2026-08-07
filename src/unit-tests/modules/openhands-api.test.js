@@ -206,13 +206,48 @@ describe('openhands-api', () => {
 
   describe('callRunOpenHandsFunction', () => {
     it('should create conversation and return Web UI URL', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ id: 'new-conv-456' })
-      });
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ id: 'new-conv-456' })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ conversations: [{ id: 'new-conv-456' }] })
+        });
 
       const url = await callRunOpenHandsFunction('help me fix this', 'sources/github/owner/repo');
-      expect(url).toBe('http://localhost:3000/conversations/new-conv-456');
+      expect(url).toBe('http://localhost:3000/conversation/new-conv-456');
+    });
+
+    it('should return direct URL if provided in API response', async () => {
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ id: 'conv-789', url: 'https://app.all-hands.dev/conversation/direct-link-123' })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ conversations: [{ id: 'conv-789' }] })
+        });
+
+      const url = await callRunOpenHandsFunction('help me fix this', 'sources/github/owner/repo');
+      expect(url).toBe('https://app.all-hands.dev/conversation/direct-link-123');
+    });
+
+    it('should construct workspace-scoped URL if workspace_id is provided', async () => {
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ id: 'conv-999', workspace_id: 'ws-abc' })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ conversations: [{ id: 'conv-999' }] })
+        });
+
+      const url = await callRunOpenHandsFunction('help me fix this', 'sources/github/owner/repo');
+      expect(url).toBe('http://localhost:3000/workspaces/ws-abc/conversation/conv-999');
     });
   });
 });

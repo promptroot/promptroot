@@ -113,13 +113,21 @@ export async function showOpenHandsEnvModal(promptText, owner = null, repo = nul
       submitBtn.disabled = true;
       submitBtn.textContent = 'Submitting...';
       
+      const newWin = window.open('about:blank', '_blank');
       try {
         const sessionUrl = await callRunOpenHandsFunction(promptText, selectedSourceId, selectedBranch);
         if (sessionUrl) {
-          window.open(sessionUrl, '_blank', 'noopener,noreferrer');
-          showToast('OpenHands session started successfully. <a href="' + sessionUrl + '" target="_blank" style="text-decoration: underline; color: #5cb85c; font-weight: bold;">Open Workspace</a>', 'success');
+          if (newWin) {
+            newWin.location.href = sessionUrl;
+          } else {
+            window.open(sessionUrl, '_blank', 'noopener,noreferrer');
+          }
+          showToast('OpenHands session started. <a href="' + sessionUrl + '" target="_blank" style="text-decoration: underline; color: #5cb85c; font-weight: bold;">Open Conversation</a><br><small style="opacity:0.85;">If a workspace error occurs, ensure your browser is switched to the workspace belonging to your API key.</small>', 'success');
+        } else if (newWin) {
+          newWin.close();
         }
       } catch (error) {
+        if (newWin) newWin.close();
         showToast('Failed to start OpenHands session: ' + error.message, 'error');
       } finally {
         submitBtn.disabled = false;

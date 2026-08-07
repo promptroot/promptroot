@@ -545,17 +545,25 @@ export async function showFreeInputForm() {
               submitBtn.innerHTML = 'Submitting...';
             }
 
+            const newWin = window.open('about:blank', '_blank');
             try {
               console.log('[FreeInput] Calling callRunOpenHandsFunction...');
               const sessionUrl = await callRunOpenHandsFunction(promptText, _lastSelectedSourceId, _lastSelectedBranch);
               console.log('[FreeInput] callRunOpenHandsFunction returned sessionUrl:', sessionUrl);
               if (sessionUrl) {
-                window.open(sessionUrl, '_blank', 'noopener,noreferrer');
+                if (newWin) {
+                  newWin.location.href = sessionUrl;
+                } else {
+                  window.open(sessionUrl, '_blank', 'noopener,noreferrer');
+                }
                 showToast('OpenHands session started successfully. <a href="' + sessionUrl + '" target="_blank" style="text-decoration: underline; color: #5cb85c; font-weight: bold;">Open Workspace</a>', 'success');
                 textarea.value = '';
                 updateButtonStates();
+              } else if (newWin) {
+                newWin.close();
               }
             } catch (err) {
+              if (newWin) newWin.close();
               console.error('[FreeInput] OpenHands flow inner error:', err);
               showToast('Failed to start OpenHands session: ' + err.message, 'error');
             } finally {

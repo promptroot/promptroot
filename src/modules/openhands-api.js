@@ -193,6 +193,24 @@ export async function loadOpenHandsProfileInfo() {
   };
 }
 
+export async function waitForConversationReady(conversationId, maxAttempts = 5, delayMs = 1200) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const data = await listAppConversations();
+      const conversations = data.conversations || data.items || (Array.isArray(data) ? data : []);
+      const found = conversations.some(c => (c.id || c.conversation_id) === conversationId);
+      if (found) {
+        console.log(`[OpenHands] Conversation ${conversationId} indexed and ready (attempt ${attempt + 1})`);
+        return true;
+      }
+    } catch (err) {
+      console.warn('[OpenHands] Polling conversation index warning:', err);
+    }
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+  return false;
+}
+
 export async function callRunOpenHandsFunction(promptText, sourceId, branch = 'master', title = '') {
   const user = getAuth()?.currentUser || null;
   if (!user) {
@@ -207,14 +225,30 @@ export async function callRunOpenHandsFunction(promptText, sourceId, branch = 'm
 
   // Create OpenHands conversation
   const result = await createAppConversation(promptText, cleanRepo, branch);
+  console.log('[OpenHands] createAppConversation response:', result);
   
-  // Extract conversation ID
   const conversationId = result.id || result.conversation_id;
   if (!conversationId) {
     throw new Error('OpenHands server did not return a valid conversation ID.');
   }
 
+  // Wait briefly for OpenHands to index the newly created conversation
+  await waitForConversationReady(conversationId);
+
+  // Prefer direct Web UI URL provided by server if available
+  const directUrl = result.url || result.web_url || result.conversation_url || result.session_url || result.share_url;
+  if (directUrl) {
+    return directUrl;
+  }
+
   // Get base URL to build Web UI URL
   const config = await getDecryptedOpenHandsConfig(user.uid);
-  return `${config.baseUrl}/conversations/${conversationId}`;
+
+  // If workspace ID is present in response, construct workspace-scoped URL
+  const wsId = result.workspace_id || result.org_id;
+  if (wsId) {
+    return `${config.baseUrl}/workspaces/${wsId}/conversation/${conversationId}`;
+  }
+
+  return `${config.baseUrl}/conversation/${conversationId}`;
 }

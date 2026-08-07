@@ -14,9 +14,9 @@ export const COPEN_OPTIONS_STATIC = [
   { value: 'copilot', label: 'Copilot', icon: 'code' },
   { value: 'devin', label: 'Devin', icon: 'engineering' },
   { value: 'qwen', label: 'Qwen', icon: 'terminal' },
-  { value: 'blank', label: 'Blank', icon: 'public' },
   { value: 'gemini', label: 'Gemini', icon: 'auto_awesome' },
-  { value: 'chatgpt', label: 'ChatGPT', icon: 'chat' }
+  { value: 'chatgpt', label: 'ChatGPT', icon: 'chat' },
+  { value: 'blank', label: 'Blank', icon: 'public' }
 ];
 
 // For backward compatibility

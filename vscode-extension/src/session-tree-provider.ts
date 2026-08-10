@@ -117,7 +117,7 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeI
 		// Check if auth is still being verified
 		if (!this.authChecked || this.isLoading) {
 			const item = new vscode.TreeItem('⏳ Loading...', vscode.TreeItemCollapsibleState.None);
-			return Promise.resolve([item as any]);
+			return Promise.resolve([item as SessionTreeItem]);
 		}
 		
 		// Check if user is signed in (only after auth is verified)
@@ -128,7 +128,7 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeI
 				command: COMMANDS.signIn,
 				title: 'Sign In'
 			};
-			return Promise.resolve([item as any]);
+			return Promise.resolve([item as SessionTreeItem]);
 		}
 
 		if (element) {
@@ -139,7 +139,7 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeI
 		// Root level - return all sessions sorted by date
 		if (this.sessions.length === 0 && this.isInitialized) {
 			const item = new vscode.TreeItem('📭 No sessions found', vscode.TreeItemCollapsibleState.None);
-			return Promise.resolve([item as any]);
+			return Promise.resolve([item as SessionTreeItem]);
 		}
 
 		const sortedSessions = [...this.sessions].sort((a, b) => {

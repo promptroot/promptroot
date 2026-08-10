@@ -30,7 +30,8 @@ export async function enrichPrompt(taskPrompt, options = {}) {
       query: taskPrompt,
       topK: options.topK || 5,
       endpoint: options.endpoint,
-      fetchImpl: options.fetchImpl
+      fetchImpl: options.fetchImpl,
+      token: options.token
     });
     const section = formatEnrichmentSection(results);
     if (!section) return taskPrompt;

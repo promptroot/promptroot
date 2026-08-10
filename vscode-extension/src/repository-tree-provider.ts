@@ -170,7 +170,7 @@ export class RepositoryTreeProvider implements vscode.TreeDataProvider<Repositor
 			
 			// Get current profile to preserve existing favorites format
 			const currentProfile = await this.firestoreService.getUserProfile(user.uid);
-			let favoriteRepos = currentProfile?.favoriteRepos || [];
+			const favoriteRepos = currentProfile?.favoriteRepos || [];
 			
 			// Convert favorites to web app format while preserving existing entries
 			const repoNames = Array.from(this.favoriteRepos);

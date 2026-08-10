@@ -1,7 +1,15 @@
+// Single source of truth for this extension's backend identity.
+// To point the extension at a self-hosted instance, change PROJECT_ID/REGION
+// here. You must ALSO update browser-extension/manifest.json (host_permissions,
+// CSP connect-src, content_scripts matches) and the hostnames in content.js.
+// See docs/DEPLOYMENT_CONFIG.md.
+const PROJECT_ID = 'promptroot-b02a2';
+const REGION = 'us-central1';
+
 const CONFIG = {
   github: {
     clientId: 'Ov23liz8g6qMlD1izTFe',
-    redirectUri: 'https://promptroot-b02a2.firebaseapp.com/oauth-callback.html',
+    redirectUri: `https://${PROJECT_ID}.firebaseapp.com/oauth-callback.html`,
     scopes: ['repo'],
     targetRepo: {
       owner: 'promptroot',
@@ -10,11 +18,11 @@ const CONFIG = {
       path: 'webcaptures'
     }
   },
-  
+
   firebase: {
-    projectId: 'promptroot-b02a2',
-    functionsUrl: 'https://us-central1-promptroot-b02a2.cloudfunctions.net',
-    
+    projectId: PROJECT_ID,
+    functionsUrl: `https://${REGION}-${PROJECT_ID}.cloudfunctions.net`,
+
     endpoints: {
       oauthExchange: '/githubOAuthExchange',
       getGitHubUser: '/getGitHubUser'

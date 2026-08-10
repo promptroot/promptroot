@@ -233,7 +233,6 @@ export class GitHubService {
 			this.outputChannel.appendLine(`Loaded ${allRepositories.length} repositories across ${page - 1} pages`);
 			
 			// Debug: Show repository ownership breakdown
-			const ownerCount = allRepositories.filter(r => r.owner.login === r.owner.login).length;
 			const privateCount = allRepositories.filter(r => r.private).length;
 			const publicCount = allRepositories.length - privateCount;
 			this.outputChannel.appendLine(`Repository breakdown: ${publicCount} public, ${privateCount} private`);

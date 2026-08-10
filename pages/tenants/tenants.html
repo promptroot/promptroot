@@ -34,8 +34,7 @@
 
       <p class="tenants-intro">
         Each tenant owns its own wiki or collection of Specs. Use one tenant per app or
-        per project. Members can read and edit; visibility controls whether
-        non-members can read.
+        per project. Tenants are private: only the owner and members can read or edit.
       </p>
 
       <div id="tenantsNotSignedIn" class="alert alert-warning" hidden>
@@ -66,13 +65,6 @@
           <div class="form-row">
             <label class="form-label" for="editTenantDescInput">Description</label>
             <input id="editTenantDescInput" name="description" class="form-control" type="text" />
-          </div>
-          <div class="form-row">
-            <label class="form-label" for="editTenantVisibilitySelect">Visibility</label>
-            <select id="editTenantVisibilitySelect" name="visibility" class="form-control">
-              <option value="private">Private (members only)</option>
-              <option value="public">Public (anyone can read)</option>
-            </select>
           </div>
           <div class="form-row">
             <label class="form-label" for="editTenantRepoInput">GitHub repo (optional)</label>
@@ -111,13 +103,6 @@
           <div class="form-row">
             <label class="form-label" for="tenantDescInput">Description</label>
             <input id="tenantDescInput" name="description" class="form-control" type="text" />
-          </div>
-          <div class="form-row">
-            <label class="form-label" for="tenantVisibilitySelect">Visibility</label>
-            <select id="tenantVisibilitySelect" name="visibility" class="form-control">
-              <option value="private" selected>Private (members only)</option>
-              <option value="public">Public (anyone can read)</option>
-            </select>
           </div>
           <div class="form-row">
             <label class="form-label" for="tenantRepoInput">GitHub repo (optional)</label>

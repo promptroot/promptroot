@@ -1,4 +1,5 @@
 const { tokenize } = require('./lib/tokenizer.cjs');
+const { PRIMARY_DOMAIN } = require('./config');
 
 const K1 = 1.5;
 const B = 0.75;
@@ -68,7 +69,7 @@ function rank({ query, chunks, topK = 5, includePrivate = false }) {
     chunkIndex: chunk.chunkIndex,
     text: chunk.text,
     score,
-    url: `https://promptroot.ai/wiki#${chunk.slug}`
+    url: `${PRIMARY_DOMAIN}/wiki#${chunk.slug}`
   }));
 }
 

@@ -277,7 +277,7 @@ export class QueueTreeProvider implements vscode.TreeDataProvider<QueueTreeItem>
 			collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
 		} else {
 			// Fallback for unknown types - cast to any to access properties
-			const unknownItem = queueItem as any;
+			const unknownItem = queueItem as { type?: string; status?: string };
 			this.outputChannel.appendLine(`createQueueTreeItem: Unknown item type: ${unknownItem.type}`);
 			label = `${icon} Unknown Type (${unknownItem.type})`;
 			description = unknownItem.status || 'unknown';

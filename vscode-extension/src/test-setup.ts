@@ -86,6 +86,28 @@ const vscode = {
     Collapsed: 1,
     Expanded: 2,
   },
+  ThemeIcon: class ThemeIcon {
+    constructor(public id: string, public color?: unknown) {}
+  },
+  ThemeColor: class ThemeColor {
+    constructor(public id: string) {}
+  },
+  MarkdownString: class MarkdownString {
+    value: string;
+    isTrusted = false;
+    supportThemeIcons = false;
+    constructor(value = '') {
+      this.value = value;
+    }
+    appendMarkdown(v: string) {
+      this.value += v;
+      return this;
+    }
+    appendText(v: string) {
+      this.value += v;
+      return this;
+    }
+  },
   EventEmitter: class EventEmitter {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private listeners: any[] = [];

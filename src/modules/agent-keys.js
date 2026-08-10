@@ -2,14 +2,13 @@ import { showToast } from './toast.js';
 import { copyText } from '../utils/clipboard.js';
 import { AGENT_API, AGENT_KEY_UI_TEXT, TIMEOUTS } from '../utils/constants.js';
 import { getOpenclawConfig, setOpenclawRelay } from './openclaw-keys.js';
+import { cloudFunctionUrl } from '../utils/cloud-function-url.js';
 
 // ===== Agent Key Management Module =====
 // Handles generation, storage (via Cloud Function), and revocation of Agent API tokens.
 // Tokens are generated client-side; only the SHA-256 hash is stored server-side.
 
-const MANAGE_KEYS_URL = window.location.port === '5000'
-  ? `http://${window.location.hostname}:5001/promptroot-b02a2/us-central1/manageAgentKeys`
-  : 'https://us-central1-promptroot-b02a2.cloudfunctions.net/manageAgentKeys';
+const MANAGE_KEYS_URL = cloudFunctionUrl('manageAgentKeys');
 
 /**
  * Compute SHA-256 hash of a string, returned as hex.

@@ -20,9 +20,8 @@ import { GitHubRepository, GitHubService } from './github-service';
 import { BranchSelector } from './branch-selector';
 import { ErrorHandler } from './error-handler';
 import { DashboardWebviewProvider } from './dashboard-webview-provider';
-import { JulesSession, SessionStatus, JulesQueueItem } from './models';
+import { JulesSession, SessionStatus } from './models';
 import { User } from 'firebase/auth';
-import { Timestamp } from 'firebase/firestore';
 
 let outputChannel: vscode.OutputChannel;
 let treeProvider: PromptrootTreeProvider;
@@ -1076,7 +1075,7 @@ async function addAssetToQueue(item?: PromptrootTreeItem): Promise<void> {
         if (gitExtension) {
           const repo = gitExtension.getRepository(workspaceUri);
           if (repo && repo.state.remotes.length > 0) {
-            const origin = repo.state.remotes.find((r: any) => r.name === 'origin') || repo.state.remotes[0];
+            const origin = repo.state.remotes.find((r: { name: string }) => r.name === 'origin') || repo.state.remotes[0];
             const remoteUrl = origin?.fetchUrl || origin?.pushUrl;
             
             if (remoteUrl) {
@@ -1465,7 +1464,7 @@ async function addToQueue(uri?: vscode.Uri): Promise<void> {
         if (gitExtension) {
           const repo = gitExtension.getRepository(workspaceUri);
           if (repo && repo.state.remotes.length > 0) {
-            const origin = repo.state.remotes.find((r: any) => r.name === 'origin') || repo.state.remotes[0];
+            const origin = repo.state.remotes.find((r: { name: string }) => r.name === 'origin') || repo.state.remotes[0];
             const remoteUrl = origin?.fetchUrl || origin?.pushUrl;
             
             if (remoteUrl) {

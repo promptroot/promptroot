@@ -1,14 +1,25 @@
 import { homedir, platform } from 'node:os';
 import { join } from 'node:path';
 
-const PROD_BASE = 'https://us-central1-promptroot-b02a2.cloudfunctions.net';
+// Default deployment identity. To point the CLI/MCP server at a self-hosted
+// instance, change these constants or set the PROMPTROOT_* env vars below.
+// See docs/DEPLOYMENT_CONFIG.md.
+const DEFAULT_PROJECT_ID = 'promptroot-b02a2';
+const DEFAULT_REGION = 'us-central1';
+const DEFAULT_WEB_URL = 'https://promptroot.ai';
+
+const PROD_BASE = `https://${DEFAULT_REGION}-${DEFAULT_PROJECT_ID}.cloudfunctions.net`;
 
 export function apiBase() {
   return process.env.PROMPTROOT_API_BASE || PROD_BASE;
 }
 
+export function webBase() {
+  return process.env.PROMPTROOT_WEB_URL || DEFAULT_WEB_URL;
+}
+
 export function deviceFlowVerificationUrl() {
-  return process.env.PROMPTROOT_DEVICE_FLOW_URL || 'https://promptroot.ai/auth/device';
+  return process.env.PROMPTROOT_DEVICE_FLOW_URL || `${webBase()}/auth/device`;
 }
 
 export function credentialsPath() {

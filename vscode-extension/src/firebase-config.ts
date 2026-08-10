@@ -10,12 +10,18 @@ import { initializeApp, FirebaseApp, FirebaseOptions } from 'firebase/app';
 import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore as initFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
 
+// Single source of truth for the default project. authDomain and storageBucket
+// follow the standard Firebase naming derived from the project id, so overriding
+// the `promptroot.firebase.projectId` setting repoints them too.
+// See docs/DEPLOYMENT_CONFIG.md.
+const DEFAULT_PROJECT_ID = "promptroot-b02a2";
+
 // Firebase production configuration
 const FIREBASE_CONFIG: FirebaseOptions = {
 	apiKey: "AIzaSyD_NzQlgmcUfgrqpgTl3Q3pCkfBrO8PcoA",
-	authDomain: "promptroot-b02a2.firebaseapp.com",
-	projectId: "promptroot-b02a2",
-	storageBucket: "promptroot-b02a2.firebasestorage.app",
+	authDomain: `${DEFAULT_PROJECT_ID}.firebaseapp.com`,
+	projectId: DEFAULT_PROJECT_ID,
+	storageBucket: `${DEFAULT_PROJECT_ID}.firebasestorage.app`,
 	messagingSenderId: "494845853842",
 	appId: "1:494845853842:web:6c97aec4822be003fc264b"
 };
@@ -31,11 +37,17 @@ let isEmulatorMode = false;
 export function initializeFirebase(_context: vscode.ExtensionContext, outputChannel?: vscode.OutputChannel): void {
 	const config = vscode.workspace.getConfiguration('promptroot.firebase');
 	const useEmulator = config.get<boolean>('useEmulator', false);
-	const projectId = config.get<string>('projectId', 'promptroot-b02a2');
+	const projectId = config.get<string>('projectId', DEFAULT_PROJECT_ID);
 
 	try {
-		// Initialize Firebase app
-		const appConfig = { ...FIREBASE_CONFIG, projectId };
+		// Initialize Firebase app. authDomain/storageBucket are derived from the
+		// effective projectId so a custom projectId setting repoints them too.
+		const appConfig: FirebaseOptions = {
+			...FIREBASE_CONFIG,
+			projectId,
+			authDomain: `${projectId}.firebaseapp.com`,
+			storageBucket: `${projectId}.firebasestorage.app`
+		};
 		firebaseApp = initializeApp(appConfig);
 		
 		// Initialize Auth

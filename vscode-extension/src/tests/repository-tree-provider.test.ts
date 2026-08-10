@@ -5,6 +5,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RepositoryTreeProvider, RepositoryTreeItem, RepositoryItemType } from '../repository-tree-provider';
 
+// FirestoreService touches Firebase in its constructor; stub it so the provider
+// can be constructed without an initialized Firebase app.
+vi.mock('../firestore-service', () => ({
+	FirestoreService: vi.fn(() => ({
+		getUserProfile: vi.fn().mockResolvedValue(null),
+		saveUserProfile: vi.fn().mockResolvedValue(undefined)
+	}))
+}));
+
 describe('RepositoryTreeProvider', () => {
 	let mockAuthManager: {
 		getAccessToken: ReturnType<typeof vi.fn>;
@@ -57,6 +66,8 @@ describe('RepositoryTreeProvider', () => {
 	describe('getChildren', () => {
 		it('should show sign-in prompt when not authenticated', async () => {
 			mockAuthManager.isSignedIn.mockReturnValue(false);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(provider as any).authChecked = true;
 
 			const children = await provider.getChildren();
 
@@ -66,6 +77,8 @@ describe('RepositoryTreeProvider', () => {
 
 		it('should show Favorites and All Repositories groups at root', async () => {
 			mockAuthManager.isSignedIn.mockReturnValue(true);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(provider as any).authChecked = true;
 
 			const children = await provider.getChildren();
 
@@ -81,8 +94,9 @@ describe('RepositoryTreeProvider', () => {
 		});
 
 		it('should add repository to favorites', async () => {
-			// Mock Firestore save
+			// Mock Firestore read + save
 			const mockFirestoreService = {
+				getUserProfile: vi.fn().mockResolvedValue(null),
 				saveUserProfile: vi.fn().mockResolvedValue(undefined)
 			};
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,17 +105,21 @@ describe('RepositoryTreeProvider', () => {
 			await provider.addFavorite('user/test-repo');
 
 			expect(provider.isFavorite('user/test-repo')).toBe(true);
+			// Favorites are persisted in the web-app object format, not plain strings.
 			expect(mockFirestoreService.saveUserProfile).toHaveBeenCalledWith(
 				expect.objectContaining({
 					uid: 'test-uid',
-					favoriteRepos: ['user/test-repo']
+					favoriteRepos: [
+						{ branch: 'main', id: 'sources/github/user/test-repo', name: 'user/test-repo' }
+					]
 				})
 			);
 		});
 
 		it('should remove repository from favorites', async () => {
-			// Mock Firestore save
+			// Mock Firestore read + save
 			const mockFirestoreService = {
+				getUserProfile: vi.fn().mockResolvedValue(null),
 				saveUserProfile: vi.fn().mockResolvedValue(undefined)
 			};
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any

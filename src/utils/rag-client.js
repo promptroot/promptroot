@@ -1,18 +1,21 @@
-const DEFAULT_ENDPOINT = 'https://us-central1-promptroot-b02a2.cloudfunctions.net/ragQuery';
+import { cloudFunctionUrl } from './cloud-function-url.js';
 
 export async function ragQuery({
   query,
   topK = 5,
-  endpoint = DEFAULT_ENDPOINT,
+  endpoint,
   fetchImpl = fetch,
+  token,
   signal
 } = {}) {
   if (typeof query !== 'string' || query.trim().length === 0) {
     throw new Error('ragQuery: query is required');
   }
-  const resp = await fetchImpl(endpoint, {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const resp = await fetchImpl(endpoint || cloudFunctionUrl('ragQuery'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ query, topK }),
     signal
   });

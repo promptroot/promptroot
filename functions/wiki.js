@@ -8,15 +8,7 @@ const {
   authError
 } = require('./wiki-auth');
 const { validateFrontmatter, validateTenant } = require('./lib/sdd-validate.cjs');
-
-const ALLOWED_ORIGINS = [
-  'https://promptroot.io',
-  'https://promptroot.ai',
-  'https://promptroot-b02a2.web.app',
-  'https://promptroot-b02a2.firebaseapp.com',
-  'http://localhost:3000',
-  'http://localhost:5000'
-];
+const { WIKI_ALLOWED_ORIGINS: ALLOWED_ORIGINS } = require('./config');
 
 function setCors(req, res) {
   const origin = req.headers.origin;
@@ -394,11 +386,11 @@ const restoreVersion = onRequest({ cors: false }, async (req, res) => {
 const createTenant = onRequest({ cors: false }, async (req, res) => {
   await withAuth(req, res, async ({ uid }) => {
     const body = await readJsonBody(req);
-    const { slug, name, description, visibility, githubRepo } = body;
+    const { slug, name, description, githubRepo } = body;
     const tenantInput = {
       slug,
       name,
-      visibility: visibility || 'private',
+      visibility: 'private',
       ownerUid: uid,
       members: [uid]
     };
@@ -474,8 +466,8 @@ const updateTenant = onRequest({ cors: false }, async (req, res) => {
     }
     if (description !== undefined) updates.description = description || '';
     if (visibility !== undefined) {
-      if (!['public', 'private'].includes(visibility)) throw authError('visibility must be public or private', 400);
-      updates.visibility = visibility;
+      if (visibility !== 'private') throw authError('Public tenants are disabled; visibility must be private', 400);
+      updates.visibility = 'private';
     }
     if (githubRepo !== undefined) updates.githubRepo = githubRepo || null;
 

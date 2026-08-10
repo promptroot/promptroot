@@ -6,7 +6,7 @@
   </a>
 </p>
 
-> **[promptroot.ai](https://promptroot.ai)** — Share and cultivate your team's AI knowledge.
+> **[promptroot.ai](https://promptroot.ai)** — Cultivate your team's AI knowledge.
 
 Manage prompts, queue tasks, and track Jules sessions directly inside VS Code. Same account, same data, real-time sync with the [PromptRoot web app](https://promptroot.ai).
 

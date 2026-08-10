@@ -16,8 +16,31 @@ related:
 **Project:** PromptRoot (web app + Cloud Functions + agent integrations)
 **Document Type:** Software Design Document (SDD)
 **Date:** 2026-04-26
-**Last updated:** 2026-04-29
-**Status:** shipped (PR #814 — implementation complete, pending merge + production deploy)
+**Last updated:** 2026-07-26
+**Status:** shipped (PR #814). Amended 2026-07-26 by a security-hardening pass (see the Security Hardening addendum below), which makes wikis private-by-default and removes every public-access path. The addendum supersedes the public-access portions of §3.4, §3.10, §5, W1, and W6.
+
+---
+
+## 0. Security Hardening addendum (2026-07-26)
+
+**Motivation.** The original design allowed `visibility: public` tenants and SDDs, an anonymous `ragQuery` path, and a world-readable full-text bundle. For proprietary specs that is unacceptable: content leaked to the public internet, to any signed-in user (via a broken legacy rule), and to anyone with Firebase project access. This pass closes the public and cross-user exposures. It does **not** add at-rest encryption (see "Still open" below).
+
+**Shipped (commits `1d6f5b7`, `e3ede0b`, `e4bbaa4` on `main`; pending `firebase deploy`):**
+
+1. **No public wikis.** `createTenant` forces `visibility: 'private'` and `updateTenant` rejects any non-private value (`functions/wiki.js`). The public option was removed from the tenants UI (`pages/tenants/tenants.html`, `src/pages/tenants-page.js`).
+2. **Firestore locked to Cloud Functions.** `wikiDocs`, `wikiChunks`, `tenants`, `sdds`, `versions`, and `tenantChunks` are now `allow read, write: if false` (`config/firestore/firestore.rules`). All content is reached only through the Admin-SDK functions, which enforce membership. This also fixes the broken legacy rule that let any authenticated user read a "private" `wikiDocs`.
+3. **`ragQuery` requires authentication.** The anonymous/public resolution path and the seed-tenant fallback were removed; the function 401s without a valid bearer token (`functions/index.js`, `functions/wiki-chunks.js`). The browser client now sends the Firebase ID token (`src/utils/rag-client.js`, `src/modules/wiki-enrichment.js`, `src/modules/jules-api.js`).
+4. **Public bundle removed.** Deleted `wiki/_chunks.json`, `scripts/build-wiki-index.js`, `.github/workflows/wiki-index.yml`, and the `build:wiki-index` npm script, plus the `loadBundledChunks` fallback. `wiki/_index.json` is kept so the `/wiki` browse tree still renders (its generator is now gone, so it is a static snapshot).
+
+**Supersedes in this document:** §3.4 (no anonymous or public-tenant resolution; authenticated callers query only tenants they are a member of), §3.10 (visibility is private-only; tenant membership is the sole access boundary), §5 "single seed tenant for anonymous callers" (removed), W1 "public tenant read path for anonymous users" and W6 "bundled-chunks fallback" (removed).
+
+**Behavioral consequences (intended):** the dev-history wiki is now members-only, so prompt enrichment from it and the `search-dev-history` Claude Code skill only return results for members of an accessible tenant. Non-members get empty results (no error).
+
+**Known limitation (pre-existing):** `functions/rag.js` filters out chunks whose `visibility === 'private'` when `includePrivate` is false, and `ragQuery` always passes false. Seed SDDs are frontmatter `visibility: public`, so they remain searchable, but a new SDD authored as `visibility: private` is not searchable even by authorized members. Tracked as a follow-up.
+
+**Still open (not addressed by this pass):**
+- **At-rest encryption.** Content is still plaintext in Firestore, so an operator with project or Cloud KMS access can read it. Full protection against platform-level access requires the separate encryption workstream (KMS envelope encryption, function-layer per-doc ACLs, per-account sharing). This reverses the §5 "Per-doc ACLs in v1? No" decision and the §7 out-of-scope stance; per-account sharing and per-doc encryption become the next milestone.
+- **Contractual.** Using PromptRoot for a third party's proprietary IP still requires a DPA and approved-vendor status, independent of code.
 
 ---
 

@@ -5,6 +5,7 @@ import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output, stderr } from 'node:process';
 import { callFunction } from '../src/api.js';
 import { parseGithubRepoFromRemote } from '../src/tenant-resolver.js';
+import { apiBase, webBase } from '../src/config.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
@@ -28,7 +29,7 @@ per-call configuration is needed.
 
 If no MCP server is configured, fall back to:
 
-    POST https://us-central1-promptroot-b02a2.cloudfunctions.net/ragQuery
+    POST ${apiBase()}/ragQuery
     {
       "query": "<question>",
       "topK": 5,
@@ -76,7 +77,7 @@ async function chooseTenant() {
   }
 
   if (tenants.length === 0) {
-    stderr.write('No tenants found. Create one at https://promptroot.ai/wiki/tenants and rerun.\n');
+    stderr.write(`No tenants found. Create one at ${webBase()}/wiki/tenants and rerun.\n`);
     process.exit(1);
   }
 

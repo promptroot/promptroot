@@ -157,3 +157,5 @@ the full set and account for **every** PR:
 
 Sum the buckets and check they equal the wave size. If they do not, the search index is
 behind — verify the stragglers with a direct per-PR read.
+
+PS all references to PRs (= #<prnumber>) should always be linked

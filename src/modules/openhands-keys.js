@@ -1,5 +1,5 @@
 import { getDb } from './firebase-service.js';
-import { getDoc, setDoc, getServerTimestamp } from '../utils/firestore-helpers.js';
+import { getDoc, setDoc, getServerTimestamp, getFieldDelete } from '../utils/firestore-helpers.js';
 import { OPENHANDS } from '../utils/constants.js';
 
 // ===== OpenHands Key and Configuration Management Module =====
@@ -40,7 +40,7 @@ export async function deleteStoredOpenHandsConfig(uid) {
     
     clearOpenHandsKeyCache(uid);
     await setDoc('users', uid, {
-      openhandsConfig: firebase.firestore.FieldValue.delete()
+      openhandsConfig: getFieldDelete()
     }, { merge: true }, CACHE_KEY);
     return true;
   } catch (error) {

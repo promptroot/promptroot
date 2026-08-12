@@ -44,7 +44,8 @@ vi.mock('../../utils/firestore-helpers.js', () => ({
   setDoc: vi.fn((col, docId, data, options, cacheKey) => {
     return mockDb.collection(col).doc(docId).set(data, options);
   }),
-  getServerTimestamp: vi.fn(() => 'SERVER_TIMESTAMP')
+  getServerTimestamp: vi.fn(() => 'SERVER_TIMESTAMP'),
+  getFieldDelete: vi.fn(() => 'FIELD_DELETE_SENTINEL')
 }));
 
 import {
@@ -153,6 +154,27 @@ describe('openhands-keys', () => {
       mockDocGet.mockResolvedValue({ exists: false });
       const result = await checkOpenHandsConfig('uid');
       expect(result).toBe(false);
+    });
+  });
+
+  describe('deleteStoredOpenHandsConfig', () => {
+    it('should remove the openhandsConfig field via a field delete sentinel', async () => {
+      const uid = 'test-uid';
+
+      const ok = await deleteStoredOpenHandsConfig(uid);
+
+      expect(ok).toBe(true);
+      expect(mockDocSet).toHaveBeenCalledWith(
+        { openhandsConfig: 'FIELD_DELETE_SENTINEL' },
+        { merge: true }
+      );
+    });
+
+    it('should return false when Firestore is not initialized', async () => {
+      const { getDb } = await import('../../modules/firebase-service.js');
+      getDb.mockReturnValueOnce(null);
+      const ok = await deleteStoredOpenHandsConfig('uid');
+      expect(ok).toBe(false);
     });
   });
 

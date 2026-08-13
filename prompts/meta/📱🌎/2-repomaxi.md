@@ -36,12 +36,9 @@ keep it granular if possible
 do not work on coding
 focus on this report of 10 tasks
 
-output format: split tasks with
-```
-
----
-
-```
+output format markdown:
+split tasks with
+markdown string for new section ---
 
 ps there is no code output
 we want an easy copyable plan

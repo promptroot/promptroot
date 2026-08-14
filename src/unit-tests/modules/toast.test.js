@@ -365,6 +365,41 @@ describe('toast', () => {
       expect(message.textContent).toBe(specialMessage);
     });
 
+    it('should render HTML-like strings strictly as text content (prevent XSS)', () => {
+      const untrustedHtml = '<b>Error:</b> <script>alert(1)</script>';
+      const toast = showToast(untrustedHtml, 'error');
+      
+      const message = toast.querySelector('.toast__message');
+      expect(message.textContent).toBe(untrustedHtml);
+      expect(message.querySelector('script')).toBeNull();
+      expect(message.querySelector('b')).toBeNull();
+    });
+
+    it('should safely render structured link options with http/https schemes', () => {
+      const toast = showToast('Session started.', 'success', 3000, {
+        link: { href: 'https://example.com/workspace', label: 'Open Workspace' }
+      });
+      
+      const message = toast.querySelector('.toast__message');
+      expect(message.textContent).toContain('Session started.');
+      
+      const link = message.querySelector('.toast__link');
+      expect(link).toBeTruthy();
+      expect(link.getAttribute('href')).toBe('https://example.com/workspace');
+      expect(link.textContent).toBe('Open Workspace');
+      expect(link.getAttribute('target')).toBe('_blank');
+      expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+    });
+
+    it('should reject link options with unsafe URL schemes', () => {
+      const toast = showToast('Malicious link.', 'error', 3000, {
+        link: { href: 'javascript:alert(1)', label: 'Click me' }
+      });
+      
+      const message = toast.querySelector('.toast__message');
+      expect(message.querySelector('a')).toBeNull();
+    });
+
     it('should handle rapid successive calls', () => {
       // Create many toasts quickly
       for (let i = 0; i < 10; i++) {

@@ -31,7 +31,7 @@ function ensureContainer() {
  * @param {string} type - Type of toast: 'success', 'error', 'warn', 'info'
  * @param {number} duration - Duration in ms (default: 4000)
  */
-export function showToast(message, type = 'info', duration = TIMEOUTS.toast) {
+export function showToast(message, type = 'info', duration = TIMEOUTS.toast, options = {}) {
   const container = ensureContainer();
   
   const toast = document.createElement('div');
@@ -45,6 +45,28 @@ export function showToast(message, type = 'info', duration = TIMEOUTS.toast) {
   const messageEl = document.createElement('span');
   messageEl.className = 'toast__message';
   messageEl.textContent = message;
+
+  if (options && options.link && options.link.href && options.link.label) {
+    try {
+      const parsedUrl = new URL(options.link.href, window.location.origin);
+      if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+        const linkEl = document.createElement('a');
+        linkEl.className = 'toast__link';
+        linkEl.href = parsedUrl.href;
+        linkEl.textContent = options.link.label;
+        if (options.link.target) {
+          linkEl.target = options.link.target;
+        } else {
+          linkEl.target = '_blank';
+          linkEl.rel = 'noopener noreferrer';
+        }
+        messageEl.appendChild(document.createTextNode(' '));
+        messageEl.appendChild(linkEl);
+      }
+    } catch (e) {
+      console.warn('Invalid toast link URL:', options.link.href);
+    }
+  }
   
   const closeBtn = document.createElement('button');
   closeBtn.className = 'toast__close';

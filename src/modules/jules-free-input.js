@@ -497,6 +497,83 @@ export async function showFreeInputForm() {
           // We don't route through dispatchToAgent here because that would call
           // callRunJulesFunction directly, bypassing the callback machinery in handleSubmit.
           await handleSubmit();
+        } else if (selectedAgent === 'openhands') {
+          const promptText = validatePromptText();
+          if (!promptText) return;
+
+          if (!_lastSelectedSourceId) {
+            showToast('Please select a repository.', 'warn');
+            return;
+          }
+          if (!_lastSelectedBranch) {
+            showToast('Please select a branch.', 'warn');
+            return;
+          }
+
+          try {
+            const { getAuth } = await import('./firebase-service.js');
+            const user = getAuth()?.currentUser;
+            if (!user) {
+              showToast('Please sign in to use OpenHands.', 'warn');
+              return;
+            }
+
+            const { checkOpenHandsConfig } = await import('./openhands-keys.js');
+            const hasConfig = await checkOpenHandsConfig(user.uid);
+            if (!hasConfig) {
+              showToast('OpenHands is not configured. Redirecting to Profile Settings...', 'warn');
+              setTimeout(() => {
+                window.location.href = '/pages/profile/profile.html';
+              }, 2000);
+              return;
+            }
+
+            const { callRunOpenHandsFunction } = await import('./openhands-api.js');
+
+            const submitBtn = runInAgentContainer.querySelector('.split-btn__action');
+            const submitHtml = submitBtn ? submitBtn.innerHTML : 'OpenHands';
+            if (submitBtn) {
+              submitBtn.disabled = true;
+              submitBtn.innerHTML = 'Submitting...';
+            }
+
+            let title = '';
+            const lines = promptText.split(/\r?\n/);
+            if (lines.length > 0 && /^#\s+/.test(lines[0])) {
+              title = lines[0].replace(/^#\s+/, '').trim();
+            } else if (lines.length > 0) {
+              title = lines[0].substring(0, 50).trim();
+            }
+
+            const newWin = window.open('about:blank', '_blank');
+            try {
+              const sessionUrl = await callRunOpenHandsFunction(promptText, _lastSelectedSourceId, _lastSelectedBranch, title);
+              if (sessionUrl) {
+                if (newWin) {
+                  newWin.location.href = sessionUrl;
+                } else {
+                  window.open(sessionUrl, '_blank', 'noopener,noreferrer');
+                }
+                showToast('OpenHands session started successfully.', 'success', undefined, {
+                  link: { href: sessionUrl, label: 'Open Workspace' }
+                });
+                textarea.value = '';
+                updateButtonStates();
+              } else if (newWin) {
+                newWin.close();
+              }
+            } catch (err) {
+              if (newWin) newWin.close();
+              showToast('Failed to start OpenHands session: ' + err.message, 'error');
+            } finally {
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = submitHtml;
+              }
+            }
+          } catch (error) {
+            showToast('Failed to start OpenHands flow', 'error');
+          }
         } else if (selectedAgent === 'brace') {
           const promptText = validatePromptText();
           if (!promptText) return;

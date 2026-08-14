@@ -1,6 +1,7 @@
 
 /* Jules Modals */
 #julesEnvModal,
+#openhandsEnvModal,
 #subtaskErrorModal {
   position: fixed;
   top: 0;
@@ -15,6 +16,7 @@
 }
 
 #julesEnvModal.show,
+#openhandsEnvModal.show,
 #subtaskErrorModal.show {
   display: flex !important;
   z-index: 10000; /* High z-index to ensure modal appears above everything */
@@ -22,6 +24,7 @@
 
 /* Modal Content Containers */
 #julesEnvModal > div,
+#openhandsEnvModal > div,
 #subtaskErrorModal > div {
   background: var(--surface);
   border: 1px solid var(--border);

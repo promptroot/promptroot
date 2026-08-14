@@ -10,6 +10,7 @@ import { getCopenOptions, COPEN_STORAGE_KEY, COPEN_DEFAULT_LABEL, COPEN_DEFAULT_
 import { showToast } from './toast.js';
 import { getCurrentBranch, getCurrentRepo } from './branch-selector.js';
 import { copyText } from '../utils/clipboard.js';
+import { getLastAgent } from './run-in-agent.js';
 
 let activeVariableModal = null;
 let activeCopenButton = null;
@@ -388,12 +389,20 @@ function buildVariableModalDOM(textPlaceholders, includeFlags, promptText = '') 
   copenContainer.appendChild(copenToggleBtn);
   copenContainer.appendChild(copenMenu);
 
-  // Continue (Send to Jules) button
+  // Continue (Send to agent) button
+  const lastAgent = getLastAgent();
+  let agentLabel = 'Send to Jules';
+  if (lastAgent === 'openhands') {
+    agentLabel = 'Send to OpenHands';
+  } else if (lastAgent === 'brace') {
+    agentLabel = 'Send to Brace';
+  }
+
   const continueBtn = createElement('button', 'btn primary');
   continueBtn.id = 'variableModalContinue';
   continueBtn.type = 'submit';
   const continueIcon = createIcon('send', 'icon-inline');
-  const continueText = createElement('span', '', 'Send to Jules');
+  const continueText = createElement('span', '', agentLabel);
   continueBtn.appendChild(continueIcon);
   continueBtn.appendChild(continueText);
 
@@ -528,7 +537,7 @@ export function showCustomizeModal(promptText) {
       }
     })();
 
-    const handleSendToJules = async (e) => {
+    const handleContinueAgent = async (e) => {
       if (e) e.preventDefault();
       
       const text = getCurrentText();
@@ -536,13 +545,33 @@ export function showCustomizeModal(promptText) {
       // Close modal
       modal.destroy();
       
-      // Send to Jules
-      try {
-        const { handleTryInJules } = await import('./jules-api.js');
-        await handleTryInJules(text);
-      } catch (error) {
-        console.error('Failed to send to Jules:', error);
-        showToast('Failed to send to Jules', 'error');
+      const lastAgent = getLastAgent();
+      if (lastAgent === 'jules') {
+        try {
+          const { handleTryInJules } = await import('./jules-api.js');
+          await handleTryInJules(text);
+        } catch (error) {
+          console.error('Failed to send to Jules:', error);
+          showToast('Failed to send to Jules', 'error');
+        }
+      } else if (lastAgent === 'openhands') {
+        try {
+          const { owner, repo } = getCurrentRepo();
+          const branch = getCurrentBranch();
+          const { showOpenHandsEnvModal } = await import('./openhands-modal.js');
+          await showOpenHandsEnvModal(text, owner, repo, branch);
+        } catch (error) {
+          console.error('Failed to send to OpenHands:', error);
+          showToast('Failed to send to OpenHands', 'error');
+        }
+      } else if (lastAgent === 'brace') {
+        try {
+          const { dispatchToAgent } = await import('./run-in-agent.js');
+          await dispatchToAgent('brace', { promptText: text });
+        } catch (error) {
+          console.error('Failed to send to Brace:', error);
+          showToast('Failed to send to Brace', 'error');
+        }
       }
       
       resolve();
@@ -577,7 +606,7 @@ export function showCustomizeModal(promptText) {
     if (form) {
       modal.addListener(form, 'submit', (e) => e.preventDefault());
     }
-    modal.addListener(continueBtn, 'click', handleSendToJules);
+    modal.addListener(continueBtn, 'click', handleContinueAgent);
     modal.addListener(cancelBtn, 'click', handleCancel);
     modal.addListener(copyBtn, 'click', handleCopy);
     modal.addListener(downloadBtn, 'click', handleDownload);

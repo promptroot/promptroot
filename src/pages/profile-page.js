@@ -5,18 +5,31 @@
 
 import { waitForFirebase } from '../shared-init.js';
 import { getAuth } from '../modules/firebase-service.js';
-import { TIMEOUTS } from '../utils/constants.js';
+import { TIMEOUTS, OPENHANDS_UI_TEXT } from '../utils/constants.js';
 import { getUserCopens, addCustomCopen, updateCustomCopen, deleteCustomCopen, toggleDefaultCopen, getCustomCopenIcon, saveCopenOrder, resetToDefaultCopens } from '../modules/copen-manager.js';
 import { showToast } from '../modules/toast.js';
 import { showConfirm } from '../modules/confirm-modal.js';
 import { clearCopenCache } from '../modules/copen.js';
 import { showJulesKeyModal } from '../modules/jules-modal.js';
 import { deleteStoredJulesKey, checkJulesKey } from '../modules/jules-keys.js';
+import { checkOpenHandsConfig, deleteStoredOpenHandsConfig, encryptAndStoreOpenHandsConfig, getDecryptedOpenHandsConfig } from '../modules/openhands-keys.js';
 import { renderStatus, STATUS_TYPES } from '../modules/status-renderer.js';
 import { initAgentKeys } from '../modules/agent-keys.js';
 
 let currentUser = null;
 let editingCopenId = null;
+
+function setButtonIconText(button, iconName, labelText) {
+  if (!button) return;
+  button.disabled = false;
+  button.replaceChildren();
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'icon icon-inline';
+  iconSpan.setAttribute('aria-hidden', 'true');
+  iconSpan.textContent = iconName;
+  button.appendChild(iconSpan);
+  button.appendChild(document.createTextNode(' ' + labelText));
+}
 
 function waitForComponents() {
   if (document.querySelector('header')) {
@@ -42,7 +55,39 @@ async function loadProfile(user) {
 
   await initAgentKeys(user);
   await loadJulesKeyStatus(user);
+  await loadOpenHandsConfigStatus(user);
   await loadCopens(user);
+}
+
+async function loadOpenHandsConfigStatus(user) {
+  const openhandsBaseUrlInput = document.getElementById('openhandsBaseUrlInput');
+  const openhandsApiKeyInput = document.getElementById('openhandsApiKeyInput');
+  const openhandsKeyDangerZone = document.getElementById('openhandsKeyDangerZone');
+  
+  if (!openhandsBaseUrlInput) return;
+  
+  try {
+    const hasConfig = await checkOpenHandsConfig(user.uid);
+    
+    if (hasConfig) {
+      const config = await getDecryptedOpenHandsConfig(user.uid);
+      if (config) {
+        openhandsBaseUrlInput.value = config.baseUrl || 'https://app.all-hands.dev';
+        openhandsApiKeyInput.value = config.apiKey || '';
+      }
+      if (openhandsKeyDangerZone) {
+        openhandsKeyDangerZone.classList.remove('hidden');
+      }
+    } else {
+      openhandsBaseUrlInput.value = 'https://app.all-hands.dev';
+      openhandsApiKeyInput.value = '';
+      if (openhandsKeyDangerZone) {
+        openhandsKeyDangerZone.classList.add('hidden');
+      }
+    }
+  } catch (error) {
+    console.error('Error loading OpenHands config status:', error);
+  }
 }
 
 async function loadJulesKeyStatus(user) {
@@ -485,6 +530,8 @@ async function initApp() {
     const copenEditorClose = document.getElementById('copenEditorClose');
     const addJulesKeyBtn = document.getElementById('addJulesKeyBtn');
     const resetJulesKeyBtn = document.getElementById('resetJulesKeyBtn');
+    const saveOpenhandsBtn = document.getElementById('saveOpenhandsBtn');
+    const deleteOpenhandsBtn = document.getElementById('deleteOpenhandsBtn');
 
     if (addCopenBtn) {
       addCopenBtn.addEventListener('click', () => showCopenEditor());
@@ -560,6 +607,71 @@ async function initApp() {
           resetJulesKeyBtn.replaceChildren(document.createTextNode(' Delete Jules API Key'));
           resetJulesKeyBtn.insertAdjacentHTML('afterbegin', '<span class=\"icon icon-inline\" aria-hidden=\"true\">delete</span>');
           resetJulesKeyBtn.disabled = false;
+        }
+      });
+    }
+
+    if (saveOpenhandsBtn) {
+      saveOpenhandsBtn.addEventListener('click', async () => {
+        const baseUrlInput = document.getElementById('openhandsBaseUrlInput');
+        const apiKeyInput = document.getElementById('openhandsApiKeyInput');
+        
+        if (!baseUrlInput) return;
+        
+        const baseUrl = baseUrlInput.value.trim();
+        const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+        
+        if (!baseUrl) {
+          showToast(OPENHANDS_UI_TEXT.URL_REQUIRED, 'warn');
+          return;
+        }
+        
+        try {
+          if (!currentUser) return;
+          
+          saveOpenhandsBtn.disabled = true;
+          saveOpenhandsBtn.textContent = OPENHANDS_UI_TEXT.SAVING;
+          
+          await encryptAndStoreOpenHandsConfig(baseUrl, apiKey, currentUser.uid);
+          
+          setButtonIconText(saveOpenhandsBtn, 'save', 'Save Settings');
+          
+          await loadOpenHandsConfigStatus(currentUser);
+          showToast(OPENHANDS_UI_TEXT.SAVED, 'success');
+        } catch (error) {
+          showToast(OPENHANDS_UI_TEXT.SAVE_ERROR + error.message, 'error');
+          setButtonIconText(saveOpenhandsBtn, 'save', 'Save Settings');
+        }
+      });
+    }
+    
+    if (deleteOpenhandsBtn) {
+      deleteOpenhandsBtn.addEventListener('click', async () => {
+        const confirmed = await showConfirm(OPENHANDS_UI_TEXT.DELETE_CONFIRM, {
+          title: 'Delete OpenHands Settings',
+          confirmText: 'Delete',
+          confirmClass: 'danger'
+        });
+        if (!confirmed) return;
+        
+        try {
+          if (!currentUser) return;
+          
+          deleteOpenhandsBtn.disabled = true;
+          deleteOpenhandsBtn.textContent = OPENHANDS_UI_TEXT.DELETING;
+          
+          const deleted = await deleteStoredOpenHandsConfig(currentUser.uid);
+          if (deleted) {
+            setButtonIconText(deleteOpenhandsBtn, 'delete', 'Delete OpenHands Settings');
+            
+            await loadOpenHandsConfigStatus(currentUser);
+            showToast(OPENHANDS_UI_TEXT.DELETED, 'success');
+          } else {
+            throw new Error('Failed to delete config');
+          }
+        } catch (error) {
+          showToast('Failed to delete settings: ' + error.message, 'error');
+          setButtonIconText(deleteOpenhandsBtn, 'delete', 'Delete OpenHands Settings');
         }
       });
     }

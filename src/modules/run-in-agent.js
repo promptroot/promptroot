@@ -15,6 +15,7 @@ const BRACE_RELAY_TIMEOUT_MS = 5000;
 export function getAgentOptions() {
   return [
     { value: 'jules', label: 'Jules', icon: 'smart_toy' },
+    { value: 'openhands', label: 'OpenHands', icon: 'front_hand' },
     { value: 'brace', label: 'Brace', icon: 'hub' }
   ];
 }
@@ -37,6 +38,9 @@ export async function dispatchToAgent(agent, payload) {
   if (agent === 'jules') {
     const { callRunJulesFunction } = await import('./jules-api.js');
     return callRunJulesFunction(payload.promptText, payload.sourceId, payload.branch, payload.title);
+  } else if (agent === 'openhands') {
+    const { callRunOpenHandsFunction } = await import('./openhands-api.js');
+    return callRunOpenHandsFunction(payload.promptText, payload.sourceId, payload.branch, payload.title);
   } else if (agent === 'brace') {
     await _dispatchToBrace(payload.promptText);
     return;

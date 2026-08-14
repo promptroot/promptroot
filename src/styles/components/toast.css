@@ -57,6 +57,16 @@
   word-break: break-word;
 }
 
+.toast__link {
+  color: var(--accent, #6366f1);
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.toast__link:hover {
+  text-decoration: none;
+}
+
 .toast__close {
   flex-shrink: 0;
   background: none;

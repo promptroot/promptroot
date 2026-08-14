@@ -8,15 +8,15 @@ import { getAuth } from '../modules/firebase-service.js';
 
 // Static options for initialization
 export const COPEN_OPTIONS_STATIC = [
-  { value: 'allhands', label: 'All Hands', icon: 'front_hand' },
   { value: 'claude', label: 'Claude', icon: 'smart_toy' },
   { value: 'codex', label: 'Codex', icon: 'forum' },
   { value: 'copilot', label: 'Copilot', icon: 'code' },
   { value: 'devin', label: 'Devin', icon: 'engineering' },
+  { value: 'openhands', label: 'OpenHands', icon: 'front_hand' },
   { value: 'qwen', label: 'Qwen', icon: 'terminal' },
+  { value: 'blank', label: 'Blank', icon: 'public' },
   { value: 'gemini', label: 'Gemini', icon: 'auto_awesome' },
-  { value: 'chatgpt', label: 'ChatGPT', icon: 'chat' },
-  { value: 'blank', label: 'Blank', icon: 'public' }
+  { value: 'chatgpt', label: 'ChatGPT', icon: 'chat' }
 ];
 
 // For backward compatibility

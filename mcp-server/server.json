@@ -1,0 +1,32 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+  "name": "io.github.promptroot/mcp-server",
+  "version": "0.1.1",
+  "description": "MCP server for the PromptRoot dev-history wiki. Lets coding agents search, read, and write SDDs and prompts.",
+  "title": "PromptRoot Dev-History Wiki & Prompt Server",
+  "websiteUrl": "https://promptroot.ai",
+  "repository": {
+    "url": "https://github.com/promptroot/promptroot",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@promptroot/mcp-server",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeHint": "npx",
+      "environmentVariables": [
+        {
+          "name": "PROMPTROOT_SESSION_TOKEN",
+          "description": "Bypass the local credentials file with an inline session token. Useful in CI.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

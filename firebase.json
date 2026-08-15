@@ -54,7 +54,6 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "!**/.well-known/**",
       ".git/**",
       ".github/**",
       "**/node_modules/**",
@@ -65,23 +64,6 @@
       "vscode-extension/**"
     ],
     "headers": [
-      {
-        "source": "/.well-known/mcp/server-card.json",
-        "headers": [
-          {
-            "key": "Access-Control-Allow-Origin",
-            "value": "*"
-          },
-          {
-            "key": "Access-Control-Allow-Methods",
-            "value": "GET, OPTIONS"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ]
-      },
       {
         "source": "**",
         "headers": [

@@ -469,65 +469,9 @@ async function openEditQueueModal(docId) {
   subtasksList.id = 'editQueueSubtasksList';
   subtasksGroup.append(subtasksHeader, subtasksList);
 
-  // Repository field
-  const repoGroup = document.createElement('div');
-  repoGroup.className = 'modal__form-group';
-  const repoLabel = document.createElement('label');
-  repoLabel.className = 'form-section-label';
-  repoLabel.textContent = 'Repository:';
-  const repoDropdown = document.createElement('div');
-  repoDropdown.id = 'editQueueRepoDropdown';
-  repoDropdown.className = 'custom-dropdown';
-  const repoBtn = document.createElement('button');
-  repoBtn.id = 'editQueueRepoDropdownBtn';
-  repoBtn.className = 'custom-dropdown-btn w-full';
-  repoBtn.type = 'button';
-  const repoText = document.createElement('span');
-  repoText.id = 'editQueueRepoDropdownText';
-  repoText.textContent = 'Loading...';
-  const repoCaret = document.createElement('span');
-  repoCaret.className = 'custom-dropdown-caret';
-  repoCaret.setAttribute('aria-hidden', 'true');
-  repoCaret.textContent = '▼';
-  repoBtn.append(repoText, repoCaret);
-  const repoMenu = document.createElement('div');
-  repoMenu.id = 'editQueueRepoDropdownMenu';
-  repoMenu.className = 'custom-dropdown-menu';
-  repoMenu.setAttribute('role', 'menu');
-  repoDropdown.append(repoBtn, repoMenu);
-  repoGroup.append(repoLabel, repoDropdown);
-
-  // Branch field
-  const branchGroup = document.createElement('div');
-  branchGroup.className = 'modal__form-group';
-  const branchLabel = document.createElement('label');
-  branchLabel.className = 'form-section-label';
-  branchLabel.textContent = 'Branch:';
-  const branchDropdown = document.createElement('div');
-  branchDropdown.id = 'editQueueBranchDropdown';
-  branchDropdown.className = 'custom-dropdown';
-  const branchBtn = document.createElement('button');
-  branchBtn.id = 'editQueueBranchDropdownBtn';
-  branchBtn.className = 'custom-dropdown-btn w-full';
-  branchBtn.type = 'button';
-  const branchText = document.createElement('span');
-  branchText.id = 'editQueueBranchDropdownText';
-  branchText.textContent = 'Loading branches...';
-  const branchCaret = document.createElement('span');
-  branchCaret.className = 'custom-dropdown-caret';
-  branchCaret.setAttribute('aria-hidden', 'true');
-  branchCaret.textContent = '▼';
-  branchBtn.append(branchText, branchCaret);
-  const branchMenu = document.createElement('div');
-  branchMenu.id = 'editQueueBranchDropdownMenu';
-  branchMenu.className = 'custom-dropdown-menu';
-  branchMenu.setAttribute('role', 'menu');
-  branchDropdown.append(branchBtn, branchMenu);
-  branchGroup.append(branchLabel, branchDropdown);
-
   // Agent field
   const agentGroup = document.createElement('div');
-  agentGroup.className = 'modal__form-group space-below';
+  agentGroup.className = 'modal__form-group';
   const agentLabel = document.createElement('label');
   agentLabel.className = 'form-section-label';
   agentLabel.textContent = 'Agent:';
@@ -582,7 +526,63 @@ async function openEditQueueModal(docId) {
   agentDropdown.append(agentBtn, agentMenu);
   agentGroup.append(agentLabel, agentDropdown);
 
-  body.append(typeGroup, scheduleGroup, promptGroup, subtasksGroup, repoGroup, branchGroup, agentGroup);
+  // Repository field
+  const repoGroup = document.createElement('div');
+  repoGroup.className = 'modal__form-group';
+  const repoLabel = document.createElement('label');
+  repoLabel.className = 'form-section-label';
+  repoLabel.textContent = 'Repository:';
+  const repoDropdown = document.createElement('div');
+  repoDropdown.id = 'editQueueRepoDropdown';
+  repoDropdown.className = 'custom-dropdown';
+  const repoBtn = document.createElement('button');
+  repoBtn.id = 'editQueueRepoDropdownBtn';
+  repoBtn.className = 'custom-dropdown-btn w-full';
+  repoBtn.type = 'button';
+  const repoText = document.createElement('span');
+  repoText.id = 'editQueueRepoDropdownText';
+  repoText.textContent = 'Loading...';
+  const repoCaret = document.createElement('span');
+  repoCaret.className = 'custom-dropdown-caret';
+  repoCaret.setAttribute('aria-hidden', 'true');
+  repoCaret.textContent = '▼';
+  repoBtn.append(repoText, repoCaret);
+  const repoMenu = document.createElement('div');
+  repoMenu.id = 'editQueueRepoDropdownMenu';
+  repoMenu.className = 'custom-dropdown-menu';
+  repoMenu.setAttribute('role', 'menu');
+  repoDropdown.append(repoBtn, repoMenu);
+  repoGroup.append(repoLabel, repoDropdown);
+
+  // Branch field
+  const branchGroup = document.createElement('div');
+  branchGroup.className = 'modal__form-group space-below';
+  const branchLabel = document.createElement('label');
+  branchLabel.className = 'form-section-label';
+  branchLabel.textContent = 'Branch:';
+  const branchDropdown = document.createElement('div');
+  branchDropdown.id = 'editQueueBranchDropdown';
+  branchDropdown.className = 'custom-dropdown';
+  const branchBtn = document.createElement('button');
+  branchBtn.id = 'editQueueBranchDropdownBtn';
+  branchBtn.className = 'custom-dropdown-btn w-full';
+  branchBtn.type = 'button';
+  const branchText = document.createElement('span');
+  branchText.id = 'editQueueBranchDropdownText';
+  branchText.textContent = 'Loading branches...';
+  const branchCaret = document.createElement('span');
+  branchCaret.className = 'custom-dropdown-caret';
+  branchCaret.setAttribute('aria-hidden', 'true');
+  branchCaret.textContent = '▼';
+  branchBtn.append(branchText, branchCaret);
+  const branchMenu = document.createElement('div');
+  branchMenu.id = 'editQueueBranchDropdownMenu';
+  branchMenu.className = 'custom-dropdown-menu';
+  branchMenu.setAttribute('role', 'menu');
+  branchDropdown.append(branchBtn, branchMenu);
+  branchGroup.append(branchLabel, branchDropdown);
+
+  body.append(typeGroup, scheduleGroup, promptGroup, subtasksGroup, agentGroup, repoGroup, branchGroup);
 
   // Footer
   const footer = document.createElement('div');

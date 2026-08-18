@@ -139,6 +139,8 @@ export async function showOpenHandsEnvModal(promptText, owner = null, repo = nul
       return;
     }
 
+    if (queueBtn) queueBtn.disabled = true;
+
     try {
       await addToAgenticQueue(user.uid, {
         type: 'single',
@@ -151,6 +153,7 @@ export async function showOpenHandsEnvModal(promptText, owner = null, repo = nul
       showToast('Prompt queued for OpenHands!', 'success');
       hideOpenHandsEnvModal();
     } catch (err) {
+      if (queueBtn) queueBtn.disabled = false;
       showToast('Failed to queue prompt: ' + err.message, 'error');
     }
   };

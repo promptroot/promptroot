@@ -124,4 +124,38 @@ describe('openhands-modal.js', () => {
     });
     expect(toast.showToast).toHaveBeenCalledWith('Prompt queued for OpenHands!', 'success');
   });
+
+  it('should disable queue button during submission and prevent double clicks', async () => {
+    let resolveQueue;
+    const pendingPromise = new Promise(resolve => { resolveQueue = resolve; });
+    agenticQueue.addToAgenticQueue.mockReturnValue(pendingPromise);
+
+    await showOpenHandsEnvModal('test prompt', 'myowner', 'myrepo', 'feat/test');
+
+    // First click initiates submission
+    const firstClick = queueBtn.click();
+    expect(queueBtn.disabled).toBe(true);
+
+    // Second click while pending should not trigger another call
+    await queueBtn.click();
+    expect(agenticQueue.addToAgenticQueue).toHaveBeenCalledTimes(1);
+
+    // Resolve initial call
+    resolveQueue({ id: 'doc-123' });
+    await firstClick;
+
+    expect(agenticQueue.addToAgenticQueue).toHaveBeenCalledTimes(1);
+    expect(toast.showToast).toHaveBeenCalledWith('Prompt queued for OpenHands!', 'success');
+  });
+
+  it('should re-enable queue button if queueing fails', async () => {
+    agenticQueue.addToAgenticQueue.mockRejectedValue(new Error('Firestore error'));
+
+    await showOpenHandsEnvModal('test prompt', 'myowner', 'myrepo', 'feat/test');
+
+    await queueBtn.click();
+
+    expect(queueBtn.disabled).toBe(false);
+    expect(toast.showToast).toHaveBeenCalledWith('Failed to queue prompt: Firestore error', 'error');
+  });
 });

@@ -930,7 +930,7 @@ async function loadQueuePage() {
     
     setQueueCache(items);
     populateRepoFilter(items);
-    renderQueueList(items);
+    renderQueueList(getFilteredItems());
     setupQueueHandlers();
   } catch (err) {
     const errorInfo = handleError(err, { source: 'loadQueuePage' }, { showDisplay: false });
@@ -1643,14 +1643,16 @@ async function deleteSelectedSubtasks(docId, indices) {
 
 export async function executeQueuePrompt(item, promptText, title) {
   const dest = item.destination || 'jules';
-  if (dest === 'openhands') {
+  if (dest === 'jules') {
+    return await callRunJulesFunction(promptText, item.sourceId, item.branch || 'master', title);
+  } else if (dest === 'openhands') {
     const { callRunOpenHandsFunction } = await import('./openhands-api.js');
     return await callRunOpenHandsFunction(promptText, item.sourceId, item.branch || 'main', title);
   } else if (dest === 'brace') {
     const { dispatchToAgent } = await import('./run-in-agent.js');
     return await dispatchToAgent('brace', { promptText });
   }
-  return await callRunJulesFunction(promptText, item.sourceId, item.branch || 'master', title);
+  throw new Error(`Unknown destination: ${dest}`);
 }
 
 async function runSelectedSubtasks(docId, indices, suppressPopups = false, openInBackground = false) {

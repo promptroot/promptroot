@@ -581,5 +581,10 @@ describe('jules-queue', () => {
 
       expect(dispatchToAgent).toHaveBeenCalledWith('brace', { promptText: 'brace prompt' });
     });
+
+    it('should throw an error for unsupported destination', async () => {
+      const item = { destination: 'unsupported-agent', sourceId: 'src/repo' };
+      await expect(executeQueuePrompt(item, 'test prompt', 'Title')).rejects.toThrow('Unknown destination: unsupported-agent');
+    });
   });
 });

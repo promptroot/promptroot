@@ -42,7 +42,9 @@ import {
   attachQueueHandlers,
   exportQueueToMarkdown,
   getSelectedQueueIds,
-  deleteSelectedQueueItems
+  deleteSelectedQueueItems,
+  getAgentBadgeInfo,
+  executeQueuePrompt
 } from '../../modules/jules-queue.js';
 import { getCache } from '../../utils/session-cache.js';
 import * as julesQueueStore from '../../modules/jules-queue-store.js';
@@ -122,6 +124,14 @@ vi.mock('../../utils/constants.js', () => ({
 
 vi.mock('../../modules/jules-api.js', () => ({
   callRunJulesFunction: vi.fn()
+}));
+
+vi.mock('../../modules/openhands-api.js', () => ({
+  callRunOpenHandsFunction: vi.fn()
+}));
+
+vi.mock('../../modules/run-in-agent.js', () => ({
+  dispatchToAgent: vi.fn()
 }));
 
 vi.mock('../../modules/jules-modal.js', () => ({
@@ -516,6 +526,60 @@ describe('jules-queue', () => {
       hideJulesQueueModal();
 
       expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
+    });
+  });
+
+  describe('getAgentBadgeInfo', () => {
+    it('should return Jules badge info for jules or undefined', () => {
+      expect(getAgentBadgeInfo('jules')).toEqual({ icon: 'smart_toy', label: 'Jules' });
+      expect(getAgentBadgeInfo(undefined)).toEqual({ icon: 'smart_toy', label: 'Jules' });
+      expect(getAgentBadgeInfo(null)).toEqual({ icon: 'smart_toy', label: 'Jules' });
+    });
+
+    it('should return OpenHands badge info for openhands', () => {
+      expect(getAgentBadgeInfo('openhands')).toEqual({ icon: 'front_hand', label: 'OpenHands' });
+    });
+
+    it('should return Brace badge info for brace', () => {
+      expect(getAgentBadgeInfo('brace')).toEqual({ icon: 'hub', label: 'Brace' });
+    });
+  });
+
+  describe('executeQueuePrompt', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('should dispatch to Jules when destination is jules or omitted', async () => {
+      const { callRunJulesFunction } = await import('../../modules/jules-api.js');
+      callRunJulesFunction.mockResolvedValue('https://jules.session/1');
+
+      const item = { sourceId: 'src/repo', branch: 'feat' };
+      const url = await executeQueuePrompt(item, 'test prompt', 'Test Title');
+
+      expect(callRunJulesFunction).toHaveBeenCalledWith('test prompt', 'src/repo', 'feat', 'Test Title');
+      expect(url).toBe('https://jules.session/1');
+    });
+
+    it('should dispatch to OpenHands when destination is openhands', async () => {
+      const { callRunOpenHandsFunction } = await import('../../modules/openhands-api.js');
+      callRunOpenHandsFunction.mockResolvedValue('https://openhands.session/2');
+
+      const item = { destination: 'openhands', sourceId: 'src/repo', branch: 'main' };
+      const url = await executeQueuePrompt(item, 'openhands prompt', 'OH Title');
+
+      expect(callRunOpenHandsFunction).toHaveBeenCalledWith('openhands prompt', 'src/repo', 'main', 'OH Title');
+      expect(url).toBe('https://openhands.session/2');
+    });
+
+    it('should dispatch to Brace when destination is brace', async () => {
+      const { dispatchToAgent } = await import('../../modules/run-in-agent.js');
+      dispatchToAgent.mockResolvedValue();
+
+      const item = { destination: 'brace', sourceId: 'src/repo' };
+      await executeQueuePrompt(item, 'brace prompt', 'Brace Title');
+
+      expect(dispatchToAgent).toHaveBeenCalledWith('brace', { promptText: 'brace prompt' });
     });
   });
 });

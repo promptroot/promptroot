@@ -164,6 +164,18 @@ export function hideJulesQueueModal() {
   }
 }
 
+export function getAgentBadgeInfo(destination) {
+  switch (destination) {
+    case 'openhands':
+      return { icon: 'front_hand', label: 'OpenHands' };
+    case 'brace':
+      return { icon: 'hub', label: 'Brace' };
+    case 'jules':
+    default:
+      return { icon: 'smart_toy', label: 'Jules' };
+  }
+}
+
 export function renderQueueListDirectly(items) {
   setQueueCache(items);
   populateRepoFilter(items);
@@ -203,12 +215,18 @@ function getFilteredItems() {
   
   const repoFilter = document.getElementById('queueRepoFilter');
   const selectedRepo = repoFilter?.value || '';
+
+  const agentFilter = document.getElementById('queueAgentFilter');
+  const selectedAgent = agentFilter?.value || '';
   
-  if (!selectedRepo) {
-    return allItems;
-  }
-  
-  return allItems.filter(item => item.sourceId === selectedRepo);
+  return allItems.filter(item => {
+    if (selectedRepo && item.sourceId !== selectedRepo) return false;
+    if (selectedAgent) {
+      const dest = item.destination || 'jules';
+      if (dest !== selectedAgent) return false;
+    }
+    return true;
+  });
 }
 
 function applyRepoFilter() {
@@ -342,7 +360,8 @@ async function openEditQueueModal(docId) {
   updateEditModalState({
     currentDocId: docId,
     hasUnsavedChanges: false,
-    isInitializing: true
+    isInitializing: true,
+    selectedAgent: item.destination || 'jules'
   });
 
   const modal = document.createElement('div');
@@ -480,7 +499,7 @@ async function openEditQueueModal(docId) {
 
   // Branch field
   const branchGroup = document.createElement('div');
-  branchGroup.className = 'modal__form-group space-below';
+  branchGroup.className = 'modal__form-group';
   const branchLabel = document.createElement('label');
   branchLabel.className = 'form-section-label';
   branchLabel.textContent = 'Branch:';
@@ -506,7 +525,40 @@ async function openEditQueueModal(docId) {
   branchDropdown.append(branchBtn, branchMenu);
   branchGroup.append(branchLabel, branchDropdown);
 
-  body.append(typeGroup, scheduleGroup, promptGroup, subtasksGroup, repoGroup, branchGroup);
+  // Agent field
+  const agentGroup = document.createElement('div');
+  agentGroup.className = 'modal__form-group space-below';
+  const agentLabel = document.createElement('label');
+  agentLabel.className = 'form-section-label';
+  agentLabel.setAttribute('for', 'editQueueAgentSelect');
+  agentLabel.textContent = 'Agent:';
+  const agentSelect = document.createElement('select');
+  agentSelect.id = 'editQueueAgentSelect';
+  agentSelect.className = 'form-control w-full';
+
+  const agentOptions = [
+    { value: 'jules', label: 'Jules (Google Coding Assistant)' },
+    { value: 'openhands', label: 'OpenHands (All-Hands AI)' },
+    { value: 'brace', label: 'Brace (OpenClaw)' }
+  ];
+
+  agentOptions.forEach(opt => {
+    const option = document.createElement('option');
+    option.value = opt.value;
+    option.textContent = opt.label;
+    if (opt.value === (item.destination || 'jules')) {
+      option.selected = true;
+    }
+    agentSelect.appendChild(option);
+  });
+
+  agentSelect.addEventListener('change', (e) => {
+    updateEditModalState({ selectedAgent: e.target.value, hasUnsavedChanges: true });
+  });
+
+  agentGroup.append(agentLabel, agentSelect);
+
+  body.append(typeGroup, scheduleGroup, promptGroup, subtasksGroup, repoGroup, branchGroup, agentGroup);
 
   // Footer
   const footer = document.createElement('div');
@@ -802,10 +854,12 @@ async function saveQueueItemEdit(docId, closeModalCallback) {
     const editModalState = getEditModalState();
     const sourceId = editModalState.repoSelector?.getSelectedSourceId();
     const branch = editModalState.branchSelector?.getSelectedBranch();
+    const destination = editModalState.selectedAgent || item.destination || 'jules';
     
     const updates = {
       sourceId: sourceId || item.sourceId,
       branch: branch || item.branch || 'master',
+      destination: destination,
       updatedAt: getServerTimestamp()
     };
     
@@ -1366,12 +1420,13 @@ function createCardHeader(item, status) {
   const destBadge = document.createElement('span');
   destBadge.className = 'queue-destination-badge';
   const destAgent = item.destination || 'jules';
+  const badgeInfo = getAgentBadgeInfo(destAgent);
   const destIcon = document.createElement('span');
   destIcon.className = 'icon icon-inline';
   destIcon.setAttribute('aria-hidden', 'true');
-  destIcon.textContent = destAgent === 'brace' ? 'hub' : 'smart_toy';
+  destIcon.textContent = badgeInfo.icon;
   destBadge.appendChild(destIcon);
-  destBadge.appendChild(document.createTextNode(' ' + (destAgent === 'brace' ? 'Brace' : 'Jules')));
+  destBadge.appendChild(document.createTextNode(' ' + badgeInfo.label));
   titleDiv.appendChild(document.createTextNode(' '));
   titleDiv.appendChild(destBadge);
   
@@ -1586,6 +1641,18 @@ async function deleteSelectedSubtasks(docId, indices) {
   await serviceDeleteSubtasks(user.uid, docId, indices, item.remaining);
 }
 
+export async function executeQueuePrompt(item, promptText, title) {
+  const dest = item.destination || 'jules';
+  if (dest === 'openhands') {
+    const { callRunOpenHandsFunction } = await import('./openhands-api.js');
+    return await callRunOpenHandsFunction(promptText, item.sourceId, item.branch || 'main', title);
+  } else if (dest === 'brace') {
+    const { dispatchToAgent } = await import('./run-in-agent.js');
+    return await dispatchToAgent('brace', { promptText });
+  }
+  return await callRunJulesFunction(promptText, item.sourceId, item.branch || 'master', title);
+}
+
 async function runSelectedSubtasks(docId, indices, suppressPopups = false, openInBackground = false) {
   const user = getAuth()?.currentUser;
   if (!user) return;
@@ -1607,7 +1674,7 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
     while (retry) {
       try {
         const title = extractTitleFromPrompt(subtask.fullContent);
-        const sessionUrl = await callRunJulesFunction(subtask.fullContent, item.sourceId, item.branch || 'master', title);
+        const sessionUrl = await executeQueuePrompt(item, subtask.fullContent, title);
         if (sessionUrl && !suppressPopups && item.autoOpen !== false) {
           if (openInBackground) {
             openUrlInBackground(sessionUrl);
@@ -1744,6 +1811,13 @@ function setupQueueHandlers() {
   if (repoFilter && !repoFilter.dataset.listenerAttached) {
     repoFilter.dataset.listenerAttached = 'true';
     repoFilter.addEventListener('change', applyRepoFilter);
+  }
+
+  // Agent filter handler
+  const agentFilter = document.getElementById('queueAgentFilter');
+  if (agentFilter && !agentFilter.dataset.listenerAttached) {
+    agentFilter.dataset.listenerAttached = 'true';
+    agentFilter.addEventListener('change', applyRepoFilter);
   }
 
   const runHandler = async () => { await runSelectedQueueItems(); };
@@ -2031,7 +2105,7 @@ async function runSelectedQueueItems() {
         while (retry) {
           try {
             const title = extractTitleFromPrompt(item.prompt || '');
-            const sessionUrl = await callRunJulesFunction(item.prompt || '', item.sourceId, item.branch || 'master', title);
+            const sessionUrl = await executeQueuePrompt(item, item.prompt || '', title);
             if (sessionUrl && !suppressPopups && item.autoOpen !== false) {
               if (openInBackground) {
                 openUrlInBackground(sessionUrl);
@@ -2091,7 +2165,7 @@ async function runSelectedQueueItems() {
           while (subtaskRetry) {
             try {
               const title = extractTitleFromPrompt(s.fullContent);
-              const sessionUrl = await callRunJulesFunction(s.fullContent, item.sourceId, item.branch || 'master', title);
+              const sessionUrl = await executeQueuePrompt(item, s.fullContent, title);
               if (sessionUrl && !suppressPopups && item.autoOpen !== false) {
                 if (openInBackground) {
                   openUrlInBackground(sessionUrl);

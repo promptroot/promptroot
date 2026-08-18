@@ -2,6 +2,7 @@ import { getAuth } from './firebase-service.js';
 import { RepoSelector, BranchSelector } from './repo-branch-selector.js';
 import { checkOpenHandsConfig } from './openhands-keys.js';
 import { callRunOpenHandsFunction } from './openhands-api.js';
+import { addToAgenticQueue } from './agentic-queue.js';
 import { showToast } from './toast.js';
 
 // ===== OpenHands Environment Selection Modal =====
@@ -31,9 +32,11 @@ export async function showOpenHandsEnvModal(promptText, owner = null, repo = nul
   modal.classList.add('show');
 
   const submitBtn = document.getElementById('openhandsEnvSubmitBtn');
+  const queueBtn = document.getElementById('openhandsEnvQueueBtn');
   const cancelBtn = document.getElementById('openhandsEnvCancelBtn');
   
   submitBtn.disabled = true;
+  if (queueBtn) queueBtn.disabled = true;
   
   let selectedSourceId = null;
   let selectedBranch = null;
@@ -57,6 +60,7 @@ export async function showOpenHandsEnvModal(promptText, owner = null, repo = nul
       branchBtn.classList.remove('disabled');
     }
     submitBtn.disabled = false;
+    if (queueBtn) queueBtn.disabled = false;
   }
 
   // Initialize BranchSelector first
@@ -79,6 +83,7 @@ export async function showOpenHandsEnvModal(promptText, owner = null, repo = nul
       selectedSourceId = sourceId;
       selectedBranch = branch;
       submitBtn.disabled = false;
+      if (queueBtn) queueBtn.disabled = false;
       branchSelector.initialize(sourceId, branch);
     }
   });
@@ -125,15 +130,42 @@ export async function showOpenHandsEnvModal(promptText, owner = null, repo = nul
     }
   };
 
+  const handleQueue = async () => {
+    if (!selectedSourceId || !selectedBranch) return;
+
+    const user = getAuth()?.currentUser;
+    if (!user) {
+      showToast('Please sign in to use OpenHands.', 'warn');
+      return;
+    }
+
+    try {
+      await addToAgenticQueue(user.uid, {
+        type: 'single',
+        prompt: promptText,
+        sourceId: selectedSourceId,
+        branch: selectedBranch,
+        destination: 'openhands',
+        note: 'Queued for OpenHands'
+      });
+      showToast('Prompt queued for OpenHands!', 'success');
+      hideOpenHandsEnvModal();
+    } catch (err) {
+      showToast('Failed to queue prompt: ' + err.message, 'error');
+    }
+  };
+
   const handleCancel = () => {
     hideOpenHandsEnvModal();
   };
 
   submitBtn.addEventListener('click', handleSubmit);
+  if (queueBtn) queueBtn.addEventListener('click', handleQueue);
   cancelBtn.addEventListener('click', handleCancel);
 
   envModalCleanup = () => {
     submitBtn.removeEventListener('click', handleSubmit);
+    if (queueBtn) queueBtn.removeEventListener('click', handleQueue);
     cancelBtn.removeEventListener('click', handleCancel);
     envModalCleanup = null;
   };

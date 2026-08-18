@@ -530,11 +530,21 @@ async function openEditQueueModal(docId) {
   agentGroup.className = 'modal__form-group space-below';
   const agentLabel = document.createElement('label');
   agentLabel.className = 'form-section-label';
-  agentLabel.setAttribute('for', 'editQueueAgentSelect');
   agentLabel.textContent = 'Agent:';
-  const agentSelect = document.createElement('select');
-  agentSelect.id = 'editQueueAgentSelect';
-  agentSelect.className = 'form-control w-full';
+
+  const agentDropdown = document.createElement('div');
+  agentDropdown.id = 'editQueueAgentDropdown';
+  agentDropdown.className = 'custom-dropdown';
+
+  const agentBtn = document.createElement('button');
+  agentBtn.id = 'editQueueAgentDropdownBtn';
+  agentBtn.className = 'custom-dropdown-btn w-full';
+  agentBtn.type = 'button';
+  agentBtn.setAttribute('aria-haspopup', 'true');
+  agentBtn.setAttribute('aria-expanded', 'false');
+
+  const agentText = document.createElement('span');
+  agentText.id = 'editQueueAgentDropdownText';
 
   const agentOptions = [
     { value: 'jules', label: 'Jules (Google Coding Assistant)' },
@@ -542,21 +552,35 @@ async function openEditQueueModal(docId) {
     { value: 'brace', label: 'Brace (OpenClaw)' }
   ];
 
+  const currentSelectedAgent = item.destination || 'jules';
+  const initialOption = agentOptions.find(opt => opt.value === currentSelectedAgent) || agentOptions[0];
+  agentText.textContent = initialOption.label;
+
+  const agentCaret = document.createElement('span');
+  agentCaret.className = 'custom-dropdown-caret';
+  agentCaret.setAttribute('aria-hidden', 'true');
+  agentCaret.textContent = '▼';
+  agentBtn.append(agentText, agentCaret);
+
+  const agentMenu = document.createElement('div');
+  agentMenu.id = 'editQueueAgentDropdownMenu';
+  agentMenu.className = 'custom-dropdown-menu';
+  agentMenu.setAttribute('role', 'menu');
+
   agentOptions.forEach(opt => {
-    const option = document.createElement('option');
-    option.value = opt.value;
-    option.textContent = opt.label;
-    if (opt.value === (item.destination || 'jules')) {
-      option.selected = true;
+    const itemEl = document.createElement('div');
+    itemEl.className = 'custom-dropdown-item';
+    if (opt.value === currentSelectedAgent) {
+      itemEl.classList.add('selected');
     }
-    agentSelect.appendChild(option);
+    itemEl.setAttribute('role', 'menuitem');
+    itemEl.textContent = opt.label;
+    itemEl.dataset.value = opt.value;
+    agentMenu.appendChild(itemEl);
   });
 
-  agentSelect.addEventListener('change', (e) => {
-    updateEditModalState({ selectedAgent: e.target.value, hasUnsavedChanges: true });
-  });
-
-  agentGroup.append(agentLabel, agentSelect);
+  agentDropdown.append(agentBtn, agentMenu);
+  agentGroup.append(agentLabel, agentDropdown);
 
   body.append(typeGroup, scheduleGroup, promptGroup, subtasksGroup, repoGroup, branchGroup, agentGroup);
 
@@ -606,6 +630,71 @@ async function openEditQueueModal(docId) {
   if (unscheduleBtn) {
     newModal.addListener(unscheduleBtn, 'click', unscheduleQueueItem);
   }
+
+  // Agent dropdown wiring
+  const closeAgentDropdown = () => {
+    agentMenu.classList.remove('dropdown-menu--open');
+    agentBtn.setAttribute('aria-expanded', 'false');
+    agentMenu.classList.remove('dropdown-menu--positioned');
+    agentMenu.style.removeProperty('--dropdown-top');
+    agentMenu.style.removeProperty('--dropdown-left');
+    agentMenu.style.removeProperty('--dropdown-width');
+  };
+
+  const handleAgentToggle = (e) => {
+    e.stopPropagation();
+    repoDropdownMenu?.classList.remove('dropdown-menu--open');
+    branchDropdownMenu?.classList.remove('dropdown-menu--open');
+
+    if (agentMenu.classList.contains('dropdown-menu--open')) {
+      closeAgentDropdown();
+      return;
+    }
+
+    agentBtn.setAttribute('aria-expanded', 'true');
+
+    const computedStyle = window.getComputedStyle(agentMenu);
+    if (computedStyle.position === 'fixed') {
+      const rect = agentBtn.getBoundingClientRect();
+      agentMenu.classList.add('dropdown-menu--positioned');
+      agentMenu.style.setProperty('--dropdown-top', `${rect.bottom + 4}px`);
+      agentMenu.style.setProperty('--dropdown-left', `${rect.left}px`);
+      agentMenu.style.setProperty('--dropdown-width', `${rect.width}px`);
+    }
+
+    const currentAgent = getEditModalState().selectedAgent || currentSelectedAgent;
+    agentMenu.querySelectorAll('.custom-dropdown-item').forEach(el => {
+      el.classList.toggle('selected', el.dataset.value === currentAgent);
+    });
+
+    agentMenu.classList.add('dropdown-menu--open');
+  };
+
+  const handleAgentMenuClick = (e) => {
+    const itemEl = e.target.closest('.custom-dropdown-item');
+    if (!itemEl) return;
+    e.stopPropagation();
+    const val = itemEl.dataset.value;
+    const opt = agentOptions.find(o => o.value === val);
+    if (opt) {
+      agentText.textContent = opt.label;
+      agentMenu.querySelectorAll('.custom-dropdown-item').forEach(el => {
+        el.classList.toggle('selected', el === itemEl);
+      });
+      updateEditModalState({ selectedAgent: val, hasUnsavedChanges: true });
+    }
+    closeAgentDropdown();
+  };
+
+  const handleDocClickForAgent = (e) => {
+    if (!agentBtn.contains(e.target) && !agentMenu.contains(e.target)) {
+      closeAgentDropdown();
+    }
+  };
+
+  newModal.addListener(agentBtn, 'click', handleAgentToggle);
+  newModal.addListener(agentMenu, 'click', handleAgentMenuClick);
+  newModal.addListener(document, 'click', handleDocClickForAgent);
 
   setupSubtasksEventDelegation();
 

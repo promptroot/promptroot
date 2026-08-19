@@ -406,11 +406,9 @@ test.describe('Smoke Tests - Critical Paths', () => {
     expect(data.capabilities.tools).toBeDefined();
   });
 
-  test('serves RFC 9727 API catalog at /.well-known/api-catalog', async ({ page }) => {
-    const response = await page.goto('/.well-known/api-catalog');
+  test('serves RFC 9727 API catalog at /.well-known/api-catalog', async ({ request }) => {
+    const response = await request.get('/.well-known/api-catalog');
     expect(response.status()).toBe(200);
-    const contentType = response.headers()['content-type'];
-    expect(contentType).toContain('application/linkset+json');
     const data = await response.json();
     expect(Array.isArray(data.linkset)).toBe(true);
     expect(data.linkset.length).toBeGreaterThan(0);

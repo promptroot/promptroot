@@ -26,11 +26,11 @@ north star — never scheduled directly, never blocked:
 every task states which roadmap number it serves and, where true, how it also
 moves 9/10 forward.
 
-## this round's focus  <swap this block each round, keep everything else stable>
+## this round's focus
 performance quick wins · micro-optimizations that unblock bigger refactors ·
 obvious inefficiencies removable without rewrites
 verified spots to prefer:
-<paste ~10 lines from the hint bank>
+all
 
 ## hard rules — violating any one invalidates the whole plan
 R1 exactly 10 tasks, each independently mergeable in any order
@@ -47,7 +47,7 @@ R6 you write no implementation code — the plan is the deliverable
 
 ## process — do these in order, do not skip P1
 P1 search the actual code for candidate spots matching the focus block
-P2 check open PRs (R3), discard colliding candidates
+P2 check recently open PRs (R3), discard colliding candidates
 P3 rank what remains by user impact divided by blast radius
 P4 write the top 10 as full work orders using the template below
 P5 run the self-check, fix violations silently, then output

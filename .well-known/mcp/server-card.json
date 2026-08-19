@@ -59,8 +59,6 @@
       "promptroot_restore_version": {
         "description": "Roll an SDD back to an earlier version."
       }
-    },
-    "resources": {},
-    "prompts": {}
+    }
   }
 }

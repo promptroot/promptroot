@@ -24,13 +24,18 @@ describe('MCP Server Card (.well-known/mcp/server-card.json)', () => {
     expect(parsed.serverInfo.version).toBeDefined();
   });
 
-  it('matches version with mcp-server/package.json', () => {
+  it('matches version with mcp-server/package.json and server runtime', () => {
     const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
     expect(parsed.serverInfo.version).toBe(pkg.version);
     if (parsed.packages && parsed.packages[0]) {
       expect(parsed.packages[0].version).toBe(pkg.version);
     }
+
+    const serverJs = fs.readFileSync(path.resolve(process.cwd(), 'mcp-server/src/server.js'), 'utf8');
+    const versionMatch = serverJs.match(/version:\s*['"]([^'"]+)['"]/);
+    expect(versionMatch).not.toBeNull();
+    expect(versionMatch[1]).toBe(pkg.version);
   });
 
   it('declares transport, packages and tool capabilities', () => {

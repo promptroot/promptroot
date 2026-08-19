@@ -1,0 +1,85 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://us-central1-promptroot-b02a2.cloudfunctions.net/ragQuery",
+      "service-doc": [
+        {
+          "href": "https://promptroot.ai/wiki",
+          "type": "text/html",
+          "title": "PromptRoot Dev-History Wiki UI & Documentation"
+        },
+        {
+          "href": "https://github.com/promptroot/promptroot/blob/main/AGENTS.md",
+          "type": "text/markdown",
+          "title": "Dev-History Search Agent Integration Guide"
+        }
+      ],
+      "service-desc": [
+        {
+          "href": "https://promptroot.ai/.well-known/mcp/server-card.json",
+          "type": "application/json",
+          "title": "MCP Tool Definitions for SDD Search"
+        }
+      ],
+      "title": "PromptRoot Dev-History Wiki RAG Search API"
+    },
+    {
+      "anchor": "https://us-central1-promptroot-b02a2.cloudfunctions.net/agentApi",
+      "service-doc": [
+        {
+          "href": "https://promptroot.ai/agent-api",
+          "type": "text/html",
+          "title": "PromptRoot Agent REST API Documentation and Key Management"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://us-central1-promptroot-b02a2.cloudfunctions.net/agentApi/prompts",
+          "type": "application/json",
+          "title": "Agent API Prompts Endpoint Status"
+        }
+      ],
+      "title": "PromptRoot Agent REST API"
+    },
+    {
+      "anchor": "https://us-central1-promptroot-b02a2.cloudfunctions.net/startDeviceAuth",
+      "service-doc": [
+        {
+          "href": "https://promptroot.ai/auth/device",
+          "type": "text/html",
+          "title": "Device Flow Interactive Code Verification"
+        }
+      ],
+      "title": "PromptRoot Agent Device Flow Authentication API"
+    },
+    {
+      "anchor": "https://promptroot.ai/.well-known/mcp/server-card.json",
+      "service-desc": [
+        {
+          "href": "https://promptroot.ai/.well-known/mcp/server-card.json",
+          "type": "application/json",
+          "title": "PromptRoot MCP Server Card (SEP-1649)"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://github.com/promptroot/promptroot/blob/main/AGENTS.md",
+          "type": "text/markdown",
+          "title": "MCP Integration Instructions for AI Agents"
+        }
+      ],
+      "title": "PromptRoot Model Context Protocol (MCP) Server"
+    },
+    {
+      "anchor": "https://us-central1-promptroot-b02a2.cloudfunctions.net/runJulesHttp",
+      "service-doc": [
+        {
+          "href": "https://promptroot.ai/queue",
+          "type": "text/html",
+          "title": "Jules Queue Task Management UI"
+        }
+      ],
+      "title": "PromptRoot Jules Queue Execution API"
+    }
+  ]
+}

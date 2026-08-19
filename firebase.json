@@ -98,6 +98,10 @@
             "value": "GET, OPTIONS"
           },
           {
+            "key": "Access-Control-Allow-Headers",
+            "value": "Content-Type, Authorization, If-None-Match"
+          },
+          {
             "key": "Content-Type",
             "value": "application/linkset+json"
           }

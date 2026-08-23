@@ -166,13 +166,13 @@ export function hideJulesQueueModal() {
 
 export function getAgentBadgeInfo(destination) {
   switch (destination) {
+    case 'jules':
+    default:
+      return { icon: 'smart_toy', label: 'Jules' };
     case 'openhands':
       return { icon: 'front_hand', label: 'OpenHands' };
     case 'brace':
       return { icon: 'hub', label: 'Brace' };
-    case 'jules':
-    default:
-      return { icon: 'smart_toy', label: 'Jules' };
   }
 }
 

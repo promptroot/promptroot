@@ -397,4 +397,12 @@ test.describe('Smoke Tests - Critical Paths', () => {
     // Should load in under 10 seconds (generous for E2E)
     expect(loadTime).toBeLessThan(10000);
   });
+
+  test('serves MCP server card at /.well-known/mcp/server-card.json', async ({ request }) => {
+    const response = await request.get('/.well-known/mcp/server-card.json');
+    expect(response.status()).toBe(200);
+    const data = await response.json();
+    expect(data.serverInfo.name).toBe('promptroot');
+    expect(data.capabilities.tools).toBeDefined();
+  });
 });

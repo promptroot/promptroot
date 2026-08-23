@@ -5,7 +5,7 @@ import { toolDefinitions } from './tools.js';
 
 export function createServer() {
   const server = new Server(
-    { name: 'promptroot', version: '0.1.0' },
+    { name: 'promptroot', version: '0.1.1' },
     { capabilities: { tools: {} } }
   );
 

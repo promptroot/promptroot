@@ -87,6 +87,27 @@
         ]
       },
       {
+        "source": "/.well-known/api-catalog",
+        "headers": [
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          },
+          {
+            "key": "Access-Control-Allow-Methods",
+            "value": "GET, OPTIONS"
+          },
+          {
+            "key": "Access-Control-Allow-Headers",
+            "value": "Content-Type, Authorization, If-None-Match"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/linkset+json"
+          }
+        ]
+      },
+      {
         "source": "**",
         "headers": [
           {

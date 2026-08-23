@@ -405,4 +405,12 @@ test.describe('Smoke Tests - Critical Paths', () => {
     expect(data.serverInfo.name).toBe('promptroot');
     expect(data.capabilities.tools).toBeDefined();
   });
+
+  test('serves RFC 9727 API catalog at /.well-known/api-catalog', async ({ request }) => {
+    const response = await request.get('/.well-known/api-catalog');
+    expect(response.status()).toBe(200);
+    const data = await response.json();
+    expect(Array.isArray(data.linkset)).toBe(true);
+    expect(data.linkset.length).toBeGreaterThan(0);
+  });
 });

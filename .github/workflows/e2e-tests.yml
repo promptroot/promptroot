@@ -63,7 +63,7 @@ jobs:
     
     - name: Upload test results
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: playwright-report-${{ matrix.os }}-${{ matrix.browser }}
         path: playwright-report/
@@ -71,7 +71,7 @@ jobs:
     
     - name: Upload test videos
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: test-videos-${{ matrix.os }}-${{ matrix.browser }}
         path: test-results/
@@ -79,7 +79,7 @@ jobs:
     
     - name: Upload test artifacts
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: test-artifacts-${{ matrix.os }}-${{ matrix.browser }}
         path: |
@@ -100,7 +100,7 @@ jobs:
         path: all-reports
     
     - name: Publish test report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: combined-test-report
         path: all-reports/

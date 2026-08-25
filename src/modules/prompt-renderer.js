@@ -175,7 +175,8 @@ function _initRunInAgentButton() {
           showToast('Failed to load OpenHands: ' + err.message, 'error');
         });
       } else if (selectedAgent === 'brace') {
-        dispatchToAgent('brace', { promptText: currentPromptText });
+        dispatchToAgent('brace', { promptText: currentPromptText })
+          .catch(err => showToast(err.message, 'error'));
       }
     }
   });

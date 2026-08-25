@@ -578,7 +578,8 @@ export async function showFreeInputForm() {
         } else if (selectedAgent === 'brace') {
           const promptText = validatePromptText();
           if (!promptText) return;
-          dispatchToAgent('brace', { promptText });
+          dispatchToAgent('brace', { promptText })
+            .catch(err => showToast(err.message, 'error'));
         }
       }
     });

@@ -179,7 +179,7 @@ export function getAgentBadgeInfo(destination) {
 export function renderQueueListDirectly(items) {
   setQueueCache(items);
   populateRepoFilter(items);
-  renderQueueList(items);
+  renderQueueList(getFilteredItems());
 }
 
 // Repository filtering functionality
@@ -195,6 +195,8 @@ function populateRepoFilter(items) {
     }
   });
   
+  const previousSelection = repoFilter.value;
+
   // Clear existing options except the first (All Repositories)
   while (repoFilter.children.length > 1) {
     repoFilter.removeChild(repoFilter.lastChild);
@@ -207,6 +209,10 @@ function populateRepoFilter(items) {
     option.textContent = repo;
     repoFilter.appendChild(option);
   });
+
+  if (previousSelection && repos.has(previousSelection)) {
+    repoFilter.value = previousSelection;
+  }
 }
 
 function getFilteredItems() {

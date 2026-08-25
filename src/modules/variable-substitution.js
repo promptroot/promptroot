@@ -570,7 +570,7 @@ export function showCustomizeModal(promptText) {
           await dispatchToAgent('brace', { promptText: text });
         } catch (error) {
           console.error('Failed to send to Brace:', error);
-          showToast('Failed to send to Brace', 'error');
+          showToast(error.message, 'error');
         }
       }
       

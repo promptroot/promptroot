@@ -376,6 +376,49 @@ describe('jules-queue', () => {
     it('should handle empty array', () => {
       expect(() => renderQueueListDirectly([])).not.toThrow();
     });
+
+    it('should apply the agent filter instead of rendering every item', () => {
+      const items = [
+        { id: '1', prompt: 'Jules task', destination: 'jules' },
+        { id: '2', prompt: 'Brace task', destination: 'brace' }
+      ];
+      julesQueueStore.getQueueCache.mockReturnValue(items);
+
+      const listDiv = createMockElement('div');
+      const agentFilter = createMockElement('select');
+      agentFilter.value = 'brace';
+      global.document.getElementById.mockImplementation((id) => {
+        if (id === 'allQueueList') return listDiv;
+        if (id === 'queueAgentFilter') return agentFilter;
+        return null;
+      });
+
+      renderQueueListDirectly(items);
+
+      expect(julesQueueStore.setQueueCache).toHaveBeenCalledWith(items);
+      expect(listDiv.appendChild).toHaveBeenCalledTimes(1);
+    });
+
+    it('should render every item when no agent filter is selected', () => {
+      const items = [
+        { id: '1', prompt: 'Jules task', destination: 'jules' },
+        { id: '2', prompt: 'Brace task', destination: 'brace' }
+      ];
+      julesQueueStore.getQueueCache.mockReturnValue(items);
+
+      const listDiv = createMockElement('div');
+      const agentFilter = createMockElement('select');
+      agentFilter.value = '';
+      global.document.getElementById.mockImplementation((id) => {
+        if (id === 'allQueueList') return listDiv;
+        if (id === 'queueAgentFilter') return agentFilter;
+        return null;
+      });
+
+      renderQueueListDirectly(items);
+
+      expect(listDiv.appendChild).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('deleteSelectedQueueItems', () => {

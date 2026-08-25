@@ -29,6 +29,6 @@
     "@vitest/coverage-v8": "^2.1.8",
     "dotenv": "^17.2.3",
     "jsdom": "^25.0.1",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.11"
   }
 }

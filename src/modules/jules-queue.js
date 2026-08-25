@@ -164,10 +164,22 @@ export function hideJulesQueueModal() {
   }
 }
 
+export function getAgentBadgeInfo(destination) {
+  switch (destination) {
+    case 'jules':
+    default:
+      return { icon: 'smart_toy', label: 'Jules' };
+    case 'openhands':
+      return { icon: 'front_hand', label: 'OpenHands' };
+    case 'brace':
+      return { icon: 'hub', label: 'Brace' };
+  }
+}
+
 export function renderQueueListDirectly(items) {
   setQueueCache(items);
   populateRepoFilter(items);
-  renderQueueList(items);
+  renderQueueList(getFilteredItems());
 }
 
 // Repository filtering functionality
@@ -183,6 +195,8 @@ function populateRepoFilter(items) {
     }
   });
   
+  const previousSelection = repoFilter.value;
+
   // Clear existing options except the first (All Repositories)
   while (repoFilter.children.length > 1) {
     repoFilter.removeChild(repoFilter.lastChild);
@@ -195,6 +209,10 @@ function populateRepoFilter(items) {
     option.textContent = repo;
     repoFilter.appendChild(option);
   });
+
+  if (previousSelection && repos.has(previousSelection)) {
+    repoFilter.value = previousSelection;
+  }
 }
 
 function getFilteredItems() {
@@ -203,12 +221,18 @@ function getFilteredItems() {
   
   const repoFilter = document.getElementById('queueRepoFilter');
   const selectedRepo = repoFilter?.value || '';
+
+  const agentFilter = document.getElementById('queueAgentFilter');
+  const selectedAgent = agentFilter?.value || '';
   
-  if (!selectedRepo) {
-    return allItems;
-  }
-  
-  return allItems.filter(item => item.sourceId === selectedRepo);
+  return allItems.filter(item => {
+    if (selectedRepo && item.sourceId !== selectedRepo) return false;
+    if (selectedAgent) {
+      const dest = item.destination || 'jules';
+      if (dest !== selectedAgent) return false;
+    }
+    return true;
+  });
 }
 
 function applyRepoFilter() {
@@ -342,7 +366,8 @@ async function openEditQueueModal(docId) {
   updateEditModalState({
     currentDocId: docId,
     hasUnsavedChanges: false,
-    isInitializing: true
+    isInitializing: true,
+    selectedAgent: item.destination || 'jules'
   });
 
   const modal = document.createElement('div');
@@ -450,6 +475,63 @@ async function openEditQueueModal(docId) {
   subtasksList.id = 'editQueueSubtasksList';
   subtasksGroup.append(subtasksHeader, subtasksList);
 
+  // Agent field
+  const agentGroup = document.createElement('div');
+  agentGroup.className = 'modal__form-group';
+  const agentLabel = document.createElement('label');
+  agentLabel.className = 'form-section-label';
+  agentLabel.textContent = 'Agent:';
+
+  const agentDropdown = document.createElement('div');
+  agentDropdown.id = 'editQueueAgentDropdown';
+  agentDropdown.className = 'custom-dropdown';
+
+  const agentBtn = document.createElement('button');
+  agentBtn.id = 'editQueueAgentDropdownBtn';
+  agentBtn.className = 'custom-dropdown-btn w-full';
+  agentBtn.type = 'button';
+  agentBtn.setAttribute('aria-haspopup', 'true');
+  agentBtn.setAttribute('aria-expanded', 'false');
+
+  const agentText = document.createElement('span');
+  agentText.id = 'editQueueAgentDropdownText';
+
+  const agentOptions = [
+    { value: 'jules', label: 'Jules (Google Coding Assistant)' },
+    { value: 'openhands', label: 'OpenHands (All-Hands AI)' },
+    { value: 'brace', label: 'Brace (OpenClaw)' }
+  ];
+
+  const currentSelectedAgent = item.destination || 'jules';
+  const initialOption = agentOptions.find(opt => opt.value === currentSelectedAgent) || agentOptions[0];
+  agentText.textContent = initialOption.label;
+
+  const agentCaret = document.createElement('span');
+  agentCaret.className = 'custom-dropdown-caret';
+  agentCaret.setAttribute('aria-hidden', 'true');
+  agentCaret.textContent = '▼';
+  agentBtn.append(agentText, agentCaret);
+
+  const agentMenu = document.createElement('div');
+  agentMenu.id = 'editQueueAgentDropdownMenu';
+  agentMenu.className = 'custom-dropdown-menu';
+  agentMenu.setAttribute('role', 'menu');
+
+  agentOptions.forEach(opt => {
+    const itemEl = document.createElement('div');
+    itemEl.className = 'custom-dropdown-item';
+    if (opt.value === currentSelectedAgent) {
+      itemEl.classList.add('selected');
+    }
+    itemEl.setAttribute('role', 'menuitem');
+    itemEl.textContent = opt.label;
+    itemEl.dataset.value = opt.value;
+    agentMenu.appendChild(itemEl);
+  });
+
+  agentDropdown.append(agentBtn, agentMenu);
+  agentGroup.append(agentLabel, agentDropdown);
+
   // Repository field
   const repoGroup = document.createElement('div');
   repoGroup.className = 'modal__form-group';
@@ -506,7 +588,7 @@ async function openEditQueueModal(docId) {
   branchDropdown.append(branchBtn, branchMenu);
   branchGroup.append(branchLabel, branchDropdown);
 
-  body.append(typeGroup, scheduleGroup, promptGroup, subtasksGroup, repoGroup, branchGroup);
+  body.append(typeGroup, scheduleGroup, promptGroup, subtasksGroup, agentGroup, repoGroup, branchGroup);
 
   // Footer
   const footer = document.createElement('div');
@@ -554,6 +636,71 @@ async function openEditQueueModal(docId) {
   if (unscheduleBtn) {
     newModal.addListener(unscheduleBtn, 'click', unscheduleQueueItem);
   }
+
+  // Agent dropdown wiring
+  const closeAgentDropdown = () => {
+    agentMenu.classList.remove('dropdown-menu--open');
+    agentBtn.setAttribute('aria-expanded', 'false');
+    agentMenu.classList.remove('dropdown-menu--positioned');
+    agentMenu.style.removeProperty('--dropdown-top');
+    agentMenu.style.removeProperty('--dropdown-left');
+    agentMenu.style.removeProperty('--dropdown-width');
+  };
+
+  const handleAgentToggle = (e) => {
+    e.stopPropagation();
+    repoDropdownMenu?.classList.remove('dropdown-menu--open');
+    branchDropdownMenu?.classList.remove('dropdown-menu--open');
+
+    if (agentMenu.classList.contains('dropdown-menu--open')) {
+      closeAgentDropdown();
+      return;
+    }
+
+    agentBtn.setAttribute('aria-expanded', 'true');
+
+    const computedStyle = window.getComputedStyle(agentMenu);
+    if (computedStyle.position === 'fixed') {
+      const rect = agentBtn.getBoundingClientRect();
+      agentMenu.classList.add('dropdown-menu--positioned');
+      agentMenu.style.setProperty('--dropdown-top', `${rect.bottom + 4}px`);
+      agentMenu.style.setProperty('--dropdown-left', `${rect.left}px`);
+      agentMenu.style.setProperty('--dropdown-width', `${rect.width}px`);
+    }
+
+    const currentAgent = getEditModalState().selectedAgent || currentSelectedAgent;
+    agentMenu.querySelectorAll('.custom-dropdown-item').forEach(el => {
+      el.classList.toggle('selected', el.dataset.value === currentAgent);
+    });
+
+    agentMenu.classList.add('dropdown-menu--open');
+  };
+
+  const handleAgentMenuClick = (e) => {
+    const itemEl = e.target.closest('.custom-dropdown-item');
+    if (!itemEl) return;
+    e.stopPropagation();
+    const val = itemEl.dataset.value;
+    const opt = agentOptions.find(o => o.value === val);
+    if (opt) {
+      agentText.textContent = opt.label;
+      agentMenu.querySelectorAll('.custom-dropdown-item').forEach(el => {
+        el.classList.toggle('selected', el === itemEl);
+      });
+      updateEditModalState({ selectedAgent: val, hasUnsavedChanges: true });
+    }
+    closeAgentDropdown();
+  };
+
+  const handleDocClickForAgent = (e) => {
+    if (!agentBtn.contains(e.target) && !agentMenu.contains(e.target)) {
+      closeAgentDropdown();
+    }
+  };
+
+  newModal.addListener(agentBtn, 'click', handleAgentToggle);
+  newModal.addListener(agentMenu, 'click', handleAgentMenuClick);
+  newModal.addListener(document, 'click', handleDocClickForAgent);
 
   setupSubtasksEventDelegation();
 
@@ -802,10 +949,12 @@ async function saveQueueItemEdit(docId, closeModalCallback) {
     const editModalState = getEditModalState();
     const sourceId = editModalState.repoSelector?.getSelectedSourceId();
     const branch = editModalState.branchSelector?.getSelectedBranch();
+    const destination = editModalState.selectedAgent || item.destination || 'jules';
     
     const updates = {
       sourceId: sourceId || item.sourceId,
       branch: branch || item.branch || 'master',
+      destination: destination,
       updatedAt: getServerTimestamp()
     };
     
@@ -876,7 +1025,7 @@ async function loadQueuePage() {
     
     setQueueCache(items);
     populateRepoFilter(items);
-    renderQueueList(items);
+    renderQueueList(getFilteredItems());
     setupQueueHandlers();
   } catch (err) {
     const errorInfo = handleError(err, { source: 'loadQueuePage' }, { showDisplay: false });
@@ -1366,12 +1515,13 @@ function createCardHeader(item, status) {
   const destBadge = document.createElement('span');
   destBadge.className = 'queue-destination-badge';
   const destAgent = item.destination || 'jules';
+  const badgeInfo = getAgentBadgeInfo(destAgent);
   const destIcon = document.createElement('span');
   destIcon.className = 'icon icon-inline';
   destIcon.setAttribute('aria-hidden', 'true');
-  destIcon.textContent = destAgent === 'brace' ? 'hub' : 'smart_toy';
+  destIcon.textContent = badgeInfo.icon;
   destBadge.appendChild(destIcon);
-  destBadge.appendChild(document.createTextNode(' ' + (destAgent === 'brace' ? 'Brace' : 'Jules')));
+  destBadge.appendChild(document.createTextNode(' ' + badgeInfo.label));
   titleDiv.appendChild(document.createTextNode(' '));
   titleDiv.appendChild(destBadge);
   
@@ -1586,6 +1736,20 @@ async function deleteSelectedSubtasks(docId, indices) {
   await serviceDeleteSubtasks(user.uid, docId, indices, item.remaining);
 }
 
+export async function executeQueuePrompt(item, promptText, title) {
+  const dest = item.destination || 'jules';
+  if (dest === 'jules') {
+    return await callRunJulesFunction(promptText, item.sourceId, item.branch || 'master', title);
+  } else if (dest === 'openhands') {
+    const { callRunOpenHandsFunction } = await import('./openhands-api.js');
+    return await callRunOpenHandsFunction(promptText, item.sourceId, item.branch || 'main', title);
+  } else if (dest === 'brace') {
+    const { dispatchToAgent } = await import('./run-in-agent.js');
+    return await dispatchToAgent('brace', { promptText });
+  }
+  throw new Error(`Unknown destination: ${dest}`);
+}
+
 async function runSelectedSubtasks(docId, indices, suppressPopups = false, openInBackground = false) {
   const user = getAuth()?.currentUser;
   if (!user) return;
@@ -1607,7 +1771,7 @@ async function runSelectedSubtasks(docId, indices, suppressPopups = false, openI
     while (retry) {
       try {
         const title = extractTitleFromPrompt(subtask.fullContent);
-        const sessionUrl = await callRunJulesFunction(subtask.fullContent, item.sourceId, item.branch || 'master', title);
+        const sessionUrl = await executeQueuePrompt(item, subtask.fullContent, title);
         if (sessionUrl && !suppressPopups && item.autoOpen !== false) {
           if (openInBackground) {
             openUrlInBackground(sessionUrl);
@@ -1744,6 +1908,13 @@ function setupQueueHandlers() {
   if (repoFilter && !repoFilter.dataset.listenerAttached) {
     repoFilter.dataset.listenerAttached = 'true';
     repoFilter.addEventListener('change', applyRepoFilter);
+  }
+
+  // Agent filter handler
+  const agentFilter = document.getElementById('queueAgentFilter');
+  if (agentFilter && !agentFilter.dataset.listenerAttached) {
+    agentFilter.dataset.listenerAttached = 'true';
+    agentFilter.addEventListener('change', applyRepoFilter);
   }
 
   const runHandler = async () => { await runSelectedQueueItems(); };
@@ -2031,7 +2202,7 @@ async function runSelectedQueueItems() {
         while (retry) {
           try {
             const title = extractTitleFromPrompt(item.prompt || '');
-            const sessionUrl = await callRunJulesFunction(item.prompt || '', item.sourceId, item.branch || 'master', title);
+            const sessionUrl = await executeQueuePrompt(item, item.prompt || '', title);
             if (sessionUrl && !suppressPopups && item.autoOpen !== false) {
               if (openInBackground) {
                 openUrlInBackground(sessionUrl);
@@ -2091,7 +2262,7 @@ async function runSelectedQueueItems() {
           while (subtaskRetry) {
             try {
               const title = extractTitleFromPrompt(s.fullContent);
-              const sessionUrl = await callRunJulesFunction(s.fullContent, item.sourceId, item.branch || 'master', title);
+              const sessionUrl = await executeQueuePrompt(item, s.fullContent, title);
               if (sessionUrl && !suppressPopups && item.autoOpen !== false) {
                 if (openInBackground) {
                   openUrlInBackground(sessionUrl);

@@ -439,7 +439,8 @@ export async function showFreeInputForm() {
         destination: selectedAgent,
         note: 'Queued from Free Input'
       });
-      showToast(`Prompt queued for ${selectedAgent === 'brace' ? 'Brace' : 'Jules'}!`, 'success');
+      const agentLabel = selectedAgent === 'openhands' ? 'OpenHands' : selectedAgent === 'brace' ? 'Brace' : 'Jules';
+      showToast(`Prompt queued for ${agentLabel}!`, 'success');
       showFreeInputForm();
     } catch (err) {
       showToast('Failed to queue prompt: ' + err.message, 'error');
@@ -577,7 +578,8 @@ export async function showFreeInputForm() {
         } else if (selectedAgent === 'brace') {
           const promptText = validatePromptText();
           if (!promptText) return;
-          dispatchToAgent('brace', { promptText });
+          dispatchToAgent('brace', { promptText })
+            .catch(err => showToast(err.message, 'error'));
         }
       }
     });

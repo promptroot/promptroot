@@ -155,18 +155,23 @@ describe('run-in-agent', () => {
         expect(showToast).toHaveBeenCalledWith('Sent to Brace!', 'success');
       });
 
-      it('should show error toast when relay returns 503 (no brace connected)', async () => {
-        const { showToast } = await import('../../modules/toast.js');
+      it('should reject when relay returns 503 (no brace connected)', async () => {
         fetch.mockResolvedValue({
           ok: false,
           status: 503,
           json: async () => ({ error: 'No Brace instance connected' }),
         });
 
-        await dispatchToAgent('brace', { promptText: 'test' });
-        expect(showToast).toHaveBeenCalledWith(
-          'Failed to send to Brace: No Brace instance connected',
-          'error'
+        await expect(dispatchToAgent('brace', { promptText: 'test' })).rejects.toThrow(
+          'Failed to send to Brace: No Brace instance connected'
+        );
+      });
+
+      it('should reject when the relay fetch fails outright', async () => {
+        fetch.mockRejectedValue(new Error('network down'));
+
+        await expect(dispatchToAgent('brace', { promptText: 'test' })).rejects.toThrow(
+          'Failed to send to Brace: network down'
         );
       });
 
@@ -190,7 +195,7 @@ describe('run-in-agent', () => {
         const { getAuth } = await import('../../modules/firebase-service.js');
         getAuth.mockReturnValue({ currentUser: null });
 
-        await dispatchToAgent('brace', { promptText: 'test' });
+        await expect(dispatchToAgent('brace', { promptText: 'test' })).rejects.toThrow();
         expect(window.open).toHaveBeenCalledWith(
           'https://brace-ui.fly.dev',
           '_blank',
@@ -198,13 +203,15 @@ describe('run-in-agent', () => {
         );
       });
 
-      it('should show toast in fallback path', async () => {
+      it('should reject with BRACE_NOT_CONFIGURED in fallback path', async () => {
         const { showToast } = await import('../../modules/toast.js');
         const { getAuth } = await import('../../modules/firebase-service.js');
         getAuth.mockReturnValue({ currentUser: null });
 
-        await dispatchToAgent('brace', { promptText: 'test' });
-        expect(showToast).toHaveBeenCalledWith('Sent to Brace!', 'success');
+        await expect(dispatchToAgent('brace', { promptText: 'test' })).rejects.toMatchObject({
+          code: 'BRACE_NOT_CONFIGURED',
+        });
+        expect(showToast).not.toHaveBeenCalledWith('Sent to Brace!', 'success');
       });
     });
 

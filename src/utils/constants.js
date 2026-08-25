@@ -532,5 +532,6 @@ export const AGENT_UI_TEXT = {
   BRACE_NOT_CONFIGURED: 'Brace (not configured)',
   SENT_TO_BRACE: 'Sent to Brace!',
   BRACE_SEND_FAILED: 'Failed to send to Brace: ',
+  BRACE_NOT_CONFIGURED_ERROR: 'Brace is not configured. Connect Brace, then try again.',
   AGENTIC_QUEUE_EMPTY: 'No items in the Agentic Queue.'
 };

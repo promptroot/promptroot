@@ -65,8 +65,9 @@ async function _dispatchToBrace(promptText) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), BRACE_RELAY_TIMEOUT_MS);
 
+        let res;
         try {
-          const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+          res = await fetch(`${baseUrl}/v1/chat/completions`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -79,16 +80,6 @@ async function _dispatchToBrace(promptText) {
             }),
             signal: controller.signal,
           });
-          clearTimeout(timeoutId);
-
-          if (res.ok) {
-            showToast(AGENT_UI_TEXT.SENT_TO_BRACE, 'success');
-            return;
-          }
-
-          const body = await res.json().catch(() => ({}));
-          showToast(AGENT_UI_TEXT.BRACE_SEND_FAILED + (body.error || res.status), 'error');
-          return;
         } catch (err) {
           clearTimeout(timeoutId);
           if (err.name === 'AbortError') {
@@ -96,14 +87,24 @@ async function _dispatchToBrace(promptText) {
             showToast(AGENT_UI_TEXT.SENT_TO_BRACE, 'success');
             return;
           }
-          showToast(AGENT_UI_TEXT.BRACE_SEND_FAILED + err.message, 'error');
+          throw new Error(AGENT_UI_TEXT.BRACE_SEND_FAILED + err.message);
+        }
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          showToast(AGENT_UI_TEXT.SENT_TO_BRACE, 'success');
           return;
         }
+
+        const body = await res.json().catch(() => ({}));
+        throw new Error(AGENT_UI_TEXT.BRACE_SEND_FAILED + (body.error || res.status));
       }
     }
   }
 
   // Fallback when not configured: open brace-ui so the user can connect
   window.open(OPENCLAW.BRACE_UI_URL, '_blank', 'noopener,noreferrer');
-  showToast(AGENT_UI_TEXT.SENT_TO_BRACE, 'success');
+  const err = new Error(AGENT_UI_TEXT.BRACE_NOT_CONFIGURED_ERROR);
+  err.code = 'BRACE_NOT_CONFIGURED';
+  throw err;
 }

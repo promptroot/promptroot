@@ -8,6 +8,7 @@ let editModalState = {
   currentType: null,
   repoSelector: null,
   branchSelector: null,
+  selectedAgent: 'jules',
   isUnscheduled: false,
   isInitializing: false
 };
@@ -51,6 +52,7 @@ export function resetEditModalState() {
     currentType: null,
     repoSelector: null,
     branchSelector: null,
+    selectedAgent: 'jules',
     isUnscheduled: false,
     isInitializing: false
   });

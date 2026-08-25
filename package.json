@@ -28,7 +28,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@vitest/coverage-v8": "^2.1.8",
     "dotenv": "^17.2.3",
-    "jsdom": "^25.0.1",
+    "jsdom": "^30.0.1",
     "vitest": "^2.1.8"
   }
 }

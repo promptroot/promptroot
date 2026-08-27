@@ -92,3 +92,6 @@ GOOD — match this density:
 [ ] every task has all 7 template sections
 [ ] no task under 15 lines — rewrite any that is
 [ ] no task touches a file from the open-PR list
+[ ] one tasks markdown document written to `docs/` directory
+[ ] dedicated branch created, committed, and pushed
+[ ] response terminates with the full URL to the markdown document on the pushed branch

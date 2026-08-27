@@ -85,13 +85,13 @@ GOOD — match this density:
 - header lines: date · base commit · open PRs checked (numbers) or "could not check"
 - no implementation code blocks; code snippets only as short evidence quotes
 
-## self-check — verify each box before answering; fix, don't explain
-[ ] exactly 10 tasks
-[ ] no file in two tasks
-[ ] every cited path was opened and confirmed to exist
-[ ] every task has all 7 template sections
-[ ] no task under 15 lines — rewrite any that is
-[ ] no task touches a file from the open-PR list
-[ ] one tasks markdown document written to `docs/` directory
-[ ] dedicated branch created, committed, and pushed
-[ ] response terminates with the full URL to the markdown document on the pushed branch
+## self-check — verify each box before answering; fix, don't explain 
+[ ] exactly 10 tasks 
+[ ] no file in two tasks 
+[ ] every cited path was opened and confirmed to exist 
+[ ] every task has all 7 template sections 
+[ ] no task under 15 lines — rewrite any that is 
+[ ] no task touches a file from the open-PR list with tag review ready merge
+[ ] one tasks markdown document written to `docs/` directory 
+[ ] dedicated branch created, committed, and pushed 
+[ ] response terminates with the full URL to the markdown document on the pushed branch 

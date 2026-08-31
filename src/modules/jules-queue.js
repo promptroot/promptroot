@@ -179,6 +179,7 @@ export function getAgentBadgeInfo(destination) {
 export function renderQueueListDirectly(items) {
   setQueueCache(items);
   populateRepoFilter(items);
+  populateBranchFilter(items);
   renderQueueList(getFilteredItems());
 }
 
@@ -198,8 +199,10 @@ function populateRepoFilter(items) {
   const previousSelection = repoFilter.value;
 
   // Clear existing options except the first (All Repositories)
-  while (repoFilter.children.length > 1) {
-    repoFilter.removeChild(repoFilter.lastChild);
+  if (repoFilter.children) {
+    while (repoFilter.children.length > 1) {
+      repoFilter.removeChild(repoFilter.lastChild);
+    }
   }
   
   // Add repository options
@@ -215,6 +218,46 @@ function populateRepoFilter(items) {
   }
 }
 
+// Branch filtering functionality
+function populateBranchFilter(items) {
+  const branchFilter = document.getElementById('queueBranchFilter');
+  if (!branchFilter || !items) return;
+
+  const repoFilter = document.getElementById('queueRepoFilter');
+  const selectedRepo = repoFilter?.value || '';
+
+  // Get unique branches from items (scoped to selected repo if one is active)
+  const branches = new Set();
+  items.forEach(item => {
+    if (!selectedRepo || item.sourceId === selectedRepo) {
+      branches.add(item.branch || 'master');
+    }
+  });
+
+  const previousSelection = branchFilter.value;
+
+  // Clear existing options except the first (All Branches)
+  if (branchFilter.children) {
+    while (branchFilter.children.length > 1) {
+      branchFilter.removeChild(branchFilter.lastChild);
+    }
+  }
+
+  // Add branch options sorted alphabetically
+  Array.from(branches).sort().forEach(branch => {
+    const option = document.createElement('option');
+    option.value = branch;
+    option.textContent = branch;
+    branchFilter.appendChild(option);
+  });
+
+  if (previousSelection && branches.has(previousSelection)) {
+    branchFilter.value = previousSelection;
+  } else {
+    branchFilter.value = '';
+  }
+}
+
 function getFilteredItems() {
   const allItems = getQueueCache();
   if (!allItems) return [];
@@ -224,6 +267,9 @@ function getFilteredItems() {
 
   const agentFilter = document.getElementById('queueAgentFilter');
   const selectedAgent = agentFilter?.value || '';
+
+  const branchFilter = document.getElementById('queueBranchFilter');
+  const selectedBranch = branchFilter?.value || '';
   
   return allItems.filter(item => {
     if (selectedRepo && item.sourceId !== selectedRepo) return false;
@@ -231,11 +277,16 @@ function getFilteredItems() {
       const dest = item.destination || 'jules';
       if (dest !== selectedAgent) return false;
     }
+    if (selectedBranch) {
+      const itemBranch = item.branch || 'master';
+      if (itemBranch !== selectedBranch) return false;
+    }
     return true;
   });
 }
 
 function applyRepoFilter() {
+  populateBranchFilter(getQueueCache());
   const filteredItems = getFilteredItems();
   renderQueueList(filteredItems);
   
@@ -1025,6 +1076,7 @@ async function loadQueuePage() {
     
     setQueueCache(items);
     populateRepoFilter(items);
+    populateBranchFilter(items);
     renderQueueList(getFilteredItems());
     setupQueueHandlers();
   } catch (err) {
@@ -1915,6 +1967,13 @@ function setupQueueHandlers() {
   if (agentFilter && !agentFilter.dataset.listenerAttached) {
     agentFilter.dataset.listenerAttached = 'true';
     agentFilter.addEventListener('change', applyRepoFilter);
+  }
+
+  // Branch filter handler
+  const branchFilter = document.getElementById('queueBranchFilter');
+  if (branchFilter && !branchFilter.dataset.listenerAttached) {
+    branchFilter.dataset.listenerAttached = 'true';
+    branchFilter.addEventListener('change', applyRepoFilter);
   }
 
   const runHandler = async () => { await runSelectedQueueItems(); };

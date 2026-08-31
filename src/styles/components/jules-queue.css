@@ -268,23 +268,26 @@
   display: none;
 }
 
-/* Repository & Agent Filter Styles */
+/* Repository, Agent & Branch Filter Styles */
 .queue-repo-filter,
-.queue-agent-filter {
+.queue-agent-filter,
+.queue-branch-filter {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .queue-repo-filter .form-label,
-.queue-agent-filter .form-label {
+.queue-agent-filter .form-label,
+.queue-branch-filter .form-label {
   margin: 0;
   white-space: nowrap;
   color: var(--text);
 }
 
 .queue-repo-filter .form-control,
-.queue-agent-filter .form-control {
+.queue-agent-filter .form-control,
+.queue-branch-filter .form-control {
   font-size: 13px;
   padding: 6px 10px;
   border-radius: 6px;
@@ -302,14 +305,16 @@
 }
 
 .queue-repo-filter .form-control:focus,
-.queue-agent-filter .form-control:focus {
+.queue-agent-filter .form-control:focus,
+.queue-branch-filter .form-control:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(77, 217, 255, 0.1);
   outline: none;
 }
 
 .queue-repo-filter .form-control option,
-.queue-agent-filter .form-control option {
+.queue-agent-filter .form-control option,
+.queue-branch-filter .form-control option {
   background: #12162a;
   color: var(--text);
   padding: 8px;

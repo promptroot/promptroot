@@ -226,22 +226,31 @@ function populateBranchFilter(items) {
   const repoFilter = document.getElementById('queueRepoFilter');
   const selectedRepo = repoFilter?.value || '';
 
-  // Get unique branches from items (scoped to selected repo if one is active)
-  const branches = new Set();
-  items.forEach(item => {
-    if (!selectedRepo || item.sourceId === selectedRepo) {
-      branches.add(item.branch || 'master');
-    }
-  });
-
-  const previousSelection = branchFilter.value;
-
   // Clear existing options except the first (All Branches)
   if (branchFilter.children) {
     while (branchFilter.children.length > 1) {
       branchFilter.removeChild(branchFilter.lastChild);
     }
   }
+
+  // If no repository is selected, disable the branch filter and reset selection
+  if (!selectedRepo) {
+    branchFilter.disabled = true;
+    branchFilter.value = '';
+    return;
+  }
+
+  branchFilter.disabled = false;
+
+  // Get unique branches for the selected repository
+  const branches = new Set();
+  items.forEach(item => {
+    if (item.sourceId === selectedRepo) {
+      branches.add(item.branch || 'master');
+    }
+  });
+
+  const previousSelection = branchFilter.value;
 
   // Add branch options sorted alphabetically
   Array.from(branches).sort().forEach(branch => {
@@ -269,7 +278,7 @@ function getFilteredItems() {
   const selectedAgent = agentFilter?.value || '';
 
   const branchFilter = document.getElementById('queueBranchFilter');
-  const selectedBranch = branchFilter?.value || '';
+  const selectedBranch = (selectedRepo && branchFilter && !branchFilter.disabled) ? (branchFilter.value || '') : '';
   
   return allItems.filter(item => {
     if (selectedRepo && item.sourceId !== selectedRepo) return false;

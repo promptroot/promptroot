@@ -312,6 +312,14 @@
   outline: none;
 }
 
+.queue-repo-filter .form-control:disabled,
+.queue-agent-filter .form-control:disabled,
+.queue-branch-filter .form-control:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 .queue-repo-filter .form-control option,
 .queue-agent-filter .form-control option,
 .queue-branch-filter .form-control option {

@@ -226,6 +226,8 @@ function populateBranchFilter(items) {
   const repoFilter = document.getElementById('queueRepoFilter');
   const selectedRepo = repoFilter?.value || '';
 
+  const previousSelection = branchFilter.value;
+
   // Clear existing options except the first (All Branches)
   if (branchFilter.children) {
     while (branchFilter.children.length > 1) {
@@ -249,8 +251,6 @@ function populateBranchFilter(items) {
       branches.add(item.branch || 'master');
     }
   });
-
-  const previousSelection = branchFilter.value;
 
   // Add branch options sorted alphabetically
   Array.from(branches).sort().forEach(branch => {
@@ -294,8 +294,7 @@ function getFilteredItems() {
   });
 }
 
-function applyRepoFilter() {
-  populateBranchFilter(getQueueCache());
+function applyQueueFilters() {
   const filteredItems = getFilteredItems();
   renderQueueList(filteredItems);
   
@@ -304,6 +303,11 @@ function applyRepoFilter() {
   if (selectAllCheck) {
     selectAllCheck.checked = false;
   }
+}
+
+function applyRepoFilter() {
+  populateBranchFilter(getQueueCache());
+  applyQueueFilters();
 }
 
 export function attachQueueHandlers() {
@@ -1975,14 +1979,14 @@ function setupQueueHandlers() {
   const agentFilter = document.getElementById('queueAgentFilter');
   if (agentFilter && !agentFilter.dataset.listenerAttached) {
     agentFilter.dataset.listenerAttached = 'true';
-    agentFilter.addEventListener('change', applyRepoFilter);
+    agentFilter.addEventListener('change', applyQueueFilters);
   }
 
   // Branch filter handler
   const branchFilter = document.getElementById('queueBranchFilter');
   if (branchFilter && !branchFilter.dataset.listenerAttached) {
     branchFilter.dataset.listenerAttached = 'true';
-    branchFilter.addEventListener('change', applyRepoFilter);
+    branchFilter.addEventListener('change', applyQueueFilters);
   }
 
   const runHandler = async () => { await runSelectedQueueItems(); };

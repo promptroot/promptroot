@@ -500,6 +500,36 @@ describe('jules-queue', () => {
 
       expect(listDiv.appendChild).toHaveBeenCalledTimes(1);
     });
+
+    it('should preserve selected branch across re-population if still valid for the selected repo', () => {
+      const items = [
+        { id: '1', sourceId: 'repoA', branch: 'feat/alpha' },
+        { id: '2', sourceId: 'repoA', branch: 'main' }
+      ];
+      julesQueueStore.getQueueCache.mockReturnValue(items);
+
+      const listDiv = createMockElement('div');
+      const repoFilter = createMockElement('select');
+      repoFilter.value = 'repoA';
+      const branchFilter = createMockElement('select');
+      branchFilter.value = 'feat/alpha';
+      branchFilter.children = [{}, {}, {}];
+      branchFilter.removeChild = vi.fn(function() {
+        branchFilter.children.pop();
+        if (branchFilter.children.length === 1) branchFilter.value = '';
+      });
+
+      global.document.getElementById.mockImplementation((id) => {
+        if (id === 'allQueueList') return listDiv;
+        if (id === 'queueRepoFilter') return repoFilter;
+        if (id === 'queueBranchFilter') return branchFilter;
+        return null;
+      });
+
+      renderQueueListDirectly(items);
+
+      expect(branchFilter.value).toBe('feat/alpha');
+    });
   });
 
   describe('deleteSelectedQueueItems', () => {

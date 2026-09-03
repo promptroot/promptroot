@@ -419,6 +419,34 @@ describe('jules-queue', () => {
 
       expect(listDiv.appendChild).toHaveBeenCalledTimes(2);
     });
+
+    it('should disable branch filter when no repo is selected, and enable when repo is selected', () => {
+      const items = [{ id: '1', sourceId: 'repoA', branch: 'main' }, { id: '2', sourceId: 'repoB', branch: 'dev' }];
+      julesQueueStore.getQueueCache.mockReturnValue(items);
+      const listDiv = createMockElement('div'), repoFilter = createMockElement('select'), branchFilter = createMockElement('select');
+      global.document.getElementById.mockImplementation(id => id === 'allQueueList' ? listDiv : id === 'queueRepoFilter' ? repoFilter : id === 'queueBranchFilter' ? branchFilter : null);
+
+      repoFilter.value = '';
+      renderQueueListDirectly(items);
+      expect(branchFilter.disabled).toBe(true);
+
+      repoFilter.value = 'repoA';
+      renderQueueListDirectly(items);
+      expect(branchFilter.disabled).toBe(false);
+    });
+
+    it('should filter items by branch and preserve valid branch selection', () => {
+      const items = [{ id: '1', sourceId: 'repoA', branch: 'main' }, { id: '2', sourceId: 'repoA', branch: 'feat' }];
+      julesQueueStore.getQueueCache.mockReturnValue(items);
+      const listDiv = createMockElement('div'), repoFilter = createMockElement('select'), branchFilter = createMockElement('select');
+      repoFilter.value = 'repoA';
+      branchFilter.value = 'feat';
+      global.document.getElementById.mockImplementation(id => id === 'allQueueList' ? listDiv : id === 'queueRepoFilter' ? repoFilter : id === 'queueBranchFilter' ? branchFilter : null);
+
+      renderQueueListDirectly(items);
+      expect(listDiv.appendChild).toHaveBeenCalledTimes(1);
+      expect(branchFilter.value).toBe('feat');
+    });
   });
 
   describe('deleteSelectedQueueItems', () => {

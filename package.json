@@ -23,7 +23,7 @@
   "license": "AGPL-3.0-only",
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",
-    "@playwright/test": "^1.57.0",
+    "@playwright/test": "^1.62.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/user-event": "^14.6.1",
     "@vitest/coverage-v8": "^2.1.8",

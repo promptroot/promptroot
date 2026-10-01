@@ -94,7 +94,7 @@ GOOD — match this density:
 [ ] every cited path was opened and confirmed to exist 
 [ ] every task has all 7 template sections 
 [ ] no task under 15 lines — rewrite any that is 
-[ ] no task touches a file from the open-PR list with tag review ready merge
+[ ] no task touches a file from the recent (a week) open-PR list with tag review ready merge
 [ ] one tasks markdown document written to `docs/` directory 
 [ ] dedicated branch created, committed, and pushed 
 [ ] response terminates with the full URL to the markdown document on the pushed branch 

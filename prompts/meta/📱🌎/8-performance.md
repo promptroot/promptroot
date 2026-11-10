@@ -85,7 +85,7 @@ GOOD — match this density:
 - no implementation code blocks; code snippets only as short evidence quotes 
  
 ## self-check — verify each box before answering; fix, don't explain 
-[ ] exactly 10 tasks 
+[ ] at least 10 tasks 
 [ ] no file in two tasks 
 [ ] every cited path was opened and confirmed to exist 
 [ ] every task has all 7 template sections 
@@ -93,4 +93,5 @@ GOOD — match this density:
 [ ] no task touches a file from the recent (max a week) open-PR list with tag review ready or merge
 [ ] one tasks markdown document written to `docs/` directory 
 [ ] dedicated branch created, committed, and pushed 
-[ ] response terminates with the full URL to the markdown document on the pushed branch 
+[ ] response terminates with the full URL to the markdown document on the pushed branch
+[ ] last sign the doc with your servicename modelname and effort (e.g. antigravity gemini argon 4 high, claude opus 5.5 medium)
